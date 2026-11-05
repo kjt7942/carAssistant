@@ -11,6 +11,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: carassistant
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +26,20 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
+
+      - name: Prepare signing key
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/carAssistant.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/carAssistant.jks" >> "$GITHUB_ENV"
+            echo "SIGNED=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::KEYSTORE_B64 / KEYSTORE_PASSWORD 비밀값이 없어 임시 키로 서명합니다. 이 APK는 자동 업데이트 대상이 아닙니다."
+            echo "SIGNED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Stamp UI build number
+        run: sed -i "s/__UI_BUILD__/${{ github.run_number }}/" app/src/main/assets/index.html
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
@@ -36,9 +54,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk carAssistant.apk
+          cp app/src/main/assets/index.html index.html
+          NATIVE=$(tr -d '[:space:]' < native-version.txt)
+          MINNATIVE=$(grep -o 'name="min-native" content="[0-9]*"' index.html | grep -o '[0-9]*' | head -1)
+          # 서명 키가 없는 빌드는 APK 업데이트를 알리지 않는다(native=0). 화면 업데이트만 나간다.
+          if [ "$SIGNED" != "true" ]; then NATIVE=0; fi
+          BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/latest"
+          printf '{"native":%s,"ui":%s,"minNative":%s,"apkUrl":"%s/carAssistant.apk","uiUrl":"%s/index.html"}\n' \
+            "$NATIVE" "${{ github.run_number }}" "${MINNATIVE:-1}" "$BASE" "$BASE" > version.json
+          cat version.json
           gh release delete latest --cleanup-tag -y || true
-          gh release create latest carAssistant.apk \
+          gh release create latest carAssistant.apk index.html version.json \
             --prerelease \
             --target "${GITHUB_SHA}" \
             --title "carAssistant 최신 빌드" \
-            --notes "자동 빌드된 디버그 APK (commit ${GITHUB_SHA::7})"
+            --notes "자동 빌드 (commit ${GITHUB_SHA::7}, build ${{ github.run_number }}, 서명 키 사용: ${SIGNED})"

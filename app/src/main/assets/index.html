@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="ui-build" content="__UI_BUILD__">
+<meta name="min-native" content="2">
 <title>차량 비서</title>
 <style>
 /* 차량 화면(1280x720 가정) 야간 운전용 단일 다크 룩. 좌: 시계·날짜 / 우: 날씨 / 하단: 상태·버튼. 그림자·블러·상시 애니메이션 없음 */
@@ -60,6 +62,8 @@ button.main-btn:active{background:var(--fg-dim)}
 .p-no{background:rgba(217,119,108,.18);color:var(--bad)}
 .p-info{background:var(--line);color:var(--fg-dim)}
 .dg-list{overflow:auto;max-height:68vh}
+.upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
+.upd[hidden]{display:none}
 @media (max-width:860px){
   .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-content:center;gap:2.5vh}
   .time{padding-right:0;row-gap:1vh}
@@ -108,12 +112,15 @@ button.main-btn:active{background:var(--fg-dim)}
   </div>
 </div>
 
+<div class="upd" id="upd" hidden><span id="updTxt"></span><button id="updBtn" type="button" hidden>지금 설치</button></div>
+
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
     <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
     <div class="dg-list" id="dgList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
+      <button id="dgUpd" type="button">업데이트 확인</button>
       <button id="dgRefresh" type="button">새로 확인</button>
       <button id="dgClose" type="button">닫기</button>
     </div>
@@ -287,7 +294,8 @@ button.main-btn:active{background:var(--fg-dim)}
     if(/어둡|밝기.*(내|낮)/.test(t)){setDim('3');return '밝기를 어둡게 바꿨습니다.'}
     if(/보통/.test(t)){setDim('2');return '밝기를 보통으로 바꿨습니다.'}
     if(/자동/.test(t)){setDim('auto');return '밝기를 자동으로 바꿨습니다.'}
-    if(/새로고침|갱신|업데이트/.test(t)){last.t=0;maybeFetch(true);return '날씨를 새로 불러옵니다.'}
+    if(/업데이트|새버전|최신버전/.test(t)){if(A){A.checkUpdate();return '새 버전을 확인합니다.'}return '앱에서만 쓸 수 있습니다.'}
+    if(/새로고침|갱신/.test(t)){last.t=0;maybeFetch(true);return '날씨를 새로 불러옵니다.'}
     return '"'+raw+'"는 아직 할 수 없습니다. 지금은 날씨, 시간, 날짜, 밝기, 24시간 표시 명령만 됩니다.';
   }
   window.onNativeSpeech=function(e){
@@ -318,6 +326,7 @@ button.main-btn:active{background:var(--fg-dim)}
       ['음성 인식 서비스',!!d.speech,d.speech?'사용 가능':'이 기기에 음성 인식 서비스가 없음'],
       ['음성 출력(TTS)',!!(d.ttsReady&&d.ttsKo>=0),d.ttsReady?(d.ttsKo>=0?'한국어 사용 가능 · 엔진 '+d.ttsEngines+'개':'엔진은 있으나 한국어 음성 데이터 없음'):'음성 출력 엔진 없음'],
       ['인터넷·날씨',!!wx,wx?'날씨 수신 성공':(wxErr||'아직 수신 전')],
+      ['앱 버전',null,'앱 v'+(d.versionCode||'-')+' · 화면 '+(d.uiBuild||'-')+' ('+(d.uiSource||'-')+') · '+(d.updState||'-')+(d.canInstall===false?' · 설치 허용 필요':'')],
       ['기기',null,(d.model||'-')+' · Android '+(d.release||'-')+' (API '+(d.sdk||'-')+')']
     ];
     var h='';
@@ -329,13 +338,32 @@ button.main-btn:active{background:var(--fg-dim)}
   $('bDiag').addEventListener('click',function(){showDiag()});
   $('dgRefresh').addEventListener('click',function(){showDiag()});
   $('dgPerm').addEventListener('click',function(){if(A)A.requestPerms()});
+  $('dgUpd').addEventListener('click',function(){if(A){A.checkUpdate();$('dg').hidden=true}});
   $('dgClose').addEventListener('click',function(){$('dg').hidden=true});
+
+  /* ---------- 앱 업데이트 알림 ---------- */
+  var updHide=null;
+  function updShow(txt,btn,ms){
+    clearTimeout(updHide);$('updTxt').textContent=txt;$('updBtn').hidden=!btn;$('upd').hidden=false;
+    if(ms)updHide=setTimeout(function(){$('upd').hidden=true},ms);
+  }
+  window.onNativeUpdate=function(e){
+    if(e.state==='downloading')updShow('새 버전 내려받는 중 '+(e.msg||''),false);
+    else if(e.state==='ready'){updShow('새 버전이 준비되었습니다',true)}
+    else if(e.state==='installing')updShow(e.msg,false,15000);
+    else if(e.state==='needPermission')updShow(e.msg,true);
+    else if(e.state==='done')updShow('업데이트 완료',false,5000);
+    else if(e.state==='none')updShow(e.msg,false,4000);
+    else if(e.state==='error')updShow(e.msg,false,8000);
+  };
+  $('updBtn').addEventListener('click',function(){if(A)A.installUpdate()});
 
   /* ---------- 시작 ---------- */
   drawClock();tick();drawWx();
   if(A){try{A.startLocation()}catch(e){}}
   setTimeout(function(){maybeFetch(false)},6000);
   setInterval(function(){maybeFetch(false);drawStatus()},60000);
+  if(A){try{A.uiOk()}catch(e){}}
 })();
 </script>
 </body>
