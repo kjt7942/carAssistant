@@ -11,6 +11,10 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.location.Location
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
@@ -129,6 +133,7 @@ class MainActivity : Activity() {
             unregisterReceiver(installReceiver)
         } catch (e: Exception) {
         }
+        abandonFocus()
         recognizer?.destroy()
         recognizer = null
         tts?.shutdown()
@@ -519,6 +524,47 @@ class MainActivity : Activity() {
         JSONObject().put("type", type).put("text", text)
 
     private var sttRetry = 0
+    private var focusReq: AudioFocusRequest? = null
+    private val focusRelease = Runnable { abandonFocus() }
+
+    /** 음성 인식 중에는 음악·라디오 등 다른 소리를 멈추도록 요청한다. (따르는지는 재생 앱에 달려 있음) */
+    private fun requestFocus() {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (focusReq == null) {
+                val attrs = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                focusReq = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                    .setAudioAttributes(attrs)
+                    .setOnAudioFocusChangeListener { }
+                    .build()
+            }
+            am.requestAudioFocus(focusReq!!)
+        } catch (e: Exception) {
+        }
+        main.removeCallbacks(focusRelease)
+        main.postDelayed(focusRelease, 25000)
+    }
+
+    private fun abandonFocus() {
+        main.removeCallbacks(focusRelease)
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            focusReq?.let { am.abandonAudioFocusRequest(it) }
+        } catch (e: Exception) {
+        }
+    }
+
+    private fun beep() {
+        try {
+            val tg = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
+            tg.startTone(ToneGenerator.TONE_PROP_BEEP, 120)
+            main.postDelayed({ tg.release() }, 400)
+        } catch (e: Exception) {
+        }
+    }
 
     private fun newRecognizer(): SpeechRecognizer {
         val r = SpeechRecognizer.createSpeechRecognizer(this)
@@ -545,11 +591,13 @@ class MainActivity : Activity() {
                     return
                 }
                 if (error == 11) resetRecognizer()
+                abandonFocus()
                 js("onNativeSpeech", speechEvent("error", speechError(error)))
             }
 
             override fun onResults(results: Bundle?) {
                 sttRetry = 0
+                abandonFocus()
                 val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = if (list != null && list.isNotEmpty()) list[0] else ""
                 js("onNativeSpeech", speechEvent("result", text))
@@ -591,6 +639,16 @@ class MainActivity : Activity() {
             r.cancel()
         } catch (e: Exception) {
         }
+        requestFocus()
+        if (fromUser) {
+            beep()
+            main.postDelayed({ beginRecognition(r) }, 350)
+        } else {
+            beginRecognition(r)
+        }
+    }
+
+    private fun beginRecognition(r: SpeechRecognizer) {
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
@@ -614,7 +672,7 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun stopListening() {
-            main.post { recognizer?.stopListening() }
+            main.post { recognizer?.stopListening(); abandonFocus() }
         }
 
         @JavascriptInterface
