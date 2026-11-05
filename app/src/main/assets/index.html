@@ -72,8 +72,10 @@ button.main-btn:active{background:var(--fg-dim)}
   .stats{font-size:min(3.9vh,4.4vw)}
   .place{font-size:min(3.2vh,3.6vw)}
   .status{font-size:min(3vh,3.4vw)}
-  button{min-width:90px;font-size:19px;padding:0 10px}
-  button.main-btn{min-width:120px}
+  .bar{flex-direction:column;align-items:stretch;gap:10px}
+  .btns{flex-wrap:nowrap;justify-content:stretch;gap:8px}
+  button{min-width:0;flex:1 1 0;font-size:17px;padding:0 4px}
+  button.main-btn{flex:1.5 1 0;min-width:0}
 }
 </style>
 </head>
