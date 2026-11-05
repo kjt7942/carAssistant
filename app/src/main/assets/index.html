@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>차량 비서</title>
+<style>
+/* 차량 화면(1280x720 가정) 야간 운전용 단일 다크 룩. 좌: 시계·날짜 / 우: 날씨 / 하단: 상태·버튼. 그림자·블러·상시 애니메이션 없음 */
+:root{
+  color-scheme:dark;
+  --bg:#05070a; --fg:#c9d1d8; --fg-dim:#7b8791; --line:#182027; --panel:#0c1117;
+  --accent:#74b6c6; --good:#58b883; --bad:#d9776c; --warn:#c79a4e;
+  --f-disp:"Roboto Condensed","sans-serif-condensed","Arial Narrow",sans-serif;
+  --f-body:"Noto Sans CJK KR","Noto Sans KR","Malgun Gothic",sans-serif;
+}
+html[data-dim="1"]{--fg:#e8eef2;--fg-dim:#99a5af;--accent:#93d3e3;--warn:#dfb062;--line:#222c34}
+html[data-dim="3"]{--fg:#8a959e;--fg-dim:#56616a;--accent:#4d8997;--warn:#8f7140;--line:#11171c}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);overflow:hidden;box-sizing:border-box;
+  padding:12px 16px;-webkit-user-select:none;user-select:none}
+.stage{height:100%;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px}
+.main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);min-height:0}
+.time{display:grid;grid-template-columns:max-content;justify-content:start;align-content:center;row-gap:2vh;min-width:0;padding-right:3vw}
+.clock{display:flex;align-items:baseline;gap:.18em;font-family:var(--f-disp);font-weight:600;line-height:.9;
+  font-size:min(36vh,17vw);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ampm{font-family:var(--f-body);font-weight:500;font-size:.2em;color:var(--fg-dim)}
+.date{display:flex;align-items:baseline;justify-content:center;text-align:center;flex-wrap:wrap;column-gap:.5em;font-size:min(8.5vh,4.6vw);line-height:1.2}
+.dow{color:var(--accent);font-weight:700}
+.dt{font-weight:500}
+.wx{display:flex;flex-direction:column;justify-content:center;gap:2.2vh;min-width:0;border-left:1px solid var(--line);padding-left:3vw}
+.wx-top{display:flex;align-items:center;gap:2vw;min-width:0}
+.wx-ico{width:min(17vh,9vw);height:min(17vh,9vw);color:var(--accent);flex:none}
+.wx-ico svg{width:100%;height:100%;display:block}
+.temp{font-family:var(--f-disp);font-weight:600;font-size:min(24vh,13vw);line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.temp small{font-size:.5em;color:var(--fg-dim);font-weight:500}
+.cond{font-size:min(6.5vh,3.6vw);font-weight:500;text-align:right}
+.stats{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:1.2vh 2.2vw;font-size:min(5vh,2.8vw);color:var(--fg-dim)}
+.stats b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums}
+.place{font-size:min(4vh,2.4vw);color:var(--fg-dim);text-align:right}
+.empty{color:var(--fg-dim);font-size:min(5vh,2.8vw);line-height:1.5}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px}
+.status{font-size:min(3.8vh,2.3vw);color:var(--fg-dim);min-width:0;line-height:1.35}
+.status.stale{color:var(--warn)}
+.btns{display:flex;gap:12px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+button{font:inherit;font-size:22px;font-weight:500;color:var(--fg-dim);background:transparent;border:1px solid var(--line);
+  border-radius:12px;min-width:110px;min-height:76px;padding:0 18px}
+button:active{background:var(--line)}
+button.main-btn{color:#031318;background:var(--accent);border-color:var(--accent);font-weight:700;min-width:170px}
+button.main-btn:active{background:var(--fg-dim)}
+.ov{position:fixed;inset:0;background:rgba(3,5,7,.97);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;z-index:5}
+.ov-in{width:100%;max-width:1000px;display:flex;flex-direction:column;gap:2.2vh}
+.ov-state{color:var(--accent);font-size:min(5vh,3vw);font-weight:700}
+.ov-text{font-size:min(8vh,4.4vw);font-weight:500;line-height:1.3;min-height:1.3em}
+.ov-resp{font-size:min(6vh,3.4vw);color:var(--fg-dim);line-height:1.4}
+.dg-row{display:grid;grid-template-columns:minmax(120px,26%) auto minmax(0,1fr);gap:4px 14px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:min(4vh,2.4vw)}
+.dg-row .k{color:var(--fg-dim)}
+.pill{display:inline-block;min-width:3.4em;text-align:center;padding:0 10px;border-radius:999px;font-size:.8em;font-weight:700}
+.p-ok{background:rgba(88,184,131,.18);color:var(--good)}
+.p-no{background:rgba(217,119,108,.18);color:var(--bad)}
+.p-info{background:var(--line);color:var(--fg-dim)}
+.dg-list{overflow:auto;max-height:68vh}
+@media (max-width:860px){
+  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-content:center;gap:2.5vh}
+  .time{padding-right:0;row-gap:1vh}
+  .clock{font-size:min(24vh,27vw)}
+  .date{font-size:min(5.6vh,6.2vw)}
+  .wx{border-left:0;border-top:1px solid var(--line);padding-left:0;padding-top:2.5vh;gap:1.4vh}
+  .wx-ico{width:min(11vh,14vw);height:min(11vh,14vw)}
+  .temp{font-size:min(15vh,19vw)}
+  .cond{font-size:min(4.6vh,5.2vw)}
+  .stats{font-size:min(3.9vh,4.4vw)}
+  .place{font-size:min(3.2vh,3.6vw)}
+  .status{font-size:min(3vh,3.4vw)}
+  button{min-width:90px;font-size:19px;padding:0 10px}
+  button.main-btn{min-width:120px}
+}
+</style>
+</head>
+<body>
+<main class="stage">
+  <div class="main">
+    <section class="time" aria-label="시계와 날짜">
+      <div class="clock"><span class="ampm" id="ampm"></span><span id="hm">--:--</span></div>
+      <div class="date"><span class="dt" id="dt"></span><span class="dow" id="dow"></span></div>
+    </section>
+    <section class="wx" id="wx" aria-label="날씨"><div class="empty">날씨를 불러오는 중입니다.</div></section>
+  </div>
+  <div class="bar">
+    <div class="status" id="status"></div>
+    <div class="btns">
+      <button id="bVoice" class="main-btn" type="button">음성 명령</button>
+      <button id="bDiag" type="button">진단</button>
+      <button id="bFmt" type="button">24시간</button>
+      <button id="bDim" type="button">밝기 자동</button>
+    </div>
+  </div>
+</main>
+
+<div class="ov" id="ov" hidden>
+  <div class="ov-in">
+    <div class="ov-state" id="ovState"></div>
+    <div class="ov-text" id="ovText"></div>
+    <div class="ov-resp" id="ovResp"></div>
+    <div class="btns" style="justify-content:flex-start"><button id="ovClose" type="button">닫기</button></div>
+  </div>
+</div>
+
+<div class="ov" id="dg" hidden>
+  <div class="ov-in">
+    <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
+    <div class="dg-list" id="dgList"></div>
+    <div class="btns" style="justify-content:flex-start">
+      <button id="dgPerm" type="button">권한 다시 요청</button>
+      <button id="dgRefresh" type="button">새로 확인</button>
+      <button id="dgClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var A=window.Android||null;
+  var DOW=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  var store={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  function pad(n){return n<10?'0'+n:''+n}
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
+  function num(v){return typeof v==='number'&&isFinite(v)}
+
+  /* ---------- 시계 (한국 시간 고정) ---------- */
+  var fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'});
+  function seoulNow(){
+    var p={};fmt.formatToParts(new Date()).forEach(function(x){p[x.type]=x.value});
+    return {mo:+p.month,d:+p.day,h:+p.hour,mi:+p.minute,wk:{Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday]};
+  }
+  var use24=store.get('clk24')!=='0';
+  var dimMode=store.get('dim')||'auto';
+  var DIMS=['auto','1','2','3'],DIMLABEL={auto:'밝기 자동','1':'밝기 밝게','2':'밝기 보통','3':'밝기 어둡게'};
+  if(DIMS.indexOf(dimMode)<0)dimMode='auto';
+  function applyDim(hour){
+    var lv=dimMode;
+    if(dimMode==='auto')lv=(hour>=7&&hour<18)?'1':((hour>=18&&hour<21)||(hour>=5&&hour<7))?'2':'3';
+    document.documentElement.setAttribute('data-dim',lv);
+    $('bDim').textContent=DIMLABEL[dimMode];
+  }
+  function drawClock(){
+    var t=seoulNow(),h=t.h,ap='';
+    if(!use24){ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12}else{h=pad(h)}
+    $('ampm').textContent=ap;
+    $('hm').textContent=h+':'+pad(t.mi);
+    $('dt').textContent=t.mo+'월 '+t.d+'일';
+    $('dow').textContent=DOW[t.wk];
+    $('bFmt').textContent=use24?'24시간':'12시간';
+    applyDim(t.h);drawStatus();
+  }
+  function tick(){setTimeout(function(){drawClock();tick()},60000-(Date.now()%60000)+50)}
+  function setDim(m){dimMode=m;store.set('dim',m);drawClock()}
+  function setFmt(v){use24=v;store.set('clk24',v?'1':'0');drawClock()}
+  $('bFmt').addEventListener('click',function(){setFmt(!use24)});
+  $('bDim').addEventListener('click',function(){setDim(DIMS[(DIMS.indexOf(dimMode)+1)%DIMS.length])});
+
+  /* ---------- 위치 + 날씨 ---------- */
+  var DEF={lat:36.5866,lon:128.1867,name:'문경시'};
+  var loc=null,wx=null,wxErr='',busy=false,last={t:0,lat:null,lon:null},place='',placeFor=null;
+  var ICON={
+    clear:'<circle cx="24" cy="24" r="8"/><path d="M24 6v5M24 37v5M6 24h5M37 24h5M11.3 11.3l3.5 3.5M33.2 33.2l3.5 3.5M11.3 36.7l3.5-3.5M33.2 14.8l3.5-3.5"/>',
+    moon:'<path d="M31 8a16 16 0 1 0 10 28A13 13 0 0 1 31 8z"/>',
+    partly:'<circle cx="17" cy="16" r="6"/><path d="M17 4v3M5 16h3M8.5 7.5l2 2M25.5 7.5l-2 2"/><path d="M16 38h18a7 7 0 0 0 .8-13.9A10 10 0 0 0 15.6 26 6 6 0 0 0 16 38z"/>',
+    cloudy:'<path d="M13 37h21a8 8 0 0 0 .9-15.9A11.5 11.5 0 0 0 12.9 24 6.7 6.7 0 0 0 13 37z"/>',
+    rain:'<path d="M13 30h21a7.5 7.5 0 0 0 .9-14.9A11 11 0 0 0 12.9 17.5 6.3 6.3 0 0 0 13 30z"/><path d="M16 35l-2 6M24 35l-2 6M32 35l-2 6"/>',
+    snow:'<path d="M13 30h21a7.5 7.5 0 0 0 .9-14.9A11 11 0 0 0 12.9 17.5 6.3 6.3 0 0 0 13 30z"/><path d="M16 35v6M13 38h6M26 35v6M23 38h6M36 35v6M33 38h6"/>',
+    fog:'<path d="M8 16h32M12 24h28M8 32h32M14 40h24"/>'
+  };
+  function wmo(code,night){
+    if(code===0)return{c:'맑음',i:night?'moon':'clear'};
+    if(code===1)return{c:'대체로 맑음',i:night?'moon':'clear'};
+    if(code===2)return{c:'구름 조금',i:'partly'};
+    if(code===3)return{c:'흐림',i:'cloudy'};
+    if(code===45||code===48)return{c:'안개',i:'fog'};
+    if(code>=51&&code<=57)return{c:'이슬비',i:'rain'};
+    if(code>=61&&code<=67)return{c:'비',i:'rain'};
+    if(code>=71&&code<=77)return{c:'눈',i:'snow'};
+    if(code>=80&&code<=82)return{c:'소나기',i:'rain'};
+    if(code===85||code===86)return{c:'눈 소나기',i:'snow'};
+    if(code>=95)return{c:'뇌우',i:'rain'};
+    return{c:'날씨 정보 없음',i:'cloudy'};
+  }
+  function km(a,b,c,d){
+    var R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r;
+    var h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)*Math.sin(y/2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+  function coords(){return loc?{lat:loc.lat,lon:loc.lon}:{lat:DEF.lat,lon:DEF.lon}}
+  function gpsFresh(){return !!loc&&(Date.now()-loc.recv)<120000}
+  function placeLabel(){
+    if(place)return place+(gpsFresh()?'':' (기본 위치)');
+    return gpsFresh()?(loc.lat.toFixed(2)+', '+loc.lon.toFixed(2)):DEF.name+' (기본 위치)';
+  }
+  function maybeFetch(force){
+    if(busy)return;
+    var c=coords();
+    var moved=last.lat==null?99:km(last.lat,last.lon,c.lat,c.lon);
+    if(force||last.lat==null||moved>3||Date.now()-last.t>30*60*1000)fetchWx(c);
+  }
+  function fetchWx(c){
+    busy=true;
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(4)+'&longitude='+c.lon.toFixed(4)+
+      '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m'+
+      '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=1&wind_speed_unit=ms';
+    fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
+      var cu=j.current,d=j.daily;
+      wx={temp:cu.temperature_2m,feels:cu.apparent_temperature,code:cu.weather_code,wind:cu.wind_speed_10m,
+        hi:d.temperature_2m_max[0],lo:d.temperature_2m_min[0],pop:d.precipitation_probability_max[0],at:Date.now()};
+      last={t:Date.now(),lat:c.lat,lon:c.lon};wxErr='';
+      geocode(c);drawWx();drawStatus();
+    }).catch(function(e){
+      wxErr='날씨 서비스에 연결하지 못했습니다 ('+(e&&e.message||'오류')+')';drawWx();drawStatus();
+    }).then(function(){busy=false});
+  }
+  function geocode(c){
+    if(placeFor&&km(placeFor.lat,placeFor.lon,c.lat,c.lon)<2)return;
+    fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+c.lat.toFixed(4)+'&longitude='+c.lon.toFixed(4)+'&localityLanguage=ko')
+      .then(function(r){return r.json()}).then(function(j){
+        var nm=j.city||j.locality||j.principalSubdivision||'';
+        if(nm){place=nm;placeFor=c;drawWx()}
+      }).catch(function(){});
+  }
+  function night(){var h=seoulNow().h;return h>=18||h<6}
+  function drawWx(){
+    var el=$('wx');
+    if(!wx){el.innerHTML='<div class="empty">'+esc(wxErr||'날씨를 불러오는 중입니다.')+'</div>';return}
+    var w=wmo(wx.code,night()),st=[];
+    if(num(wx.hi)||num(wx.lo))st.push('<span>최고 <b>'+(num(wx.hi)?Math.round(wx.hi)+'°':'-')+'</b> · 최저 <b>'+(num(wx.lo)?Math.round(wx.lo)+'°':'-')+'</b></span>');
+    if(num(wx.pop))st.push('<span>강수확률 <b>'+Math.round(wx.pop)+'%</b></span>');
+    if(num(wx.feels))st.push('<span>체감 <b>'+Math.round(wx.feels)+'°</b></span>');
+    if(num(wx.wind))st.push('<span>바람 <b>'+(Math.round(wx.wind*10)/10)+'m/s</b></span>');
+    el.innerHTML='<div class="wx-top"><div class="wx-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[w.i]+'</svg></div>'+
+      '<div class="temp">'+Math.round(wx.temp)+'<small>°C</small></div></div>'+
+      '<div class="cond">'+esc(w.c)+'</div>'+(st.length?'<div class="stats">'+st.join('')+'</div>':'')+
+      '<div class="place">'+esc(placeLabel())+'</div>';
+  }
+  function drawStatus(){
+    var s=$('status'),parts=[],stale=false;
+    if(gpsFresh()){
+      var sp=num(loc.speed)&&loc.speed>=1?' · '+Math.round(loc.speed*3.6)+'km/h':'';
+      parts.push('GPS 수신 중'+(num(loc.acc)?' · 정확도 '+Math.round(loc.acc)+'m':'')+sp);
+    }else parts.push('GPS 대기 중 · 기본 위치(문경) 사용');
+    if(wx){
+      var m=Math.round((Date.now()-wx.at)/60000),t=new Date(wx.at),tt=seoulNowFrom(wx.at);
+      parts.push('날씨 '+tt+' 기준');if(m>90)stale=true;
+    }else if(wxErr)parts.push('날씨 연결 실패');
+    s.textContent=parts.join(' · ');s.className='status'+(stale?' stale':'');
+  }
+  function seoulNowFrom(ms){var p={};fmt.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return p.hour+':'+p.minute}
+
+  window.onNativeLocation=function(o){
+    o.recv=Date.now();loc=o;
+    maybeFetch(false);drawStatus();drawWx();
+  };
+  window.onNativePerms=function(){if(A)A.startLocation();drawStatus()};
+
+  /* ---------- 음성 명령 ---------- */
+  var ovTimer=null;
+  function ovShow(state,text,resp){
+    $('ov').hidden=false;$('ovState').textContent=state||'';$('ovText').textContent=text||'';$('ovResp').textContent=resp||'';
+  }
+  function ovHide(){$('ov').hidden=true;clearTimeout(ovTimer)}
+  function say(text){if(A){try{A.speak(text)}catch(e){}}}
+  function koTime(){var t=seoulNow(),h=t.h,ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12;return ap+' '+h+'시 '+(t.mi?t.mi+'분':'정각')}
+  function weatherSentence(){
+    if(!wx)return '아직 날씨 정보를 받지 못했습니다.';
+    var w=wmo(wx.code,night());
+    return '지금 '+placeLabel().replace(' (기본 위치)','')+' 기온은 '+Math.round(wx.temp)+'도, '+w.c+'입니다. 오늘 최고 '+Math.round(wx.hi)+'도, 최저 '+Math.round(wx.lo)+'도, 강수확률은 '+Math.round(wx.pop)+'퍼센트입니다.';
+  }
+  function command(raw){
+    var t=raw.replace(/\s+/g,'');
+    if(/진단|점검/.test(t)){showDiag();return '진단 화면을 열었습니다.'}
+    if(/날씨|기온|온도|비와|비올|추워|더워/.test(t))return weatherSentence();
+    if(/몇시|시각|시간알려|지금시간/.test(t))return '지금은 '+koTime()+'입니다.';
+    if(/날짜|며칠|무슨요일|요일|오늘/.test(t)){var n=seoulNow();return '오늘은 '+n.mo+'월 '+n.d+'일 '+DOW[n.wk]+'입니다.'}
+    if(/24시간/.test(t)){setFmt(true);return '24시간 표시로 바꿨습니다.'}
+    if(/12시간/.test(t)){setFmt(false);return '12시간 표시로 바꿨습니다.'}
+    if(/밝게|밝기.*(올|높)/.test(t)){setDim('1');return '밝기를 밝게 바꿨습니다.'}
+    if(/어둡|밝기.*(내|낮)/.test(t)){setDim('3');return '밝기를 어둡게 바꿨습니다.'}
+    if(/보통/.test(t)){setDim('2');return '밝기를 보통으로 바꿨습니다.'}
+    if(/자동/.test(t)){setDim('auto');return '밝기를 자동으로 바꿨습니다.'}
+    if(/새로고침|갱신|업데이트/.test(t)){last.t=0;maybeFetch(true);return '날씨를 새로 불러옵니다.'}
+    return '"'+raw+'"는 아직 할 수 없습니다. 지금은 날씨, 시간, 날짜, 밝기, 24시간 표시 명령만 됩니다.';
+  }
+  window.onNativeSpeech=function(e){
+    clearTimeout(ovTimer);
+    if(e.type==='ready'){ovShow('듣는 중… 말씀해 주세요','','')}
+    else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
+    else if(e.type==='result'){
+      if(!e.text){ovShow('알아듣지 못했습니다','','다시 눌러서 말씀해 주세요.');ovTimer=setTimeout(ovHide,4000);return}
+      var r=command(e.text);ovShow('인식 완료',e.text,r);say(r);ovTimer=setTimeout(ovHide,9000);
+    }
+    else if(e.type==='error'){ovShow('음성 인식 실패','',e.text);ovTimer=setTimeout(ovHide,5000)}
+  };
+  $('bVoice').addEventListener('click',function(){
+    if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
+    ovShow('마이크 준비 중…','','');A.listen();
+  });
+  $('ovClose').addEventListener('click',function(){ovHide();if(A)try{A.stopListening()}catch(e){}});
+
+  /* ---------- 진단 ---------- */
+  function showDiag(){
+    var d={};try{d=JSON.parse(A?A.diag():'{}')}catch(e){}
+    var l=d.loc,rows=[
+      ['위치 권한',!!(d.fine||d.coarse),d.fine?'정확한 위치 허용':d.coarse?'대략적 위치만 허용':'허용 안 됨'],
+      ['GPS 장치',!!d.gpsProvider&&!!d.gpsOn,d.gpsProvider?(d.gpsOn?'켜짐':'꺼짐 (기기 설정에서 위치를 켜야 함)'):'GPS 장치 없음'],
+      ['네트워크 위치',d.netOn?true:null,d.netProvider?(d.netOn?'켜짐':'꺼짐'):'없음'],
+      ['현재 위치',!!l,l?(l.provider+' · 정확도 '+Math.round(l.acc)+'m · 속도 '+(l.speed!=null?Math.round(l.speed*3.6)+'km/h':'값 없음')+' · '+l.ageSec+'초 전'):'아직 수신 없음 (실외에서 1~2분 걸릴 수 있음)'],
+      ['마이크 권한',!!d.mic,d.mic?'허용':'허용 안 됨'],
+      ['음성 인식 서비스',!!d.speech,d.speech?'사용 가능':'이 기기에 음성 인식 서비스가 없음'],
+      ['음성 출력(TTS)',!!(d.ttsReady&&d.ttsKo>=0),d.ttsReady?(d.ttsKo>=0?'한국어 사용 가능 · 엔진 '+d.ttsEngines+'개':'엔진은 있으나 한국어 음성 데이터 없음'):'음성 출력 엔진 없음'],
+      ['인터넷·날씨',!!wx,wx?'날씨 수신 성공':(wxErr||'아직 수신 전')],
+      ['기기',null,(d.model||'-')+' · Android '+(d.release||'-')+' (API '+(d.sdk||'-')+')']
+    ];
+    var h='';
+    rows.forEach(function(r){
+      h+='<div class="dg-row"><div class="k">'+esc(r[0])+'</div><span class="pill '+(r[1]===true?'p-ok':r[1]===false?'p-no':'p-info')+'">'+(r[1]===true?'가능':r[1]===false?'불가':'정보')+'</span><div>'+esc(r[2])+'</div></div>';
+    });
+    $('dgList').innerHTML=h;$('dg').hidden=false;
+  }
+  $('bDiag').addEventListener('click',function(){showDiag()});
+  $('dgRefresh').addEventListener('click',function(){showDiag()});
+  $('dgPerm').addEventListener('click',function(){if(A)A.requestPerms()});
+  $('dgClose').addEventListener('click',function(){$('dg').hidden=true});
+
+  /* ---------- 시작 ---------- */
+  drawClock();tick();drawWx();
+  if(A){try{A.startLocation()}catch(e){}}
+  setTimeout(function(){maybeFetch(false)},6000);
+  setInterval(function(){maybeFetch(false);drawStatus()},60000);
+})();
+</script>
+</body>
+</html>
