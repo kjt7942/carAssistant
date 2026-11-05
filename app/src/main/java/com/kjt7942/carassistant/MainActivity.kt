@@ -510,6 +510,7 @@ class MainActivity : Activity() {
         SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "말씀이 들리지 않았습니다"
         SpeechRecognizer.ERROR_NO_MATCH -> "알아듣지 못했습니다"
         SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "인식기가 사용 중입니다"
+        11 -> "음성 인식 서비스 연결이 끊겼습니다. 다시 눌러 주세요"
         SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "마이크 권한이 없습니다"
         else -> "알 수 없는 오류($code)"
     }
@@ -517,19 +518,10 @@ class MainActivity : Activity() {
     private fun speechEvent(type: String, text: String): JSONObject =
         JSONObject().put("type", type).put("text", text)
 
-    private fun startListening() {
-        if (!granted(Manifest.permission.RECORD_AUDIO)) {
-            js("onNativeSpeech", speechEvent("error", "마이크 권한이 없습니다"))
-            requestPermissions(perms, reqCode)
-            return
-        }
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            js("onNativeSpeech", speechEvent("error", "이 기기에는 음성 인식 서비스가 없습니다"))
-            return
-        }
-        recognizer?.destroy()
+    private var sttRetry = 0
+
+    private fun newRecognizer(): SpeechRecognizer {
         val r = SpeechRecognizer.createSpeechRecognizer(this)
-        recognizer = r
         r.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 js("onNativeSpeech", speechEvent("ready", ""))
@@ -543,10 +535,21 @@ class MainActivity : Activity() {
             }
 
             override fun onError(error: Int) {
+                // 11: 인식 서비스 연결 끊김, 5: 인식기 오류, 8: 사용 중 -> 인식기를 새로 만들어 한 번 자동 재시도
+                if ((error == 11 || error == SpeechRecognizer.ERROR_CLIENT ||
+                        error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) && sttRetry < 1
+                ) {
+                    sttRetry += 1
+                    resetRecognizer()
+                    main.postDelayed({ startListening() }, 600)
+                    return
+                }
+                if (error == 11) resetRecognizer()
                 js("onNativeSpeech", speechEvent("error", speechError(error)))
             }
 
             override fun onResults(results: Bundle?) {
+                sttRetry = 0
                 val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = if (list != null && list.isNotEmpty()) list[0] else ""
                 js("onNativeSpeech", speechEvent("result", text))
@@ -560,12 +563,45 @@ class MainActivity : Activity() {
 
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
+        return r
+    }
+
+    private fun resetRecognizer() {
+        try {
+            recognizer?.destroy()
+        } catch (e: Exception) {
+        }
+        recognizer = null
+    }
+
+    private fun startListening(fromUser: Boolean = false) {
+        if (fromUser) sttRetry = 0
+        if (!granted(Manifest.permission.RECORD_AUDIO)) {
+            js("onNativeSpeech", speechEvent("error", "마이크 권한이 없습니다"))
+            requestPermissions(perms, reqCode)
+            return
+        }
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            js("onNativeSpeech", speechEvent("error", "이 기기에는 음성 인식 서비스가 없습니다"))
+            return
+        }
+        // 인식기는 한 번 만들어 재사용한다. 매번 destroy 후 바로 새로 만들면 서비스 연결이 끊긴다.
+        val r = recognizer ?: newRecognizer().also { recognizer = it }
+        try {
+            r.cancel()
+        } catch (e: Exception) {
+        }
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
         i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-        r.startListening(i)
+        try {
+            r.startListening(i)
+        } catch (e: Exception) {
+            resetRecognizer()
+            js("onNativeSpeech", speechEvent("error", "인식기를 시작하지 못했습니다"))
+        }
     }
 
     // ---------- 화면에서 부르는 기능 ----------
@@ -573,7 +609,7 @@ class MainActivity : Activity() {
     inner class Bridge {
         @JavascriptInterface
         fun listen() {
-            main.post { startListening() }
+            main.post { startListening(true) }
         }
 
         @JavascriptInterface
