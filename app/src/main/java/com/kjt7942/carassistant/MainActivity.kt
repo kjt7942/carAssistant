@@ -11,8 +11,6 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.location.Location
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.location.LocationListener
@@ -108,6 +106,7 @@ class MainActivity : Activity() {
             registerReceiver(installReceiver, filter)
         }
 
+        abandonFocus() // 앱이 볼륨을 낮춘 채로 종료됐다면 원래 볼륨으로 복구
         initTts()
         if (!hasAll()) requestPermissions(perms, reqCode)
         main.postDelayed(checkRunnable, 5000)
@@ -122,6 +121,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        abandonFocus()
         stopLocation()
         super.onPause()
     }
@@ -525,24 +525,25 @@ class MainActivity : Activity() {
 
     private var sttRetry = 0
     private var sttCancelled = false
-    private var focusReq: AudioFocusRequest? = null
     private val focusRelease = Runnable { abandonFocus() }
+    private var ducked = false
 
-    /** 음성 인식 중에는 음악·라디오 등 다른 소리를 멈추도록 요청한다. (따르는지는 재생 앱에 달려 있음) */
+    /**
+     * 음성 인식 중에는 미디어 볼륨을 0으로 내리고, 끝나면 원래대로 되돌린다.
+     * (오디오 포커스 요청은 이 헤드유닛 라디오가 '다시 재생'을 따르지 않아 쓰지 않는다.)
+     */
     private fun requestFocus() {
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            if (focusReq == null) {
-                val attrs = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANT)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-                focusReq = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
-                    .setAudioAttributes(attrs)
-                    .setOnAudioFocusChangeListener { }
-                    .build()
+            if (!ducked) {
+                val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                if (cur > 0) {
+                    getSharedPreferences("upd", MODE_PRIVATE).edit().putInt("savedVol", cur).apply()
+                    am.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+                    ducked = true
+                    getSharedPreferences("upd", MODE_PRIVATE).edit().putBoolean("ducking", true).apply()
+                }
             }
-            am.requestAudioFocus(focusReq!!)
         } catch (e: Exception) {
         }
         main.removeCallbacks(focusRelease)
@@ -551,9 +552,14 @@ class MainActivity : Activity() {
 
     private fun abandonFocus() {
         main.removeCallbacks(focusRelease)
+        val pr = getSharedPreferences("upd", MODE_PRIVATE)
+        if (!ducked && !pr.getBoolean("ducking", false)) return
+        ducked = false
+        pr.edit().putBoolean("ducking", false).apply()
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            focusReq?.let { am.abandonAudioFocusRequest(it) }
+            val saved = getSharedPreferences("upd", MODE_PRIVATE).getInt("savedVol", -1)
+            if (saved > 0) am.setStreamVolume(AudioManager.STREAM_MUSIC, saved, 0)
         } catch (e: Exception) {
         }
     }
@@ -648,11 +654,14 @@ class MainActivity : Activity() {
             r.cancel()
         } catch (e: Exception) {
         }
-        requestFocus()
         if (fromUser) {
             beep()
-            main.postDelayed({ beginRecognition(r) }, 350)
+            main.postDelayed({
+                requestFocus()
+                beginRecognition(r)
+            }, 350)
         } else {
+            requestFocus()
             beginRecognition(r)
         }
     }
