@@ -372,10 +372,12 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
       </div></div>
     <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
     <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
-    <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 2초 길게 눌러 옵션을 엽니다 · 핸들 음성 버튼은 그대로 사용</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
     <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
-    <div class="op-r"><div class="op-n">소리 · AI · 앱<small>음성 명령 후 라디오 복귀, AI 모델과 키</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정</button><button type="button" class="go" data-go="dgAi">AI 키</button><button type="button" class="go" data-go="dgModels">AI 모델</button><button type="button" class="go" data-go="dgApps">앱 목록</button></div></div>
-    <div class="op-r"><div class="op-n">점검 · 업데이트<small>GPS·마이크 진단, 핸들 버튼 점검, 앱 업데이트</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단</button><button type="button" class="go" data-go="dgKeys">버튼 점검</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
+    <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 2초 길게 눌러 옵션을 엽니다 · 핸들 음성 버튼은 그대로 사용</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
+    <div class="op-r"><div class="op-n">소리<small>음성 명령 중·후 라디오/음악 처리</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정 ›</button></div></div>
+    <div class="op-r"><div class="op-n">AI<small>오픈라우터 API키, 모델 연결</small></div><div class="sg"><button type="button" class="go" data-go="dgAi">AI 키 ›</button><button type="button" class="go" data-go="dgModels">AI 모델 ›</button></div></div>
+    <div class="op-r"><div class="op-n">진단<small>GPS·마이크 점검 · 앱 목록 · 핸들 버튼 점검</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단 열기 ›</button></div></div>
+    <div class="op-r"><div class="op-n">업데이트<small id="opVer">현재 버전 확인 중…</small></div><div class="sg"><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
   </div>
 </div>
 
@@ -872,6 +874,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     if(ms)updHide=setTimeout(function(){$('upd').hidden=true},ms);
   }
   window.onNativeUpdate=function(e){
+    setTimeout(function(){if(!$('op').hidden)verDraw()},300);
     if(e.state==='downloading')updShow('새 버전 내려받는 중 '+(e.msg||''),false);
     else if(e.state==='ready'){updShow('새 버전이 준비되었습니다',true)}
     else if(e.state==='installing')updShow(e.msg,false,15000);
@@ -936,7 +939,15 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     }
   })();
   var fromOp=false;
-  function openOp(){fromOp=false;opDraw();$('op').hidden=false;opPreviews()}
+  function verDraw(){
+    if(!A){$('opVer').textContent='현재 버전 정보를 읽을 수 없습니다';return}
+    var d={};try{d=JSON.parse(A.diag())}catch(e){}
+    var st=String(d.updState||''),msg='최신 버전입니다';
+    if(/설치 대기|내려받는/.test(st))msg='새 버전이 있습니다 (설치 필요)';
+    else if(/확인 실패/.test(st))msg='업데이트 확인에 실패했습니다';
+    $('opVer').textContent=A?'현재 버전 앱 v'+(d.versionCode||'?')+' · 화면 '+(d.uiBuild||'?')+' · '+msg:'현재 버전 정보를 읽을 수 없습니다';
+  }
+  function openOp(){fromOp=false;opDraw();verDraw();$('op').hidden=false;opPreviews()}
   $('bOpt').addEventListener('click',openOp);
   $('opClose').addEventListener('click',function(){$('op').hidden=true;fromOp=false});
   $('pvs').addEventListener('click',function(ev){var c=ev.target.closest('.pvcard');if(c)setTheme(c.getAttribute('data-th'))});
