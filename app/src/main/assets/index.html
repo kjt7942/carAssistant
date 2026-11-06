@@ -68,6 +68,12 @@ button.main-btn:active{background:var(--fg-dim)}
 #dg .dg-list{max-height:72vh}
 #dg button{font-size:min(3.6vh,2.4vw);min-height:0;padding:1.4vh 14px}
 #dg .ov-in{max-width:1100px}
+.pl-list{overflow:auto;max-height:62vh}
+.ap-row{padding:1.1vh 4px;border-bottom:1px solid var(--line);font-size:max(14px,min(3.4vh,2.1vw))}
+.ap-row:active{background:var(--line)}
+.ap-row small{display:block;color:var(--fg-dim);font-size:.72em}
+.kk-row{display:grid;grid-template-columns:4.2em 1fr auto;gap:4px 12px;padding:.8vh 0;border-bottom:1px solid var(--line);font-size:max(14px,min(3.4vh,2.1vw))}
+.kk-row small{color:var(--fg-dim)}
 input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1.4vh 14px;width:100%;box-sizing:border-box;-webkit-user-select:text;user-select:text}
 .upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
 .upd[hidden]{display:none}
@@ -91,6 +97,8 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 
 /* 세로 화면: 오버레이 글자는 폭(vw) 기준, 위쪽부터 배치 */
 @media (orientation:portrait){
+  .pl-list{max-height:68vh}
+  .ap-row,.kk-row{font-size:max(14px,3.6vw)}
   .ov{align-items:flex-start;padding:max(24px,6vh) 18px 18px}
   .ov-in{gap:2vh}
   .ov-state{font-size:max(17px,4.6vw)}
@@ -164,6 +172,29 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
   </div>
 </div>
 
+<div class="ov" id="ap" hidden>
+  <div class="ov-in">
+    <div class="ov-state" id="apTitle">설치된 앱 — 누르면 실행</div>
+    <div class="pl-list" id="apList"></div>
+    <div class="btns" style="justify-content:flex-start">
+      <button id="apFilter" type="button">차량 관련만</button>
+      <button id="apClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="kk" hidden>
+  <div class="ov-in">
+    <div class="ov-state">버튼 점검 — 핸들 리모컨이나 차량 버튼을 눌러 보세요</div>
+    <div class="ov-resp" id="kkDev"></div>
+    <div class="pl-list" id="kkList"><div class="ov-resp">아직 입력이 없습니다.</div></div>
+    <div class="btns" style="justify-content:flex-start">
+      <button id="kkClear" type="button">기록 지우기</button>
+      <button id="kkClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
     <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
@@ -171,6 +202,8 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
       <button id="dgAi" type="button">AI 키 설정</button>
+      <button id="dgApps" type="button">앱 목록</button>
+      <button id="dgKeys" type="button">버튼 점검</button>
       <button id="dgUpd" type="button">업데이트 확인</button>
       <button id="dgRefresh" type="button">새로 확인</button>
       <button id="dgClose" type="button">닫기</button>
@@ -416,6 +449,7 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
       ['음성 인식 서비스',!!d.speech,d.speech?'사용 가능':'이 기기에 음성 인식 서비스가 없음'],
       ['음성 출력(TTS)',!!(d.ttsReady&&d.ttsKo>=0),d.ttsReady?(d.ttsKo>=0?'한국어 사용 가능 · 엔진 '+d.ttsEngines+'개':'엔진은 있으나 한국어 음성 데이터 없음'):'음성 출력 엔진 없음'],
       ['인터넷·날씨',!!wx,wx?'날씨 수신 성공':(wxErr||'아직 수신 전')],
+      ['블루투스',d.btHas===undefined?null:(d.btHas?!!d.btOn:false),d.btHas===undefined?'앱 업데이트 필요':(d.btHas?((d.btOn?'켜짐':'꺼짐')+(d.btBonded&&d.btBonded.length?' · 등록 기기: '+d.btBonded.join(', '):' · 등록된 기기 없음')):(d.btErr?'조회 실패('+d.btErr+')':'블루투스 장치 없음'))],
       ['AI 연결(오픈라우터)',d.aiKey?true:null,d.aiKey?('키 저장됨 · 끝 '+(A&&A.keyTail?A.keyTail():'')):'키 없음 — "AI 키 설정"에서 입력'],
       ['앱 버전',null,'앱 v'+(d.versionCode||'-')+' · 화면 '+(d.uiBuild||'-')+' ('+(d.uiSource||'-')+') · '+(d.updState||'-')+(d.canInstall===false?' · 설치 허용 필요':'')],
       ['기기',null,(d.model||'-')+' · Android '+(d.release||'-')+' (API '+(d.sdk||'-')+')']
@@ -444,6 +478,45 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
   });
   $('akClear').addEventListener('click',function(){try{A.clearApiKey()}catch(e){}akRefresh('키를 삭제했습니다.')});
   $('akClose').addEventListener('click',function(){$('ak').hidden=true});
+  /* ---------- 앱 목록 / 버튼 점검 ---------- */
+  var apps=[],apOnlyCar=true;
+  var CAR_RE=/radio|fm|am\b|music|player|media|bluetooth|bt|steer|wheel|key|can|auto|car|navi|dvr|av|phone|dial|syu|microntek|ts10|px|fyt|hct|setting|라디오|음악|블루투스|미디어|전화|내비|설정/i;
+  function apDraw(){
+    var list=apps.filter(function(a){return !apOnlyCar||CAR_RE.test(a.n)||CAR_RE.test(a.p)});
+    $('apTitle').textContent='설치된 앱 '+list.length+'/'+apps.length+'개 — 누르면 실행';
+    $('apFilter').textContent=apOnlyCar?'전체 보기':'차량 관련만';
+    var h='';list.forEach(function(a,i){h+='<div class="ap-row" data-p="'+esc(a.p)+'">'+esc(a.n)+'<small>'+esc(a.p)+'</small></div>'});
+    $('apList').innerHTML=h||'<div class="ov-resp">표시할 앱이 없습니다.</div>';
+  }
+  $('dgApps').addEventListener('click',function(){
+    if(!A||!A.listApps){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}
+    try{apps=JSON.parse(A.listApps())}catch(e){apps=[]}
+    apOnlyCar=true;$('dg').hidden=true;apDraw();$('ap').hidden=false;
+  });
+  $('apFilter').addEventListener('click',function(){apOnlyCar=!apOnlyCar;apDraw()});
+  $('apList').addEventListener('click',function(ev){
+    var r=ev.target.closest('.ap-row');if(!r)return;
+    var ok=false;try{ok=A.launchApp(r.getAttribute('data-p'))}catch(e){}
+    $('apTitle').textContent=(ok?'실행 요청함: ':'실행 실패: ')+r.firstChild.textContent;
+  });
+  $('apClose').addEventListener('click',function(){$('ap').hidden=true});
+
+  var kkLog=[];
+  function kkDraw(){
+    var h='';kkLog.forEach(function(k){
+      h+='<div class="kk-row"><b>'+esc(k.action)+'</b><div>'+esc(k.name)+' <small>코드 '+k.code+(k.scan?' · 스캔 '+k.scan:'')+'</small></div><small>'+esc(k.src==='media'?'미디어 버튼':'키')+' · '+esc(k.dev)+'</small></div>';
+    });
+    $('kkList').innerHTML=h||'<div class="ov-resp">아직 입력이 없습니다.</div>';
+  }
+  window.onNativeKey=function(k){kkLog.unshift(k);if(kkLog.length>14)kkLog.pop();if(!$('kk').hidden)kkDraw()};
+  $('dgKeys').addEventListener('click',function(){
+    if(!A||!A.setKeyProbe){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}
+    var devs=[];try{devs=JSON.parse(A.inputDevices())}catch(e){}
+    $('kkDev').textContent='입력 장치: '+(devs.length?devs.map(function(d){return d.n+'('+d.k+')'}).join(', '):'정보 없음');
+    kkLog=[];kkDraw();A.setKeyProbe(true);$('dg').hidden=true;$('kk').hidden=false;
+  });
+  $('kkClear').addEventListener('click',function(){kkLog=[];kkDraw()});
+  $('kkClose').addEventListener('click',function(){try{A.setKeyProbe(false)}catch(e){}$('kk').hidden=true});
   $('dgUpd').addEventListener('click',function(){if(A){A.checkUpdate();$('dg').hidden=true}});
   $('dgClose').addEventListener('click',function(){$('dg').hidden=true});
 

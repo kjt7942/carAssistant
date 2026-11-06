@@ -11,7 +11,12 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.location.Location
+import android.bluetooth.BluetoothAdapter
 import android.media.AudioManager
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
+import android.view.InputDevice
+import android.view.KeyEvent
 import android.media.ToneGenerator
 import android.location.LocationListener
 import android.location.LocationManager
@@ -48,6 +53,8 @@ class MainActivity : Activity() {
     private val main = Handler(Looper.getMainLooper())
     private val ioExec = Executors.newSingleThreadExecutor()
     private val aiExec = Executors.newSingleThreadExecutor()
+    private var keyProbe = false
+    private var mediaSession: MediaSession? = null
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -123,6 +130,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        setKeyProbe(false)
         abandonFocus()
         stopLocation()
         super.onPause()
@@ -683,6 +691,71 @@ class MainActivity : Activity() {
         }
     }
 
+    // ---------- 핸들 리모컨·차량 버튼 점검 ----------
+
+    private fun keyEmit(src: String, e: KeyEvent) {
+        if (e.repeatCount > 0) return
+        val dev = try {
+            InputDevice.getDevice(e.deviceId)?.name ?: "id${e.deviceId}"
+        } catch (ex: Exception) {
+            "id${e.deviceId}"
+        }
+        js(
+            "onNativeKey",
+            JSONObject()
+                .put("src", src)
+                .put("name", KeyEvent.keyCodeToString(e.keyCode))
+                .put("code", e.keyCode)
+                .put("scan", e.scanCode)
+                .put("action", if (e.action == KeyEvent.ACTION_DOWN) "DOWN" else "UP")
+                .put("dev", dev)
+        )
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (keyProbe) keyEmit("key", event)
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun startMediaSession() {
+        if (mediaSession != null) return
+        try {
+            val ms = MediaSession(this, "carAssistant")
+            ms.setCallback(object : MediaSession.Callback() {
+                override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                    @Suppress("DEPRECATION")
+                    val ke = mediaButtonIntent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+                    if (ke != null) keyEmit("media", ke)
+                    return true
+                }
+            })
+            ms.setPlaybackState(
+                PlaybackState.Builder()
+                    .setState(PlaybackState.STATE_PLAYING, 0, 1f)
+                    .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or PlaybackState.ACTION_PLAY_PAUSE)
+                    .build()
+            )
+            ms.isActive = true
+            mediaSession = ms
+        } catch (e: Exception) {
+            mediaSession = null
+        }
+    }
+
+    private fun stopMediaSession() {
+        try {
+            mediaSession?.isActive = false
+            mediaSession?.release()
+        } catch (e: Exception) {
+        }
+        mediaSession = null
+    }
+
+    private fun setKeyProbe(on: Boolean) {
+        keyProbe = on
+        if (on) startMediaSession() else stopMediaSession()
+    }
+
     // ---------- AI (오픈라우터 무료 모델) ----------
     // 키는 이 기기의 앱 전용 저장소에만 두고, 화면(JS)에는 넘기지 않는다. 호출도 네이티브에서 한다.
 
@@ -803,6 +876,61 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun listApps(): String {
+            val arr = JSONArray()
+            try {
+                val i = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                val seen = HashSet<String>()
+                val list = packageManager.queryIntentActivities(i, 0)
+                    .map { Pair(it.loadLabel(packageManager).toString(), it.activityInfo.packageName) }
+                    .sortedBy { it.first.lowercase() }
+                for ((label, pkg) in list) {
+                    if (!seen.add(pkg)) continue
+                    arr.put(JSONObject().put("n", label).put("p", pkg))
+                }
+            } catch (e: Exception) {
+            }
+            return arr.toString()
+        }
+
+        @JavascriptInterface
+        fun launchApp(pkg: String): Boolean {
+            return try {
+                val i = packageManager.getLaunchIntentForPackage(pkg) ?: return false
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(i)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun inputDevices(): String {
+            val arr = JSONArray()
+            try {
+                for (id in InputDevice.getDeviceIds()) {
+                    val d = InputDevice.getDevice(id) ?: continue
+                    val src = d.sources
+                    val kind = when {
+                        src and InputDevice.SOURCE_KEYBOARD == InputDevice.SOURCE_KEYBOARD -> "키"
+                        src and InputDevice.SOURCE_DPAD == InputDevice.SOURCE_DPAD -> "방향키"
+                        src and InputDevice.SOURCE_TOUCHSCREEN == InputDevice.SOURCE_TOUCHSCREEN -> "터치"
+                        else -> "기타"
+                    }
+                    arr.put(JSONObject().put("id", id).put("n", d.name).put("k", kind))
+                }
+            } catch (e: Exception) {
+            }
+            return arr.toString()
+        }
+
+        @JavascriptInterface
+        fun setKeyProbe(on: Boolean) {
+            main.post { this@MainActivity.setKeyProbe(on) }
+        }
+
+        @JavascriptInterface
         fun setApiKey(k: String): Boolean {
             val t = k.trim()
             if (!t.startsWith("sk-or-") || t.length < 20) return false
@@ -844,6 +972,17 @@ class MainActivity : Activity() {
             o.put("updState", updState)
             o.put("canInstall", packageManager.canRequestPackageInstalls())
             o.put("aiKey", aiKey().isNotEmpty())
+            try {
+                val ba = BluetoothAdapter.getDefaultAdapter()
+                o.put("btHas", ba != null)
+                o.put("btOn", ba?.isEnabled ?: false)
+                val names = JSONArray()
+                ba?.bondedDevices?.forEach { names.put(it.name ?: it.address) }
+                o.put("btBonded", names)
+            } catch (e: Exception) {
+                o.put("btHas", false)
+                o.put("btErr", e.javaClass.simpleName)
+            }
             o.put("fine", granted(Manifest.permission.ACCESS_FINE_LOCATION))
             o.put("coarse", granted(Manifest.permission.ACCESS_COARSE_LOCATION))
             o.put("mic", granted(Manifest.permission.RECORD_AUDIO))
