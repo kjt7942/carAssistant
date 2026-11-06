@@ -30,6 +30,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -46,6 +47,7 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
     private val main = Handler(Looper.getMainLooper())
     private val ioExec = Executors.newSingleThreadExecutor()
+    private val aiExec = Executors.newSingleThreadExecutor()
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -681,6 +683,70 @@ class MainActivity : Activity() {
         }
     }
 
+    // ---------- AI (오픈라우터 무료 모델) ----------
+    // 키는 이 기기의 앱 전용 저장소에만 두고, 화면(JS)에는 넘기지 않는다. 호출도 네이티브에서 한다.
+
+    private fun aiKey(): String = getSharedPreferences("ai", MODE_PRIVATE).getString("key", "") ?: ""
+
+    private fun aiEmit(ok: Boolean, text: String, model: String, err: String) {
+        js("onNativeAi", JSONObject().put("ok", ok).put("text", text).put("model", model).put("err", err))
+    }
+
+    private fun askAi(modelsJson: String, messagesJson: String) {
+        val key = aiKey()
+        if (key.isEmpty()) {
+            aiEmit(false, "", "", "AI 키가 없습니다")
+            return
+        }
+        val models = JSONArray(modelsJson)
+        val msgs = JSONArray(messagesJson)
+        var lastErr = "응답을 받지 못했습니다"
+        for (i in 0 until models.length()) {
+            val m = models.getString(i)
+            try {
+                val body = JSONObject()
+                    .put("model", m)
+                    .put("messages", msgs)
+                    .put("max_tokens", 500)
+                    .put("temperature", 0.5)
+                val c = URL("https://openrouter.ai/api/v1/chat/completions").openConnection() as HttpURLConnection
+                c.requestMethod = "POST"
+                c.connectTimeout = 15000
+                c.readTimeout = 40000
+                c.doOutput = true
+                c.setRequestProperty("Content-Type", "application/json")
+                c.setRequestProperty("Authorization", "Bearer $key")
+                c.setRequestProperty("HTTP-Referer", "https://github.com/kjt7942/carAssistant")
+                c.setRequestProperty("X-Title", "carAssistant")
+                c.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                val code = c.responseCode
+                val stream = if (code in 200..299) c.inputStream else c.errorStream
+                val txt = stream?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
+                c.disconnect()
+                if (code == 401 || code == 403) {
+                    aiEmit(false, "", m, "AI 키가 올바르지 않거나 막혔습니다 ($code)")
+                    return
+                }
+                if (code !in 200..299) {
+                    lastErr = if (code == 429) "무료 사용 한도에 걸렸습니다 (429)" else "서버 오류 ($code)"
+                    continue
+                }
+                val content = JSONObject(txt).optJSONArray("choices")
+                    ?.optJSONObject(0)?.optJSONObject("message")?.optString("content", "") ?: ""
+                val clean = content.replace(Regex("(?s)<think>.*?</think>"), "").trim()
+                if (clean.isEmpty()) {
+                    lastErr = "빈 응답 ($m)"
+                    continue
+                }
+                aiEmit(true, clean, m, "")
+                return
+            } catch (e: Exception) {
+                lastErr = "연결 실패: ${e.message}"
+            }
+        }
+        aiEmit(false, "", "", lastErr)
+    }
+
     // ---------- 화면에서 부르는 기능 ----------
 
     inner class Bridge {
@@ -737,6 +803,36 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun setApiKey(k: String): Boolean {
+            val t = k.trim()
+            if (!t.startsWith("sk-or-") || t.length < 20) return false
+            getSharedPreferences("ai", MODE_PRIVATE).edit().putString("key", t).apply()
+            return true
+        }
+
+        @JavascriptInterface
+        fun clearApiKey() {
+            getSharedPreferences("ai", MODE_PRIVATE).edit().remove("key").apply()
+        }
+
+        @JavascriptInterface
+        fun hasApiKey(): Boolean = aiKey().isNotEmpty()
+
+        @JavascriptInterface
+        fun keyTail(): String = aiKey().takeLast(4)
+
+        @JavascriptInterface
+        fun ask(modelsJson: String, messagesJson: String) {
+            aiExec.execute {
+                try {
+                    askAi(modelsJson, messagesJson)
+                } catch (e: Exception) {
+                    aiEmit(false, "", "", "오류: ${e.message}")
+                }
+            }
+        }
+
+        @JavascriptInterface
         fun diag(): String {
             val o = JSONObject()
             o.put("model", Build.MODEL)
@@ -747,6 +843,7 @@ class MainActivity : Activity() {
             o.put("uiSource", uiSource)
             o.put("updState", updState)
             o.put("canInstall", packageManager.canRequestPackageInstalls())
+            o.put("aiKey", aiKey().isNotEmpty())
             o.put("fine", granted(Manifest.permission.ACCESS_FINE_LOCATION))
             o.put("coarse", granted(Manifest.permission.ACCESS_COARSE_LOCATION))
             o.put("mic", granted(Manifest.permission.RECORD_AUDIO))
