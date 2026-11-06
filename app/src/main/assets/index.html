@@ -621,6 +621,13 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     });
     $('kkList').innerHTML=h||'<div class="ov-resp">아직 입력이 없습니다.</div>';
   }
+  window.onNativeIntent=function(e){
+    var a=(e.action||'').replace('android.intent.action.','');
+    kkLog.unshift({src:'intent',name:a,code:'-',scan:0,action:'호출',dev:'다른 앱이 보낸 신호'});
+    if(kkLog.length>14)kkLog.pop();
+    if(!$('kk').hidden){kkDraw();return}
+    if(/VOICE_COMMAND|ASSIST|SEARCH_LONG_PRESS/.test(e.action||'')&&$('ov').hidden&&$('dg').hidden){$('bVoice').click()}
+  };
   window.onNativeKey=function(k){kkLog.unshift(k);if(kkLog.length>14)kkLog.pop();if(!$('kk').hidden)kkDraw()};
   $('dgKeys').addEventListener('click',function(){
     if(!A||!A.setKeyProbe){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}

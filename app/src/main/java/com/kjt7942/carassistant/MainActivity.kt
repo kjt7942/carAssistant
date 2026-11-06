@@ -130,6 +130,20 @@ class MainActivity : Activity() {
         initTts()
         if (!hasAll()) requestPermissions(perms, reqCode)
         main.postDelayed(checkRunnable, 5000)
+        main.postDelayed({ emitIntent(intent) }, 1800)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        emitIntent(intent)
+    }
+
+    /** 음성 비서 호출 신호(핸들 음성 버튼 등)로 열렸는지 화면에 알린다. */
+    private fun emitIntent(i: Intent?) {
+        val a = i?.action ?: return
+        if (a == Intent.ACTION_MAIN) return
+        js("onNativeIntent", JSONObject().put("action", a))
     }
 
     override fun onResume() {
