@@ -50,7 +50,7 @@ button{font:inherit;font-size:22px;font-weight:500;color:var(--fg-dim);backgroun
 button:active{background:var(--line)}
 button.main-btn{color:#031318;background:var(--accent);border-color:var(--accent);font-weight:700;min-width:170px}
 button.main-btn:active{background:var(--fg-dim)}
-.ov{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;z-index:5}
+.ov{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;z-index:5}
 .ov-in{width:100%;max-width:1000px;display:flex;flex-direction:column;gap:2.2vh}
 .ov-state{color:var(--accent);font-size:min(5vh,3vw);font-weight:700}
 .ov-text{font-size:min(8vh,4.4vw);font-weight:500;line-height:1.3;min-height:1.3em}
@@ -102,14 +102,14 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 @media (orientation:portrait){
   .pl-list{max-height:68vh}
   .ap-row,.kk-row{font-size:max(14px,3.6vw)}
-  .ov{align-items:flex-start;padding:max(24px,6vh) 18px 18px}
+  .ov{align-items:flex-start;padding:max(24px,4vh) 18px 24px}
   .ov-in{gap:2vh}
   .ov-state{font-size:max(17px,4.6vw)}
   .ov-text{font-size:max(22px,7.2vw)}
   .ov-resp{font-size:max(17px,4.8vw)}
   #dg .ov-state{font-size:max(17px,4.8vw)}
   #dg .dg-row{grid-template-columns:minmax(0,30%) auto minmax(0,1fr);font-size:max(14px,3.6vw);padding:6px 0}
-  #dg .dg-list{max-height:none}
+  #dg .dg-list{max-height:none;overflow:visible}
   #dg .btns{flex-wrap:wrap;justify-content:stretch}
   #dg button{flex:1 1 40%;font-size:max(15px,3.8vw);padding:1.8vh 8px}
   .upd{font-size:max(15px,3.6vw);flex-wrap:wrap}
@@ -483,7 +483,7 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
       ['음성 인식 서비스',!!d.speech,d.speech?'사용 가능':'이 기기에 음성 인식 서비스가 없음'],
       ['음성 출력(TTS)',!!(d.ttsReady&&d.ttsKo>=0),d.ttsReady?(d.ttsKo>=0?'한국어 사용 가능 · 엔진 '+d.ttsEngines+'개':'엔진은 있으나 한국어 음성 데이터 없음'):'음성 출력 엔진 없음'],
       ['인터넷·날씨',!!wx,wx?'날씨 수신 성공':(wxErr||'아직 수신 전')],
-      ['블루투스',d.btHas===undefined?null:(d.btHas?!!d.btOn:false),d.btHas===undefined?'앱 업데이트 필요':(d.btHas?((d.btOn?'켜짐':'꺼짐')+(d.btBonded&&d.btBonded.length?' · 등록 기기: '+d.btBonded.join(', '):' · 등록된 기기 없음')):(d.btErr==='SecurityException'?'"권한 다시 요청"에서 근처 기기 권한을 허용해 주세요':d.btErr?'조회 실패('+d.btErr+')':'블루투스 장치 없음'))],
+      ['블루투스',d.btHas===undefined?null:(d.btHas?!!d.btOn:false),d.btHas===undefined?'앱 업데이트 필요':(d.btHas?((d.btOn?'켜짐':'꺼짐')+(d.btBonded&&d.btBonded.length?' · 등록 '+d.btBonded.length+'대 ('+d.btBonded.slice(0,3).join(', ')+(d.btBonded.length>3?' 외 '+(d.btBonded.length-3)+'대':'')+')':' · 등록된 기기 없음')):(d.btErr==='SecurityException'?'"권한 다시 요청"에서 근처 기기 권한을 허용해 주세요':d.btErr?'조회 실패('+d.btErr+')':'블루투스 장치 없음'))],
       ['AI 연결(오픈라우터)',d.aiKey?true:null,d.aiKey?('키 저장됨 · 끝 '+(A&&A.keyTail?A.keyTail():'')):'키 없음 — "AI 키 설정"에서 입력'],
       ['앱 버전',null,'앱 v'+(d.versionCode||'-')+' · 화면 '+(d.uiBuild||'-')+' ('+(d.uiSource||'-')+') · '+(d.updState||'-')+(d.canInstall===false?' · 설치 허용 필요':'')],
       ['기기',null,(d.model||'-')+' · Android '+(d.release||'-')+' (API '+(d.sdk||'-')+')']
