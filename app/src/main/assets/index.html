@@ -366,6 +366,8 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     <div class="pl-list" id="apList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="apFilter" type="button">차량 관련만</button>
+      <button id="apCopy" type="button">목록 복사</button>
+      <button id="apShare" type="button">목록 보내기</button>
     </div>
   </div>
 </div>
@@ -827,6 +829,18 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     apOnlyCar=true;$('dg').hidden=true;apDraw();$('ap').hidden=false;
   });
   $('apFilter').addEventListener('click',function(){apOnlyCar=!apOnlyCar;apDraw()});
+  function apRep(){try{return A.appsReport()}catch(e){return ''}}
+  $('apCopy').addEventListener('click',function(){
+    var t=apRep(),ok=false;
+    if(t&&A&&A.copyText){try{ok=A.copyText(t)}catch(e){}}
+    if(t&&A&&A.saveText){try{A.saveText('apps.txt',t)}catch(e){}}
+    $('apTitle').textContent=ok?'복사했습니다 — 메모나 채팅창에 붙여넣기 하세요':'복사하지 못했습니다. 앱을 최신 버전으로 업데이트해 주세요';
+  });
+  $('apShare').addEventListener('click',function(){
+    var t=apRep(),ok=false;
+    if(t&&A&&A.shareText){try{ok=A.shareText(t)}catch(e){}}
+    if(!ok)$('apTitle').textContent='보내기 화면을 열지 못했습니다. "목록 복사"를 써 보세요';
+  });
   $('apList').addEventListener('click',function(ev){
     var r=ev.target.closest('.ap-row');if(!r)return;
     var ok=false;try{ok=A.launchApp(r.getAttribute('data-p'))}catch(e){}

@@ -993,6 +993,71 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun appsReport(): String {
+            val sb = StringBuilder()
+            try {
+                val pm = packageManager
+                val i = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                val seen = HashSet<String>()
+                val list = pm.queryIntentActivities(i, 0).sortedBy { it.loadLabel(pm).toString().lowercase() }
+                sb.append("# 설치된 앱 (실행 가능) — 이름 | 패키지 | 실행 화면\n")
+                for (r in list) {
+                    val pkg = r.activityInfo.packageName
+                    if (!seen.add(pkg)) continue
+                    sb.append(r.loadLabel(pm)).append(" | ").append(pkg).append(" | ").append(r.activityInfo.name).append("\n")
+                }
+                sb.append("\n# 그 밖의 관련 패키지 (실행 아이콘 없음, syu·車 관련만)\n")
+                val keys = listOf("syu", "carlink", "easyconn", "navi", "radio", "mcu", "bt", "uis", "unisoc", "sprd")
+                for (pi in pm.getInstalledPackages(0).sortedBy { it.packageName }) {
+                    val n = pi.packageName
+                    if (seen.contains(n)) continue
+                    if (keys.any { n.lowercase().contains(it) }) sb.append(n).append("\n")
+                }
+                sb.append("\n# 기기: ").append(android.os.Build.MODEL).append(" / Android ").append(android.os.Build.VERSION.RELEASE)
+                    .append(" / ").append(android.os.Build.DISPLAY).append("\n")
+            } catch (e: Exception) {
+                sb.append("목록 수집 실패: ").append(e.message)
+            }
+            return sb.toString()
+        }
+
+        @JavascriptInterface
+        fun copyText(text: String): Boolean {
+            return try {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("carAssistant", text))
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun shareText(text: String): Boolean {
+            return try {
+                val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+                val c = Intent.createChooser(i, "앱 목록 보내기")
+                c.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(c)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun saveText(name: String, text: String): String {
+            return try {
+                val dir = getExternalFilesDir(null) ?: filesDir
+                val f = File(dir, name)
+                f.writeText(text)
+                f.absolutePath
+            } catch (e: Exception) {
+                ""
+            }
+        }
+
+        @JavascriptInterface
         fun launchApp(pkg: String): Boolean {
             return try {
                 val i = packageManager.getLaunchIntentForPackage(pkg) ?: return false
