@@ -143,7 +143,7 @@ class MainActivity : Activity() {
     private fun emitIntent(i: Intent?) {
         val a = i?.action ?: return
         if (a == Intent.ACTION_MAIN) return
-        js("onNativeIntent", JSONObject().put("action", a))
+        js("onNativeIntent", JSONObject().put("action", a).put("cats", (i.categories ?: emptySet<String>()).joinToString(",")).put("type", i.type ?: "").put("from", i.`package` ?: ""))
     }
 
     override fun onResume() {

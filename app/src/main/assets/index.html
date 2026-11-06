@@ -623,10 +623,10 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
   }
   window.onNativeIntent=function(e){
     var a=(e.action||'').replace('android.intent.action.','');
-    kkLog.unshift({src:'intent',name:a,code:'-',scan:0,action:'호출',dev:'다른 앱이 보낸 신호'});
+    kkLog.unshift({src:'intent',name:a,code:'-',scan:0,action:'호출',dev:(e.cats||'')});
     if(kkLog.length>14)kkLog.pop();
     if(!$('kk').hidden){kkDraw();return}
-    if(/VOICE_COMMAND|ASSIST|SEARCH_LONG_PRESS/.test(e.action||'')&&$('ov').hidden&&$('dg').hidden){$('bVoice').click()}
+    if(/VOICE_COMMAND|ASSIST|SEARCH|VOICE_ASSIST|WEB_SEARCH|VOICE_SEARCH/.test(e.action||'')&&$('ov').hidden&&$('dg').hidden){$('bVoice').click()}
   };
   window.onNativeKey=function(k){kkLog.unshift(k);if(kkLog.length>14)kkLog.pop();if(!$('kk').hidden)kkDraw()};
   $('dgKeys').addEventListener('click',function(){
