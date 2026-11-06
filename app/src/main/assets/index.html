@@ -63,13 +63,14 @@ button.main-btn:active{background:var(--fg-dim)}
 .p-info{background:var(--line);color:var(--fg-dim)}
 .dg-list{overflow:auto;max-height:68vh}
 #dg .ov-in{gap:1.2vh}
-#dg .ov-state{font-size:min(4vh,2.6vw)}
-#dg .dg-row{padding:2px 0;font-size:min(3vh,1.9vw)}
+#dg .ov-state{font-size:min(4.4vh,2.8vw)}
+#dg .dg-row{padding:3px 0;font-size:min(3.7vh,2.3vw)}
 #dg .dg-list{max-height:72vh}
-#dg button{font-size:min(3.2vh,2.2vw);min-height:0;padding:1.2vh 10px}
+#dg button{font-size:min(3.6vh,2.4vw);min-height:0;padding:1.4vh 14px}
+#dg .ov-in{max-width:1100px}
 .upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
 .upd[hidden]{display:none}
-@media (max-width:860px){
+@media (orientation:portrait){
   .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-content:center;gap:2.5vh}
   .time{padding-right:0;row-gap:1vh}
   .clock{font-size:min(24vh,27vw)}
@@ -85,6 +86,36 @@ button.main-btn:active{background:var(--fg-dim)}
   .btns{flex-wrap:nowrap;justify-content:stretch;gap:8px}
   button{min-width:0;flex:1 1 0;font-size:17px;padding:0 4px}
   button.main-btn{flex:1.5 1 0;min-width:0}
+}
+
+/* 세로 화면: 오버레이 글자는 폭(vw) 기준, 위쪽부터 배치 */
+@media (orientation:portrait){
+  .ov{align-items:flex-start;padding:max(24px,6vh) 18px 18px}
+  .ov-in{gap:2vh}
+  .ov-state{font-size:max(17px,4.6vw)}
+  .ov-text{font-size:max(22px,7.2vw)}
+  .ov-resp{font-size:max(17px,4.8vw)}
+  #dg .ov-state{font-size:max(17px,4.8vw)}
+  #dg .dg-row{grid-template-columns:minmax(0,30%) auto minmax(0,1fr);font-size:max(14px,3.6vw);padding:6px 0}
+  #dg .dg-list{max-height:none}
+  #dg .btns{flex-wrap:wrap;justify-content:stretch}
+  #dg button{flex:1 1 40%;font-size:max(15px,3.8vw);padding:1.8vh 8px}
+  .upd{font-size:max(15px,3.6vw);flex-wrap:wrap}
+}
+/* 가로 화면이 낮을 때(휴대폰 가로 등) */
+@media (orientation:landscape) and (max-height:520px){
+  body{padding:6px 12px}
+  .bar{min-height:0}
+  button{min-height:46px;font-size:16px;min-width:90px;padding:0 12px}
+  button.main-btn{min-width:130px}
+  .ov{padding:10px 18px}
+  #dg .dg-row{font-size:max(13px,3.6vh);padding:2px 0}
+  #dg .ov-state{font-size:max(15px,4.4vh)}
+  #dg button{font-size:max(14px,3.8vh);min-height:0;padding:1vh 12px}
+  #dg .dg-list{max-height:66vh}
+  .ov-state{font-size:max(15px,5vh)}
+  .ov-text{font-size:max(20px,8vh)}
+  .ov-resp{font-size:max(16px,6vh)}
 }
 </style>
 </head>
