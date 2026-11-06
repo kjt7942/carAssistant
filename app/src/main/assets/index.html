@@ -289,11 +289,11 @@ button.main-btn:active{background:var(--fg-dim)}
     var s=$('status'),parts=[],stale=false;
     if(gpsFresh()){
       var sp=num(loc.speed)&&loc.speed>=1?' · '+Math.round(loc.speed*3.6)+'km/h':'';
-      parts.push('GPS 수신 중'+(num(loc.acc)?' · 정확도 '+Math.round(loc.acc)+'m':'')+sp);
-    }else parts.push('GPS 대기 중 · 기본 위치(문경) 사용');
+      parts.push('GPS 정상'+(num(loc.acc)?' · 정확도 '+Math.round(loc.acc)+'m':'')+sp);
+    }else parts.push('GPS 신호 찾는 중 · 기본 위치(문경) 사용');
     if(wx){
       var m=Math.round((Date.now()-wx.at)/60000),t=new Date(wx.at),tt=seoulNowFrom(wx.at);
-      parts.push('날씨 '+tt+' 기준');if(m>90)stale=true;
+      parts.push('날씨 '+tt+' 갱신');if(m>90)stale=true;
     }else if(wxErr)parts.push('날씨 연결 실패');
     s.textContent=parts.join(' · ');s.className='status'+(stale?' stale':'');
   }
