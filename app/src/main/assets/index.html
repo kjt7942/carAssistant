@@ -20,34 +20,7 @@ html[data-dim="3"]{--fg:#8a959e;--fg-dim:#56616a;--accent:#4d8997;--warn:#8f7140
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);overflow:hidden;box-sizing:border-box;
-  padding:12px 16px;-webkit-user-select:none;user-select:none}
-.stage{height:100%;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px}
-.main{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;justify-content:center;align-content:center;min-height:0}
-.time,.wx{display:contents}
-.clock{display:flex;align-items:baseline;gap:.18em;font-family:var(--f-disp);font-weight:600;line-height:.9;
-  font-size:min(36vh,17vw);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ampm{font-family:var(--f-body);font-weight:500;font-size:.2em;color:var(--fg-dim)}
-.date{display:flex;align-items:baseline;justify-content:center;text-align:center;flex-wrap:wrap;column-gap:.5em;font-size:min(8.5vh,4.6vw);line-height:1.2}
-.dow{color:var(--accent);font-weight:700}
-.dt{font-weight:500}
-.clock{grid-column:1;grid-row:1;align-self:center;padding-right:2.2vw}
-.date{grid-column:1;grid-row:2;align-self:start;margin:2vh 2.2vw 0 0}
-.wx-top{grid-column:2;grid-row:1;align-self:center;padding-left:2.2vw;border-left:1px solid var(--line)}
-.wx-info{grid-column:2;grid-row:2;align-self:start;padding:2vh 0 0 2.2vw;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:1.6vh}
-.wx>.empty{grid-column:2;grid-row:1 / span 2;align-self:center;padding-left:2.2vw;border-left:1px solid var(--line)}
-.wx-top{display:flex;align-items:center;gap:2vw;min-width:0}
-.wx-ico{width:min(17vh,9vw);height:min(17vh,9vw);color:var(--accent);flex:none}
-.wx-ico svg{width:100%;height:100%;display:block}
-.temp{font-family:var(--f-disp);font-weight:600;font-size:min(24vh,13vw);line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap}
-.temp small{font-size:.5em;color:var(--fg-dim);font-weight:500}
-.cond{font-size:min(6.5vh,3.6vw);font-weight:500;text-align:right}
-.stats{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:1.2vh 2.2vw;font-size:min(5vh,2.8vw);color:var(--fg-dim)}
-.stats b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums}
-.place{font-size:min(4vh,2.4vw);color:var(--fg-dim);text-align:right}
-.empty{color:var(--fg-dim);font-size:min(5vh,2.8vw);line-height:1.5}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px}
-.status{font-size:min(3.8vh,2.3vw);color:var(--fg-dim);min-width:0;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.status.stale{color:var(--warn)}
+  padding:0;-webkit-user-select:none;user-select:none}
 .btns{display:flex;gap:12px;flex:none;flex-wrap:wrap;justify-content:flex-end}
 button{font:inherit;font-size:22px;font-weight:500;color:var(--fg-dim);background:transparent;border:1px solid var(--line);
   border-radius:12px;min-width:110px;min-height:76px;padding:0 18px}
@@ -88,21 +61,6 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 .upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
 .upd[hidden]{display:none}
 @media (orientation:portrait){
-  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto;justify-content:stretch;align-content:center}
-  .clock{grid-column:1;grid-row:1;justify-self:center;padding-right:0}
-  .date{grid-column:1;grid-row:2;justify-self:center;margin:1vh 0 0}
-  .clock{font-size:min(24vh,27vw)}
-  .date{font-size:min(5.6vh,6.2vw)}
-  .wx-top{grid-column:1;grid-row:3;border-left:0;border-top:1px solid var(--line);padding:2.5vh 0 0;margin-top:2.5vh}
-  .wx-info{grid-column:1;grid-row:4;border-left:0;padding:1.4vh 0 0;gap:1.4vh}
-  .wx>.empty{grid-column:1;grid-row:3 / span 2;border-left:0;border-top:1px solid var(--line);padding:2.5vh 0 0;margin-top:2.5vh}
-  .wx-ico{width:min(11vh,14vw);height:min(11vh,14vw)}
-  .temp{font-size:min(15vh,19vw)}
-  .cond{font-size:min(4.6vh,5.2vw)}
-  .stats{font-size:min(3.9vh,4.4vw)}
-  .place{font-size:min(3.2vh,3.6vw)}
-  .status{font-size:min(3vh,3.4vw)}
-  .bar{flex-direction:column;align-items:stretch;gap:10px}
   .btns{flex-wrap:nowrap;justify-content:stretch;gap:8px}
   button{min-width:0;flex:1 1 0;font-size:17px;padding:0 4px}
   button.main-btn{flex:1.5 1 0;min-width:0}
@@ -127,7 +85,6 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 /* 가로 화면이 낮을 때(휴대폰 가로 등) */
 @media (orientation:landscape) and (max-height:520px){
   body{padding:6px 12px}
-  .bar{min-height:0}
   button{min-height:46px;font-size:16px;min-width:90px;padding:0 12px}
   button.main-btn{min-width:130px}
   .ov{padding:10px 18px}
@@ -185,28 +142,132 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
 #ov #ovClose{min-height:max(var(--tap),13vh)}
 .btns{gap:12px}
 .ap-row,.kk-row{min-height:var(--tap);box-sizing:border-box;padding-top:max(10px,1.4vh);padding-bottom:max(10px,1.4vh)}
-@media (orientation:portrait){.bar button{min-width:72px}.bar button.main-btn{min-width:110px}}
 .ap-row .mini{min-height:44px;min-width:76px;padding:0 16px}
 #dg .dg-row{min-height:0}
+
+/* ===== 메인 화면: 테마 A(큰 시계) / B(링 대시보드). 1280x720(가로)·720x1280(세로) 기준 비율로 확대·축소 ===== */
+.root{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--fg);--fu:var(--s)}
+.root[data-o=l]{--s:min(calc(100vw/1280),calc(100vh/720))}
+.root[data-o=p]{--s:min(calc(100vw/720),calc(100vh/1280))}
+.root[data-theme=b]{background:radial-gradient(circle at 30% 42%,#0a1a22 0,var(--bg) 62%)}
+.root[data-theme=b][data-o=p]{--fu:calc(var(--s)*1.25)}
+.scene{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.face{position:relative}
+.clock{font-family:var(--f-disp);font-weight:700;line-height:1;white-space:nowrap;display:flex;align-items:baseline;justify-content:center;font-variant-numeric:tabular-nums}
+.ampm{font-family:var(--f-body);font-weight:500;font-size:.18em;color:var(--fg-dim);margin-right:.25em;letter-spacing:0}
+.date{line-height:1.2;white-space:nowrap}
+.dow{margin-left:.3em}
+.sep{font-style:normal}
+.only-a{display:none}.only-b{display:none}
+.root[data-theme=a] .only-a,.root[data-theme=b] .only-b{display:revert}
+.wl1,.wl2{white-space:nowrap}
+.empty{color:var(--fg-dim)}
+html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
+
+/* 하단: 마이크 바 + 옵션 버튼 */
+.bar{flex:none;display:flex;gap:calc(var(--s)*16);padding:0 calc(var(--s)*50) calc(var(--s)*34)}
+.vbtn,.obtn{font:inherit;height:max(var(--tap),calc(var(--s)*80));min-height:0;padding:0;border-radius:calc(var(--s)*14);border:1px solid;display:flex;align-items:center;justify-content:center;gap:calc(var(--s)*16);font-size:max(15px,calc(var(--s)*24));font-weight:500;background:var(--panel);border-color:#1f2a33;color:#6c8f99}
+.vbtn{flex:1;min-width:0}
+.obtn{flex:none;width:max(var(--tap),calc(var(--s)*110));min-width:0}
+.vbtn:active,.obtn:active{background:var(--line)}
+.vbtn svg{width:max(24px,calc(var(--s)*40));height:max(24px,calc(var(--s)*40));flex:none}
+.obtn svg{width:max(24px,calc(var(--s)*38));height:max(24px,calc(var(--s)*38))}
+.root[data-theme=b] .vbtn,.root[data-theme=b] .obtn{background:rgba(116,182,198,.05);border-color:rgba(116,182,198,.28);color:rgba(116,182,198,.8)}
+
+/* --- 테마 A --- */
+.root[data-theme=a] .scene{flex-direction:column}
+.root[data-theme=a] .face{display:flex;flex-direction:column;align-items:center}
+.root[data-theme=a] .ring{display:none}
+.root[data-theme=a] .clock{font-size:calc(var(--s)*320);letter-spacing:calc(var(--s)*-4);color:var(--day)}
+.root[data-theme=a][data-o=p] .clock{font-size:calc(var(--s)*250)}
+.root[data-theme=a][data-o=p] .wl1{font-size:calc(var(--s)*31)}
+.root[data-theme=a][data-o=p] .wl1 .wt{font-size:calc(var(--s)*42)}
+.root[data-theme=a][data-o=p] .sep{margin:0 calc(var(--s)*11)}
+.root[data-theme=a][data-o=p] .date{font-size:calc(var(--s)*40)}
+.root[data-theme=a] .date{font-size:calc(var(--s)*44);margin-top:calc(var(--s)*20);color:var(--fg-dim)}
+.root[data-theme=a] .dow{color:var(--day);font-weight:500}
+.root[data-theme=a] .info{margin-top:calc(var(--s)*31)}
+.root[data-theme=a] .spcard,.root[data-theme=a] .gpcard{display:none}
+.root[data-theme=a] .wl1{display:flex;align-items:baseline;justify-content:center;font-size:calc(var(--s)*38);color:var(--fg-dim)}
+.root[data-theme=a] .wl1 .wt{font-family:var(--f-disp);font-weight:700;font-size:calc(var(--s)*50);color:var(--fg);margin-right:.15em}
+.root[data-theme=a] .wl1 b{color:var(--fg);font-weight:500}
+.root[data-theme=a] .sep{margin:0 calc(var(--s)*16);color:#33414b}
+.root[data-theme=a] .empty{font-size:calc(var(--s)*34);text-align:center}
+
+/* --- 테마 B --- */
+.root[data-theme=b] .scene{gap:calc(var(--s)*90)}
+.root[data-theme=b][data-o=p] .scene{flex-direction:column;gap:calc(var(--s)*40)}
+.root[data-theme=b] .face{width:calc(var(--fu)*500);height:calc(var(--fu)*500);flex:none}
+.root[data-theme=b] .ring{position:absolute;left:0;top:0;width:100%;height:100%}
+.r-bg{fill:none;stroke:#182027;stroke-width:3}
+.r-min{fill:none;stroke:#e6f4f8;stroke-opacity:.9;stroke-width:3;stroke-linecap:round}
+.r-bg2{fill:none;stroke:#182027;stroke-width:5}
+.r-hr{fill:none;stroke:#4aa8ff;stroke-width:8;stroke-linecap:round}
+.tk{stroke:#2a3a44;stroke-width:2}.tk.m{stroke:var(--accent);stroke-width:3}
+.root[data-theme=b] .clock{position:absolute;left:0;right:0;top:calc(var(--fu)*134);font-size:calc(var(--fu)*140);color:#e6f4f8;text-shadow:0 0 calc(var(--fu)*26) rgba(116,182,198,.5)}
+.root[data-theme=b] .date{position:absolute;left:0;right:0;top:calc(var(--fu)*294);text-align:center;font-size:calc(var(--fu)*32);color:var(--accent);letter-spacing:2px}
+.root[data-theme=b] .info{width:calc(var(--s)*490);flex:none;display:grid;grid-template-columns:minmax(0,1fr);row-gap:calc(var(--s)*40);column-gap:calc(var(--s)*24)}
+.root[data-theme=b][data-o=p] .info{width:calc(var(--s)*640);grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.root[data-theme=b][data-o=p] .wcard{grid-column:1 / 3}
+.root[data-theme=b] .card{border-left:2px solid var(--accent);padding:calc(var(--s)*6) 0 calc(var(--s)*6) calc(var(--s)*26);background:linear-gradient(90deg,rgba(116,182,198,.12),transparent);min-width:0}
+.root[data-theme=b] .k,.root[data-theme=b] .wk{font-size:calc(var(--s)*18);letter-spacing:4px;color:var(--accent)}
+.root[data-theme=b] .v{font-family:var(--f-disp);font-weight:700;font-size:calc(var(--s)*58);line-height:1.15;white-space:nowrap}
+.root[data-theme=b] .v small{font-family:var(--f-body);font-weight:400;font-size:calc(var(--s)*24);color:var(--fg-dim)}
+.root[data-theme=b] .gpcard .v{font-family:var(--f-body);font-weight:500;font-size:calc(var(--s)*44)}
+.v.ok{color:var(--good)}.v.warn{color:var(--warn)}
+.root[data-theme=b] .wl1{display:flex;align-items:baseline;flex-wrap:wrap}
+.root[data-theme=b] .wl1 .wt{font-family:var(--f-disp);font-weight:700;font-size:calc(var(--s)*58);line-height:1.15}
+.root[data-theme=b] .wc{font-size:calc(var(--s)*25);color:var(--fg-dim);margin-left:calc(var(--s)*8)}
+.root[data-theme=b] .whl{font-size:calc(var(--s)*25);color:var(--fg-dim);margin-left:calc(var(--s)*22)}
+.root[data-theme=b] .whl b,.root[data-theme=b] .wl2 b{color:var(--fg);font-weight:500}
+.root[data-theme=b] .wl2{font-size:calc(var(--s)*25);color:var(--fg-dim)}
+.root[data-theme=b] .empty{font-size:calc(var(--s)*28);white-space:normal}
+
+/* ===== 옵션 화면 ===== */
+#op{align-items:flex-start;padding:max(14px,2.4vh) 22px}
+.op-in{width:100%;max-width:1180px;margin:auto;display:flex;flex-direction:column;gap:max(8px,1.4vh)}
+.op-h{display:flex;justify-content:space-between;align-items:center}
+.op-h .ov-state{font-size:max(22px,min(4.6vh,3vw));letter-spacing:2px}
+.op-r{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 22px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
+.op-n{font-size:max(19px,min(4.2vh,2.7vw))}
+.op-n small{display:block;font-size:.6em;color:var(--fg-dim);margin-top:2px}
+.sg{display:flex;gap:10px;flex-wrap:wrap}
+.sg button{flex:0 0 auto;min-width:max(104px,9vw);padding:0 18px;font-size:max(16px,min(3.6vh,2.2vw))}
+.sg button.on{background:var(--accent);color:#031318;border-color:var(--accent);font-weight:700}
+.sg button.go{color:var(--accent);border-color:rgba(116,182,198,.45)}
+.pvs{display:flex;gap:16px;flex-wrap:wrap;width:100%}
+.pvcard{flex:1 1 220px;max-width:300px;border:2px solid var(--line);border-radius:16px;padding:8px;background:var(--panel);cursor:pointer}
+.pvcard.on{border-color:var(--accent)}
+.pvbox{position:relative;width:100%;padding-top:56.25%;overflow:hidden;border-radius:10px;background:var(--bg)}
+.pvc{margin-top:8px;text-align:center;font-size:max(16px,min(3.4vh,2.2vw));color:var(--fg-dim)}
+.pvcard.on .pvc{color:var(--accent);font-weight:700}
+.op-t{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 22px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
+@media (orientation:portrait){.op-n{font-size:max(19px,4.6vw)}.sg button{flex:1 1 22%;min-width:0;padding:0 8px;font-size:max(16px,3.8vw)}#opClose{flex:none;min-width:max(96px,22vw)}.op-r .sg{width:100%}.pvc{font-size:max(16px,3.8vw)}}
 </style>
 </head>
 <body>
-<main class="stage">
-  <div class="main">
-    <section class="time" aria-label="시계와 날짜">
+<main class="root" id="root" data-theme="b" data-o="l">
+  <section class="scene">
+    <div class="face">
+      <svg class="ring" viewBox="0 0 500 500" aria-hidden="true">
+        <circle class="r-bg" cx="250" cy="250" r="240"/>
+        <circle class="r-min" id="rMin" cx="250" cy="250" r="240" transform="rotate(-90 250 250)" stroke-dasharray="0 1508"/>
+        <circle class="r-bg2" cx="250" cy="250" r="222"/>
+        <circle class="r-hr" id="rHr" cx="250" cy="250" r="222" transform="rotate(-90 250 250)" stroke-dasharray="0 1395"/>
+        <line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(0 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(30 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(60 250 250)"/><line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(90 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(120 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(150 250 250)"/><line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(180 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(210 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(240 250 250)"/><line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(270 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(300 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(330 250 250)"/>
+      </svg>
       <div class="clock"><span class="ampm" id="ampm"></span><span id="hm">--:--</span></div>
       <div class="date"><span class="dt" id="dt"></span><span class="dow" id="dow"></span></div>
-    </section>
-    <section class="wx" id="wx" aria-label="날씨"><div class="empty">날씨를 불러오는 중입니다.</div></section>
-  </div>
-  <div class="bar">
-    <div class="status" id="status"></div>
-    <div class="btns">
-      <button id="bVoice" class="main-btn" type="button">음성 명령</button>
-      <button id="bDiag" type="button">진단</button>
-      <button id="bFmt" type="button">24시간</button>
-      <button id="bDim" type="button">밝기 자동</button>
     </div>
+    <div class="info">
+      <div class="card wcard" id="wx"><div class="empty">날씨를 불러오는 중입니다.</div></div>
+      <div class="card spcard"><div class="k">SPEED</div><div class="v"><span id="spv">0</span><small> km/h</small></div></div>
+      <div class="card gpcard"><div class="k">GPS</div><div class="v warn" id="gpv">수신 중</div></div>
+    </div>
+  </section>
+  <div class="bar">
+    <button id="bVoice" class="vbtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5M8.5 21.5h7"/></svg><span>음성 명령</span></button>
+    <button id="bOpt" class="obtn" type="button" aria-label="옵션"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </main>
 
@@ -300,6 +361,22 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
   </div>
 </div>
 
+<div class="ov" id="op" hidden>
+  <div class="op-in">
+    <div class="op-h"><div class="ov-state">옵션</div><button id="opClose" type="button">닫기</button></div>
+    <div class="op-t"><div class="op-n">테마<small>메인 화면 모양 — 눌러서 바꾸기</small></div>
+      <div class="pvs" id="pvs">
+        <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
+        <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
+      </div></div>
+    <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
+    <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
+    <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
+    <div class="op-r"><div class="op-n">소리 · AI · 앱<small>음성 명령 후 라디오 복귀, AI 모델과 키</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정</button><button type="button" class="go" data-go="dgAi">AI 키</button><button type="button" class="go" data-go="dgModels">AI 모델</button><button type="button" class="go" data-go="dgApps">앱 목록</button></div></div>
+    <div class="op-r"><div class="op-n">점검 · 업데이트<small>GPS·마이크 진단, 핸들 버튼 점검, 앱 업데이트</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단</button><button type="button" class="go" data-go="dgKeys">버튼 점검</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
+  </div>
+</div>
+
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
     <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
@@ -343,7 +420,14 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     var lv=dimMode;
     if(dimMode==='auto')lv=(hour>=7&&hour<18)?'1':((hour>=18&&hour<21)||(hour>=5&&hour<7))?'2':'3';
     document.documentElement.setAttribute('data-dim',lv);
-    $('bDim').textContent=DIMLABEL[dimMode];
+    opDraw();
+  }
+  var DAYC={sat:'#7F9BBA',sun:'#BC8383',wk:'#839B84'};
+  var C_MIN=2*Math.PI*240,C_HR=2*Math.PI*222;
+  function drawRing(t){
+    var hf=((t.h%12)+t.mi/60)/12,mf=t.mi/60;
+    $('rHr').setAttribute('stroke-dasharray',(C_HR*hf).toFixed(1)+' '+C_HR.toFixed(1));
+    $('rMin').setAttribute('stroke-dasharray',(C_MIN*mf).toFixed(1)+' '+C_MIN.toFixed(1));
   }
   function drawClock(){
     var t=seoulNow(),h=t.h,ap='';
@@ -352,14 +436,14 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     $('hm').textContent=h+':'+pad(t.mi);
     $('dt').textContent=t.mo+'월 '+t.d+'일';
     $('dow').textContent=DOW[t.wk];
-    $('bFmt').textContent=use24?'24시간':'12시간';
+    document.documentElement.style.setProperty('--day',t.wk===6?DAYC.sat:t.wk===0?DAYC.sun:DAYC.wk);
+    drawRing(t);
     applyDim(t.h);drawStatus();
+    if(!$('op').hidden)opPreviews();
   }
   function tick(){setTimeout(function(){drawClock();tick()},60000-(Date.now()%60000)+50)}
   function setDim(m){dimMode=m;store.set('dim',m);drawClock()}
   function setFmt(v){use24=v;store.set('clk24',v?'1':'0');drawClock()}
-  $('bFmt').addEventListener('click',function(){setFmt(!use24)});
-  $('bDim').addEventListener('click',function(){setDim(DIMS[(DIMS.indexOf(dimMode)+1)%DIMS.length])});
 
   /* ---------- 위치 + 날씨 ---------- */
   var DEF={lat:36.5866,lon:128.1867,name:'문경시'};
@@ -428,30 +512,28 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
       }).catch(function(){});
   }
   function night(){var h=seoulNow().h;return h>=18||h<6}
+  function placeShort(){return place||DEF.name}
   function drawWx(){
     var el=$('wx');
     if(!wx){el.innerHTML='<div class="empty">'+esc(wxErr||'날씨를 불러오는 중입니다.')+'</div>';return}
-    var w=wmo(wx.code,night()),st=[];
-    if(num(wx.hi)||num(wx.lo))st.push('<span>최고 <b>'+(num(wx.hi)?Math.round(wx.hi)+'°':'-')+'</b> · 최저 <b>'+(num(wx.lo)?Math.round(wx.lo)+'°':'-')+'</b></span>');
-    if(num(wx.pop))st.push('<span>강수확률 <b>'+Math.round(wx.pop)+'%</b></span>');
-    if(num(wx.feels))st.push('<span>체감 <b>'+Math.round(wx.feels)+'°</b></span>');
-    if(num(wx.wind))st.push('<span>바람 <b>'+(Math.round(wx.wind*10)/10)+'m/s</b></span>');
-    el.innerHTML='<div class="wx-top"><div class="wx-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[w.i]+'</svg></div>'+
-      '<div class="temp">'+Math.round(wx.temp)+'<small>°C</small></div></div>'+
-      '<div class="wx-info"><div class="cond">'+esc(w.c)+'</div>'+(st.length?'<div class="stats">'+st.join('')+'</div>':'')+
-      '<div class="place">'+esc(placeLabel())+'</div></div>';
+    var w=wmo(wx.code,night());
+    var hi=num(wx.hi)?Math.round(wx.hi)+'°':'-',lo=num(wx.lo)?Math.round(wx.lo)+'°':'-';
+    var l2=[];
+    if(num(wx.wind))l2.push('바람 <b>'+(Math.round(wx.wind*10)/10)+'m/s</b>');
+    if(num(wx.pop))l2.push('강수 <b>'+Math.round(wx.pop)+'%</b>');
+    el.innerHTML='<div class="wk only-b">WEATHER · '+esc(placeShort())+'</div>'+
+      '<div class="wl1"><b class="wt">'+Math.round(wx.temp)+'°</b><span class="wc">'+esc(w.c)+'</span>'+
+      '<i class="sep only-a">|</i><span class="whl">최고 <b>'+hi+'</b> 최저 <b>'+lo+'</b></span>'+
+      '<i class="sep only-a">|</i><span class="wpl only-a">'+esc(placeShort())+'</span></div>'+
+      (l2.length?'<div class="wl2 only-b">'+l2.join(' &nbsp;·&nbsp; ')+'</div>':'');
   }
   function drawStatus(){
-    var s=$('status'),parts=[],stale=false;
-    if(gpsFresh()){
-      var sp=num(loc.speed)&&loc.speed>=1?' · '+Math.round(loc.speed*3.6)+'km/h':'';
-      parts.push('GPS 정상'+(num(loc.acc)?' '+Math.round(loc.acc)+'m':'')+sp);
-    }else parts.push('GPS 신호 찾는 중 · 기본 위치(문경) 사용');
-    if(wx){
-      var m=Math.round((Date.now()-wx.at)/60000),t=new Date(wx.at),tt=seoulNowFrom(wx.at);
-      parts.push('날씨 '+tt);if(m>90)stale=true;
-    }else if(wxErr)parts.push('날씨 연결 실패');
-    s.textContent=parts.join(' · ');s.className='status'+(stale?' stale':'');
+    var fresh=gpsFresh();
+    var sp=fresh&&num(loc.speed)&&loc.speed>=1?Math.round(loc.speed*3.6):0;
+    $('spv').textContent=fresh?sp:'-';
+    var g=$('gpv');
+    if(fresh){g.textContent='정상'+(num(loc.acc)?' · '+Math.round(loc.acc)+'m':'');g.className='v ok'}
+    else{g.textContent='수신 중';g.className='v warn'}
   }
   function seoulNowFrom(ms){var p={};fmt.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return p.hour+':'+p.minute}
 
@@ -510,6 +592,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
       if(ok){retSkip=true;return ap[1]+'를 엽니다.'}
       return ap[1]+'를 열지 못했습니다.';
     }
+    if(/테마/.test(t)){setTheme(theme==='a'?'b':'a');return '테마를 '+theme.toUpperCase()+'로 바꿨습니다.'}
     if(/진단|점검/.test(t)){showDiag();return '진단 화면을 열었습니다.'}
     if(/날씨|기온|온도|비와|비올|추워|더워/.test(t))return weatherSentence();
     if(/몇시|시각|시간알려|지금시간/.test(t))return '지금은 '+koTime()+'입니다.';
@@ -619,7 +702,6 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     });
     $('dgList').innerHTML=h;$('dg').hidden=false;
   }
-  $('bDiag').addEventListener('click',function(){showDiag()});
   $('dgRefresh').addEventListener('click',function(){showDiag()});
   $('dgPerm').addEventListener('click',function(){if(A)A.requestPerms()});
   function akRefresh(m){
@@ -797,6 +879,66 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     else if(e.state==='error')updShow(e.msg,false,8000);
   };
   $('updBtn').addEventListener('click',function(){if(A)A.installUpdate()});
+
+  /* ---------- 테마 · 옵션 ---------- */
+  var root=$('root');
+  var theme=store.get('theme')==='a'?'a':'b';
+  function setTheme(th){theme=th;store.set('theme',th);root.setAttribute('data-theme',th);opDraw()}
+  function setO(){root.setAttribute('data-o',window.innerHeight>window.innerWidth?'p':'l')}
+  setO();window.addEventListener('resize',function(){setO();if(!$('op').hidden)fitPv()});
+  root.setAttribute('data-theme',theme);
+
+  function fullOn(){try{return !!A.getFullscreen()}catch(e){return true}}
+  function sgMark(id,val){[].forEach.call($(id).children,function(b){b.classList.toggle('on',b.getAttribute('data-v')===String(val))})}
+  function opDraw(){
+    sgMark('opFmt',use24?'1':'0');sgMark('opDim',dimMode);
+    var hasFull=!!(A&&A.setFullscreen);$('opFullRow').hidden=!hasFull;if(hasFull)sgMark('opFull',fullOn()?'1':'0');
+    [].forEach.call($('pvs').children,function(c){c.classList.toggle('on',c.getAttribute('data-th')===theme)});
+  }
+  function fitPv(){
+    [].forEach.call(document.querySelectorAll('.pvbox'),function(b){
+      var k=b.clientWidth/1280,c=b.firstChild;if(c)c.style.transform='scale('+k+')';
+    });
+  }
+  function opPreviews(){
+    ['a','b'].forEach(function(th){
+      var box=$(th==='a'?'pvA':'pvB');box.innerHTML='';
+      var c=root.cloneNode(true);
+      c.removeAttribute('id');[].forEach.call(c.querySelectorAll('[id]'),function(e){e.removeAttribute('id')});
+      c.setAttribute('data-theme',th);c.setAttribute('data-o','l');
+      c.style.cssText='--s:1px;position:absolute;left:0;top:0;right:auto;bottom:auto;width:1280px;height:720px;transform-origin:0 0;pointer-events:none';
+      box.appendChild(c);
+    });
+    fitPv();
+  }
+  var fromOp=false;
+  function openOp(){fromOp=false;opDraw();$('op').hidden=false;opPreviews()}
+  $('bOpt').addEventListener('click',openOp);
+  $('opClose').addEventListener('click',function(){$('op').hidden=true;fromOp=false});
+  $('pvs').addEventListener('click',function(ev){var c=ev.target.closest('.pvcard');if(c)setTheme(c.getAttribute('data-th'))});
+  function sgClick(id,fn){$(id).addEventListener('click',function(ev){var b=ev.target.closest('button');if(b)fn(b.getAttribute('data-v'))})}
+  sgClick('opFmt',function(v){setFmt(v==='1')});
+  sgClick('opDim',function(v){setDim(v)});
+  sgClick('opFull',function(v){try{A.setFullscreen(v==='1')}catch(e){}setTimeout(opDraw,50)});
+  $('op').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-go]');if(!b)return;
+    var g=b.getAttribute('data-go');fromOp=true;$('op').hidden=true;
+    if(g==='diag')showDiag();else $(g).click();
+  });
+  /* 옵션에서 연 하위 화면이 모두 닫히면 옵션으로 돌아온다 */
+  (function(){
+    var subs=['dg','sd','ak','md','ap','kk'].map($);
+    function check(){
+      if(!fromOp)return;
+      for(var i=0;i<subs.length;i++)if(!subs[i].hidden)return;
+      if(!$('ov').hidden)return;
+      openOp();
+    }
+    if(window.MutationObserver){
+      var mo=new MutationObserver(function(){setTimeout(check,0)});
+      subs.forEach(function(e){mo.observe(e,{attributes:true,attributeFilter:['hidden']})});
+    }
+  })();
 
   /* ---------- 시작 ---------- */
   drawClock();tick();drawWx();
