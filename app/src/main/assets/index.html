@@ -919,23 +919,34 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     });
     fitPv();
   }
-  /* 화면을 2초 길게 누르면 옵션 (하단 버튼을 숨겨도 열 수 있음) */
+  /* 화면 제스처: 2초 길게 누르면 옵션, 빠르게 두 번 누르면(더블 탭) 음성 명령 */
   (function(){
-    var tm=null,sx=0,sy=0;
-    function pt(e){var t=(e.touches&&e.touches[0])||e;return {x:t.clientX,y:t.clientY}}
+    var tm=null,sx=0,sy=0,downT=0,skip=false,lastT=0,lastX=0,lastY=0;
+    function pt(e){var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0])||e;return {x:t.clientX,y:t.clientY}}
     function start(e){
-      if(e.target.closest&&e.target.closest('.obtn'))return;
-      var q=pt(e);sx=q.x;sy=q.y;clearTimeout(tm);
-      tm=setTimeout(function(){tm=null;if($('op').hidden&&$('ov').hidden)openOp()},2000);
+      skip=!!(e.target.closest&&e.target.closest('.bar'));
+      var q=pt(e);sx=q.x;sy=q.y;downT=Date.now();clearTimeout(tm);
+      if(skip){tm=null;return}
+      tm=setTimeout(function(){tm=null;lastT=0;if($('op').hidden&&$('ov').hidden)openOp()},2000);
     }
     function move(e){if(tm===null)return;var q=pt(e);if(Math.abs(q.x-sx)>24||Math.abs(q.y-sy)>24){clearTimeout(tm);tm=null}}
-    function end(){clearTimeout(tm);tm=null}
+    function cancel(){clearTimeout(tm);tm=null}
+    function up(e){
+      clearTimeout(tm);tm=null;
+      if(skip)return;
+      var q=pt(e),now=Date.now();
+      if(now-downT>350||Math.abs(q.x-sx)>24||Math.abs(q.y-sy)>24){lastT=0;return}
+      if(lastT&&now-lastT<450&&Math.abs(q.x-lastX)<70&&Math.abs(q.y-lastY)<70){
+        lastT=0;
+        if($('op').hidden&&$('ov').hidden)$('bVoice').click();
+      }else{lastT=now;lastX=q.x;lastY=q.y}
+    }
     if(window.PointerEvent){
       root.addEventListener('pointerdown',start);root.addEventListener('pointermove',move);
-      root.addEventListener('pointerup',end);root.addEventListener('pointercancel',end);root.addEventListener('pointerleave',end);
+      root.addEventListener('pointerup',up);root.addEventListener('pointercancel',cancel);
     }else{
-      root.addEventListener('touchstart',start);root.addEventListener('touchmove',move);root.addEventListener('touchend',end);root.addEventListener('touchcancel',end);
-      root.addEventListener('mousedown',start);root.addEventListener('mouseup',end);
+      root.addEventListener('touchstart',start);root.addEventListener('touchmove',move);root.addEventListener('touchend',up);root.addEventListener('touchcancel',cancel);
+      root.addEventListener('mousedown',start);root.addEventListener('mouseup',up);
     }
   })();
   var fromOp=false;
