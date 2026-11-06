@@ -165,6 +165,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
 html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 
 /* 하단: 마이크 바 + 옵션 버튼 */
+.root[data-bar=off] .bar{display:none}
 .bar{flex:none;display:flex;gap:calc(var(--s)*16);padding:0 calc(var(--s)*50) calc(var(--s)*34)}
 .vbtn,.obtn{font:inherit;height:max(var(--tap),calc(var(--s)*80));min-height:0;padding:0;border-radius:calc(var(--s)*14);border:1px solid;display:flex;align-items:center;justify-content:center;gap:calc(var(--s)*16);font-size:max(15px,calc(var(--s)*24));font-weight:500;background:var(--panel);border-color:#1f2a33;color:#6c8f99}
 .vbtn{flex:1;min-width:0}
@@ -371,6 +372,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
       </div></div>
     <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
     <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
+    <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 2초 길게 눌러 옵션을 엽니다 · 핸들 음성 버튼은 그대로 사용</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
     <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
     <div class="op-r"><div class="op-n">소리 · AI · 앱<small>음성 명령 후 라디오 복귀, AI 모델과 키</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정</button><button type="button" class="go" data-go="dgAi">AI 키</button><button type="button" class="go" data-go="dgModels">AI 모델</button><button type="button" class="go" data-go="dgApps">앱 목록</button></div></div>
     <div class="op-r"><div class="op-n">점검 · 업데이트<small>GPS·마이크 진단, 핸들 버튼 점검, 앱 업데이트</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단</button><button type="button" class="go" data-go="dgKeys">버튼 점검</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
@@ -884,6 +886,9 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   var root=$('root');
   var theme=store.get('theme')==='a'?'a':'b';
   function setTheme(th){theme=th;store.set('theme',th);root.setAttribute('data-theme',th);opDraw()}
+  var barOn=store.get('bar')!=='0';
+  function setBar(v){barOn=v;store.set('bar',v?'1':'0');root.setAttribute('data-bar',v?'on':'off');opDraw();if(!$('op').hidden)opPreviews()}
+  root.setAttribute('data-bar',barOn?'on':'off');
   function setO(){root.setAttribute('data-o',window.innerHeight>window.innerWidth?'p':'l')}
   setO();window.addEventListener('resize',function(){setO();if(!$('op').hidden)fitPv()});
   root.setAttribute('data-theme',theme);
@@ -891,7 +896,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   function fullOn(){try{return !!A.getFullscreen()}catch(e){return true}}
   function sgMark(id,val){[].forEach.call($(id).children,function(b){b.classList.toggle('on',b.getAttribute('data-v')===String(val))})}
   function opDraw(){
-    sgMark('opFmt',use24?'1':'0');sgMark('opDim',dimMode);
+    sgMark('opBar',barOn?'1':'0');sgMark('opFmt',use24?'1':'0');sgMark('opDim',dimMode);
     var hasFull=!!(A&&A.setFullscreen);$('opFullRow').hidden=!hasFull;if(hasFull)sgMark('opFull',fullOn()?'1':'0');
     [].forEach.call($('pvs').children,function(c){c.classList.toggle('on',c.getAttribute('data-th')===theme)});
   }
@@ -911,12 +916,32 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     });
     fitPv();
   }
+  /* 화면을 2초 길게 누르면 옵션 (하단 버튼을 숨겨도 열 수 있음) */
+  (function(){
+    var tm=null,sx=0,sy=0;
+    function pt(e){var t=(e.touches&&e.touches[0])||e;return {x:t.clientX,y:t.clientY}}
+    function start(e){
+      if(e.target.closest&&e.target.closest('.obtn'))return;
+      var q=pt(e);sx=q.x;sy=q.y;clearTimeout(tm);
+      tm=setTimeout(function(){tm=null;if($('op').hidden&&$('ov').hidden)openOp()},2000);
+    }
+    function move(e){if(tm===null)return;var q=pt(e);if(Math.abs(q.x-sx)>24||Math.abs(q.y-sy)>24){clearTimeout(tm);tm=null}}
+    function end(){clearTimeout(tm);tm=null}
+    if(window.PointerEvent){
+      root.addEventListener('pointerdown',start);root.addEventListener('pointermove',move);
+      root.addEventListener('pointerup',end);root.addEventListener('pointercancel',end);root.addEventListener('pointerleave',end);
+    }else{
+      root.addEventListener('touchstart',start);root.addEventListener('touchmove',move);root.addEventListener('touchend',end);root.addEventListener('touchcancel',end);
+      root.addEventListener('mousedown',start);root.addEventListener('mouseup',end);
+    }
+  })();
   var fromOp=false;
   function openOp(){fromOp=false;opDraw();$('op').hidden=false;opPreviews()}
   $('bOpt').addEventListener('click',openOp);
   $('opClose').addEventListener('click',function(){$('op').hidden=true;fromOp=false});
   $('pvs').addEventListener('click',function(ev){var c=ev.target.closest('.pvcard');if(c)setTheme(c.getAttribute('data-th'))});
   function sgClick(id,fn){$(id).addEventListener('click',function(ev){var b=ev.target.closest('button');if(b)fn(b.getAttribute('data-v'))})}
+  sgClick('opBar',function(v){setBar(v==='1')});
   sgClick('opFmt',function(v){setFmt(v==='1')});
   sgClick('opDim',function(v){setDim(v)});
   sgClick('opFull',function(v){try{A.setFullscreen(v==='1')}catch(e){}setTimeout(opDraw,50)});
