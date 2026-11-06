@@ -22,15 +22,19 @@ html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);overflow:hidden;box-sizing:border-box;
   padding:12px 16px;-webkit-user-select:none;user-select:none}
 .stage{height:100%;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px}
-.main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);min-height:0}
-.time{display:grid;grid-template-columns:max-content;justify-content:start;align-content:center;row-gap:2vh;min-width:0;padding-right:3vw}
+.main{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;justify-content:center;align-content:center;min-height:0}
+.time,.wx{display:contents}
 .clock{display:flex;align-items:baseline;gap:.18em;font-family:var(--f-disp);font-weight:600;line-height:.9;
   font-size:min(36vh,17vw);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ampm{font-family:var(--f-body);font-weight:500;font-size:.2em;color:var(--fg-dim)}
 .date{display:flex;align-items:baseline;justify-content:center;text-align:center;flex-wrap:wrap;column-gap:.5em;font-size:min(8.5vh,4.6vw);line-height:1.2}
 .dow{color:var(--accent);font-weight:700}
 .dt{font-weight:500}
-.wx{display:flex;flex-direction:column;justify-content:center;gap:2.2vh;min-width:0;border-left:1px solid var(--line);padding-left:3vw}
+.clock{grid-column:1;grid-row:1;align-self:center;padding-right:2.2vw}
+.date{grid-column:1;grid-row:2;align-self:start;margin:2vh 2.2vw 0 0}
+.wx-top{grid-column:2;grid-row:1;align-self:center;padding-left:2.2vw;border-left:1px solid var(--line)}
+.wx-info{grid-column:2;grid-row:2;align-self:start;padding:2vh 0 0 2.2vw;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:1.6vh}
+.wx>.empty{grid-column:2;grid-row:1 / span 2;align-self:center;padding-left:2.2vw;border-left:1px solid var(--line)}
 .wx-top{display:flex;align-items:center;gap:2vw;min-width:0}
 .wx-ico{width:min(17vh,9vw);height:min(17vh,9vw);color:var(--accent);flex:none}
 .wx-ico svg{width:100%;height:100%;display:block}
@@ -81,11 +85,14 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 .upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
 .upd[hidden]{display:none}
 @media (orientation:portrait){
-  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-content:center;gap:2.5vh}
-  .time{padding-right:0;row-gap:1vh}
+  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto;justify-content:stretch;align-content:center}
+  .clock{grid-column:1;grid-row:1;justify-self:center;padding-right:0}
+  .date{grid-column:1;grid-row:2;justify-self:center;margin:1vh 0 0}
   .clock{font-size:min(24vh,27vw)}
   .date{font-size:min(5.6vh,6.2vw)}
-  .wx{border-left:0;border-top:1px solid var(--line);padding-left:0;padding-top:2.5vh;gap:1.4vh}
+  .wx-top{grid-column:1;grid-row:3;border-left:0;border-top:1px solid var(--line);padding:2.5vh 0 0;margin-top:2.5vh}
+  .wx-info{grid-column:1;grid-row:4;border-left:0;padding:1.4vh 0 0;gap:1.4vh}
+  .wx>.empty{grid-column:1;grid-row:3 / span 2;border-left:0;border-top:1px solid var(--line);padding:2.5vh 0 0;margin-top:2.5vh}
   .wx-ico{width:min(11vh,14vw);height:min(11vh,14vw)}
   .temp{font-size:min(15vh,19vw)}
   .cond{font-size:min(4.6vh,5.2vw)}
@@ -396,8 +403,8 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     if(num(wx.wind))st.push('<span>바람 <b>'+(Math.round(wx.wind*10)/10)+'m/s</b></span>');
     el.innerHTML='<div class="wx-top"><div class="wx-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[w.i]+'</svg></div>'+
       '<div class="temp">'+Math.round(wx.temp)+'<small>°C</small></div></div>'+
-      '<div class="cond">'+esc(w.c)+'</div>'+(st.length?'<div class="stats">'+st.join('')+'</div>':'')+
-      '<div class="place">'+esc(placeLabel())+'</div>';
+      '<div class="wx-info"><div class="cond">'+esc(w.c)+'</div>'+(st.length?'<div class="stats">'+st.join('')+'</div>':'')+
+      '<div class="place">'+esc(placeLabel())+'</div></div>';
   }
   function drawStatus(){
     var s=$('status'),parts=[],stale=false;
