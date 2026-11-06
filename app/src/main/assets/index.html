@@ -254,6 +254,24 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 .pvcard.on .pvc{color:var(--accent);font-weight:700}
 .op-t{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 22px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
 @media (orientation:portrait){.op-n{font-size:max(19px,4.6vw)}.sg button{flex:1 1 22%;min-width:0;padding:0 8px;font-size:max(16px,3.8vw)}#opClose{flex:none;min-width:max(96px,22vw)}.op-r .sg{width:100%}.pvc{font-size:max(16px,3.8vw)}}
+/* 하위 화면 — 옵션 화면과 같은 틀 */
+#ak,#ap,#kk,#md,#sd,#dg{align-items:flex-start;padding:max(14px,2.4vh) 22px}
+#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in{width:100%;max-width:1180px;margin:auto;gap:max(8px,1.4vh)}
+#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h{gap:16px}
+#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state{font-size:max(22px,min(4.6vh,3vw))!important;letter-spacing:0;min-width:0;line-height:1.25}
+.op-h button{flex:none}
+#ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp{font-size:max(16px,min(3.4vh,2.3vw))!important}
+#ap .ap-row,#kk .ap-row,#md .ap-row,#kk .kk-row{font-size:max(17px,min(3.6vh,2.4vw))}
+#dg .dg-row{font-size:max(16px,min(3.4vh,2.3vw))!important}
+#sd .sd-t{font-size:max(19px,min(4.2vh,2.7vw))}
+@media (orientation:portrait){
+#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state{font-size:max(19px,4.8vw)!important}
+#ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp{font-size:max(16px,3.8vw)!important}
+#ap .ap-row,#kk .ap-row,#md .ap-row,#kk .kk-row{font-size:max(17px,4.2vw)}
+#dg .dg-row{font-size:max(15px,3.7vw)!important}
+#sd .sd-t{font-size:max(19px,4.6vw)}
+#ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose{min-width:max(96px,22vw)}
+}
 </style>
 </head>
 <body>
@@ -295,56 +313,52 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 
 <div class="ov" id="ak" hidden>
   <div class="ov-in">
-    <div class="ov-state">AI 연결 — 오픈라우터 키</div>
+    <div class="op-h"><div class="ov-state">AI 연결 — 오픈라우터 키</div><button id="akClose" type="button">닫기</button></div>
     <div class="ov-resp" id="akMsg"></div>
     <input class="ak-in" id="akIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="sk-or-v1-…">
     <div class="btns" style="justify-content:flex-start">
       <button id="akSave" type="button" class="main-btn">저장</button>
       <button id="akClear" type="button">키 삭제</button>
-      <button id="akClose" type="button">닫기</button>
     </div>
   </div>
 </div>
 
 <div class="ov" id="ap" hidden>
   <div class="ov-in">
-    <div class="ov-state" id="apTitle">설치된 앱 — 누르면 실행</div>
+    <div class="op-h"><div class="ov-state" id="apTitle">설치된 앱 — 누르면 실행</div><button id="apClose" type="button">닫기</button></div>
     <div class="pl-list" id="apList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="apFilter" type="button">차량 관련만</button>
-      <button id="apClose" type="button">닫기</button>
     </div>
   </div>
 </div>
 
 <div class="ov" id="kk" hidden>
   <div class="ov-in">
-    <div class="ov-state">버튼 점검 — 핸들 리모컨이나 차량 버튼을 눌러 보세요</div>
+    <div class="op-h"><div class="ov-state">버튼 점검 — 핸들 리모컨이나 차량 버튼을 눌러 보세요</div><button id="kkClose" type="button">닫기</button></div>
     <div class="ov-resp" id="kkDev"></div>
     <div class="pl-list" id="kkList"><div class="ov-resp">아직 입력이 없습니다.</div></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="kkClear" type="button">기록 지우기</button>
-      <button id="kkClose" type="button">닫기</button>
     </div>
   </div>
 </div>
 
 <div class="ov" id="md" hidden>
   <div class="ov-in">
-    <div class="ov-state" id="mdTitle">AI 모델 선택 — 무료 모델</div>
+    <div class="op-h"><div class="ov-state" id="mdTitle">AI 모델 선택 — 무료 모델</div><button id="mdClose" type="button">닫기</button></div>
     <div class="ov-resp" id="mdMsg"></div>
     <div class="pl-list" id="mdList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="mdDefault" type="button">기본값으로</button>
       <button id="mdReload" type="button">목록 새로고침</button>
-      <button id="mdClose" type="button">닫기</button>
     </div>
   </div>
 </div>
 
 <div class="ov" id="sd" hidden>
   <div class="ov-in">
-    <div class="ov-state">소리 설정 — 음성 명령 중 라디오·음악 처리</div>
+    <div class="op-h"><div class="ov-state">소리 설정 — 음성 명령 중 라디오·음악 처리</div><button id="sdClose" type="button">닫기</button></div>
     <div class="ov-resp" id="sdMsg"></div>
     <div class="sd-grp"><div class="sd-t">듣는 동안</div>
       <div class="btns" id="sdDuck" style="justify-content:flex-start">
@@ -368,7 +382,6 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
         <button type="button" data-f="1">비서 화면 유지(소리만)</button>
         <button type="button" data-f="0">그 앱 화면으로</button>
       </div></div>
-    <div class="btns" style="justify-content:flex-start"><button id="sdClose" type="button">닫기</button></div>
   </div>
 </div>
 
@@ -397,14 +410,13 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
-    <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
+    <div class="op-h"><div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div><button id="dgClose" type="button">닫기</button></div>
     <div class="dg-list" id="dgList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
       <button id="dgApps" type="button">앱 목록</button>
       <button id="dgKeys" type="button">버튼 점검</button>
       <button id="dgRefresh" type="button">새로 확인</button>
-      <button id="dgClose" type="button">닫기</button>
     </div>
   </div>
 </div>
