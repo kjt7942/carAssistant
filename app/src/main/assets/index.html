@@ -281,6 +281,25 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 #sd .btns{justify-content:flex-start;gap:10px}
 #sd .btns button{padding:0 16px;font-size:max(15px,min(3.2vh,2vw))}
 @media (orientation:portrait){#sd .sd-cols{grid-template-columns:1fr}#sd .btns button{font-size:max(14px,3.4vw);padding:0 10px;flex:1 1 auto;min-width:0;white-space:nowrap}}
+/* --- 테마 C (아날로그 시계 + 달력) --- */
+.only-c{display:none}
+.root[data-theme=c] .only-c{display:revert}
+.root[data-theme=c] .scene{gap:calc(var(--s)*80)}
+.root[data-theme=c][data-o=p] .scene{flex-direction:column;gap:calc(var(--s)*50)}
+.root[data-theme=c] .face{width:calc(var(--s)*470);height:calc(var(--s)*470);flex:none}
+.root[data-theme=c][data-o=p] .face{width:calc(var(--s)*500);height:calc(var(--s)*500)}
+.root[data-theme=c] .ring,.root[data-theme=c] .clock,.root[data-theme=c] .date,.root[data-theme=c] .wcard,.root[data-theme=c] .spcard,.root[data-theme=c] .gpcard{display:none}
+.root[data-theme=c] .ana{position:absolute;left:0;top:0;width:100%;height:100%}
+.root[data-theme=c] .adate{font-family:var(--f-body);font-size:30px;letter-spacing:2px;fill:var(--day);font-weight:700}
+.root[data-theme=c] .info{width:calc(var(--s)*520);flex:none}
+.root[data-theme=c][data-o=p] .info{width:calc(var(--s)*620)}
+.cal h3{margin:0 0 calc(var(--s)*14);font-size:calc(var(--s)*36);font-weight:500;color:var(--fg)}
+.cal table{width:100%;table-layout:fixed;border-collapse:collapse;text-align:center;font-size:calc(var(--s)*28)}
+.cal th{font-weight:400;font-size:calc(var(--s)*22);color:var(--fg-dim);padding:calc(var(--s)*6) 0}
+.cal td{padding:calc(var(--s)*8) 0;color:#839B84}
+.cal td.sa{color:#7F9BBA}.cal td.su{color:#BC8383}.cal td.o{opacity:.28}
+.cal td span{display:inline-block;min-width:calc(var(--s)*46);padding:calc(var(--s)*2) 0;border-radius:calc(var(--s)*23)}
+.cal td.t span{background:var(--accent);color:#031318;font-weight:700}
 </style>
 </head>
 <body>
@@ -294,10 +313,19 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
         <circle class="r-hr" id="rHr" cx="250" cy="250" r="222" transform="rotate(-90 250 250)" stroke-dasharray="0 1395"/>
         <line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(0 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(30 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(60 250 250)"/><line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(90 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(120 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(150 250 250)"/><line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(180 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(210 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(240 250 250)"/><line class="tk m" x1="250" y1="38" x2="250" y2="54" transform="rotate(270 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(300 250 250)"/><line class="tk" x1="250" y1="38" x2="250" y2="50" transform="rotate(330 250 250)"/>
       </svg>
+<svg class="ana only-c" viewBox="0 0 500 500" aria-hidden="true">
+        <circle cx="250" cy="250" r="240" fill="none" stroke="#1f2e36" stroke-width="2"/>
+        <line x1="250" y1="24" x2="250" y2="50" stroke="#839B84" stroke-width="7" stroke-linecap="round" transform="rotate(0 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(30 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(60 250 250)"/><line x1="250" y1="24" x2="250" y2="50" stroke="#839B84" stroke-width="7" stroke-linecap="round" transform="rotate(90 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(120 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(150 250 250)"/><line x1="250" y1="24" x2="250" y2="50" stroke="#839B84" stroke-width="7" stroke-linecap="round" transform="rotate(180 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(210 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(240 250 250)"/><line x1="250" y1="24" x2="250" y2="50" stroke="#839B84" stroke-width="7" stroke-linecap="round" transform="rotate(270 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(300 250 250)"/><line x1="250" y1="24" x2="250" y2="40" stroke="#839B84" stroke-width="6" stroke-linecap="round" transform="rotate(330 250 250)"/>
+        <text class="adate" id="adate" x="250" y="338" text-anchor="middle"></text>
+        <line id="aHr" x1="250" y1="250" x2="250" y2="137" stroke="#d7dfe0" stroke-width="14" stroke-linecap="round" transform="rotate(0 250 250)"/>
+        <line id="aMn" x1="250" y1="250" x2="250" y2="74" stroke="#839B84" stroke-width="9" stroke-linecap="round" transform="rotate(0 250 250)"/>
+        <circle cx="250" cy="250" r="9" fill="#839B84"/>
+      </svg>
       <div class="clock"><span class="ampm" id="ampm"></span><span id="hm">--:--</span></div>
       <div class="date"><span class="dt" id="dt"></span><span class="dow" id="dow"></span></div>
     </div>
     <div class="info">
+      <div class="cal only-c" id="calw"></div>
       <div class="card wcard" id="wx"><div class="empty">날씨를 불러오는 중입니다.</div></div>
       <div class="card spcard"><div class="k">SPEED</div><div class="v"><span id="spv">0</span><small> km/h</small></div></div>
       <div class="card gpcard"><div class="k">GPS</div><div class="v warn" id="gpv">수신 중</div></div>
@@ -409,6 +437,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
       <div class="pvs" id="pvs">
         <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
         <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
+        <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
       </div></div>
     <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
     <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
@@ -452,7 +481,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   var fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'});
   function seoulNow(){
     var p={};fmt.formatToParts(new Date()).forEach(function(x){p[x.type]=x.value});
-    return {mo:+p.month,d:+p.day,h:+p.hour,mi:+p.minute,wk:{Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday]};
+    return {y:+p.year,mo:+p.month,d:+p.day,h:+p.hour,mi:+p.minute,wk:{Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday]};
   }
   var use24=store.get('clk24')!=='0';
   var dimMode=store.get('dim')||'auto';
@@ -471,6 +500,27 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     $('rHr').setAttribute('stroke-dasharray',(C_HR*hf).toFixed(1)+' '+C_HR.toFixed(1));
     $('rMin').setAttribute('stroke-dasharray',(C_MIN*mf).toFixed(1)+' '+C_MIN.toFixed(1));
   }
+  var DOWE=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  function drawAna(t){
+    var h=(t.h%12)*30+t.mi*0.5,m=t.mi*6;
+    $('aHr').setAttribute('transform','rotate('+h+' 250 250)');
+    $('aMn').setAttribute('transform','rotate('+m+' 250 250)');
+    $('adate').textContent=t.mo+'.'+t.d+' '+DOWE[t.wk];
+    var first=new Date(Date.UTC(t.y,t.mo-1,1)).getUTCDay(),dim=new Date(Date.UTC(t.y,t.mo,0)).getUTCDate();
+    var prev=new Date(Date.UTC(t.y,t.mo-1,0)).getUTCDate();
+    var h2='<h3>'+t.y+'년 '+t.mo+'월</h3><table><tr>'+['일','월','화','수','목','금','토'].map(function(x){return '<th>'+x+'</th>'}).join('')+'</tr>';
+    var weeks=Math.ceil((first+dim)/7);
+    for(var w=0;w<weeks;w++){
+      h2+='<tr>';
+      for(var c=0;c<7;c++){
+        var n=w*7+c-first+1,cls=c===0?'su':c===6?'sa':'',d=n;
+        if(n<1){d=prev+n;cls+=' o'}else if(n>dim){d=n-dim;cls+=' o'}else if(n===t.d)cls+=' t';
+        h2+='<td class="'+cls+'"><span>'+d+'</span></td>';
+      }
+      h2+='</tr>';
+    }
+    $('calw').innerHTML=h2+'</table>';
+  }
   function drawClock(){
     var t=seoulNow(),h=t.h,ap='';
     if(!use24){ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12}else{h=pad(h)}
@@ -479,7 +529,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     $('dt').textContent=t.mo+'월 '+t.d+'일';
     $('dow').textContent=DOW[t.wk];
     document.documentElement.style.setProperty('--day',t.wk===6?DAYC.sat:t.wk===0?DAYC.sun:DAYC.wk);
-    drawRing(t);
+    drawRing(t);drawAna(t);
     applyDim(t.h);drawStatus();
     if(!$('op').hidden)opPreviews();
   }
@@ -634,7 +684,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
       if(ok){retSkip=true;return ap[1]+'를 엽니다.'}
       return ap[1]+'를 열지 못했습니다.';
     }
-    if(/테마/.test(t)){setTheme(theme==='a'?'b':'a');return '테마를 '+theme.toUpperCase()+'로 바꿨습니다.'}
+    if(/테마/.test(t)){setTheme(THEMES[(THEMES.indexOf(theme)+1)%THEMES.length]);return '테마를 '+theme.toUpperCase()+'로 바꿨습니다.'}
     if(/진단|점검/.test(t)){showDiag();return '진단 화면을 열었습니다.'}
     if(/날씨|기온|온도|비와|비올|추워|더워/.test(t))return weatherSentence();
     if(/몇시|시각|시간알려|지금시간/.test(t))return '지금은 '+koTime()+'입니다.';
@@ -925,7 +975,8 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 
   /* ---------- 테마 · 옵션 ---------- */
   var root=$('root');
-  var theme=store.get('theme')==='a'?'a':'b';
+  var THEMES=['a','b','c'];
+  var theme=THEMES.indexOf(store.get('theme'))>=0?store.get('theme'):'b';
   function setTheme(th){theme=th;store.set('theme',th);root.setAttribute('data-theme',th);opDraw()}
   var barOn=store.get('bar')!=='0';
   function setBar(v){barOn=v;store.set('bar',v?'1':'0');root.setAttribute('data-bar',v?'on':'off');opDraw();if(!$('op').hidden)opPreviews()}
@@ -947,8 +998,8 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     });
   }
   function opPreviews(){
-    ['a','b'].forEach(function(th){
-      var box=$(th==='a'?'pvA':'pvB');box.innerHTML='';
+    THEMES.forEach(function(th){
+      var box=$({a:'pvA',b:'pvB',c:'pvC'}[th]);box.innerHTML='';
       var c=root.cloneNode(true);
       c.removeAttribute('id');[].forEach.call(c.querySelectorAll('[id]'),function(e){e.removeAttribute('id')});
       c.setAttribute('data-theme',th);c.setAttribute('data-o','l');
