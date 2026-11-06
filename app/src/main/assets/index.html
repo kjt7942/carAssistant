@@ -154,6 +154,18 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
   #ov .ov-resp{font-size:max(15px,4.6vh)}
   #ov button{font-size:max(14px,4vh)}
 }
+
+/* 음성 박스: 닫기 버튼은 오른쪽 끝에 크게 */
+#ov .ov-in{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:2vw;row-gap:1vh;align-items:center}
+#ov .ov-state,#ov .ov-text,#ov .ov-resp{grid-column:1}
+#ov .btns{grid-column:2;grid-row:1 / span 3;align-self:stretch;justify-content:flex-end;display:flex}
+#ov #ovClose{min-width:max(130px,17vw);min-height:max(76px,13vh);height:100%;font-size:max(20px,min(4.2vh,2.8vw));font-weight:700;padding:0 20px;color:var(--fg);border-color:var(--fg-dim)}
+@media (orientation:portrait){
+  #ov #ovClose{min-width:max(90px,24vw);min-height:max(68px,9vh);font-size:max(18px,4.6vw)}
+}
+@media (orientation:landscape) and (max-height:520px){
+  #ov #ovClose{min-height:max(56px,16vh);min-width:max(110px,15vw);font-size:max(17px,5vh)}
+}
 </style>
 </head>
 <body>
@@ -181,7 +193,7 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
     <div class="ov-state" id="ovState"></div>
     <div class="ov-text" id="ovText"></div>
     <div class="ov-resp" id="ovResp"></div>
-    <div class="btns" style="justify-content:flex-start"><button id="ovClose" type="button">닫기</button></div>
+    <div class="btns"><button id="ovClose" type="button">닫기</button></div>
   </div>
 </div>
 
