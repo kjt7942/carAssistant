@@ -478,10 +478,23 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     var w=wmo(wx.code,night());
     return '지금 '+placeLabel().replace(' (기본 위치)','')+' 기온은 '+Math.round(wx.temp)+'도, '+w.c+'입니다. 오늘 최고 '+Math.round(wx.hi)+'도, 최저 '+Math.round(wx.lo)+'도, 강수확률은 '+Math.round(wx.pop)+'퍼센트입니다.';
   }
+  /* 음성으로 열 수 있는 앱: [말 패턴, 패키지, 이름] — 앞에서부터 먼저 맞는 것 */
+  var APPS=[
+    [/라디오/,'com.syu.radio','라디오'],
+    [/음악|뮤직|노래/,'com.syu.music','뮤직 플레이어'],
+    [/블루투스/,'com.syu.bt','블루투스'],
+    [/비디오|동영상|영상/,'com.syu.video','비디오 플레이어'],
+    [/네이버지도|지도/,'com.nhn.android.nmap','네이버지도'],
+    [/네비|내비/,'com.syu.onekeynavi','네비게이션'],
+    [/카링크|카플레이|미러링/,'com.syu.carlink','Car Link 2.0'],
+    [/카비트|이지커넥|안드로이드오토/,'net.easyconn','CarbitLink'],
+    [/브레이브|브라우저|인터넷|웹/,'com.brave.browser','Brave']
+  ];
   function command(raw){
     var t=raw.replace(/\s+/g,'');
     if(t.length>16)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
-    var ap=/라디오/.test(t)?['com.syu.radio','라디오']:/음악|뮤직|노래/.test(t)?['com.syu.music','뮤직 플레이어']:/블루투스/.test(t)&&!/진단/.test(t)?['com.syu.bt','블루투스']:/비디오|동영상|영상/.test(t)?['com.syu.video','비디오 플레이어']:null;
+    var ap=null;
+    for(var i=0;i<APPS.length;i++){if(APPS[i][0].test(t)){ap=[APPS[i][1],APPS[i][2]];break}}
     if(ap&&/켜|열|틀|실행|보여|들려|들을|듣/.test(t)){
       var ok=false;try{ok=!!(A&&A.launchApp(ap[0]))}catch(e){}
       if(ok){retSkip=true;return ap[1]+'를 엽니다.'}
