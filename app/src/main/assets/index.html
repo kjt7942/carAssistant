@@ -303,7 +303,9 @@ button.main-btn:active{background:var(--fg-dim)}
     if(/새로고침|갱신/.test(t)){last.t=0;maybeFetch(true);return '날씨를 새로 불러옵니다.'}
     return '"'+raw+'"는 아직 할 수 없습니다. 지금은 날씨, 시간, 날짜, 밝기, 24시간 표시 명령만 됩니다.';
   }
+  var ovClosed=false;
   window.onNativeSpeech=function(e){
+    if(ovClosed)return;
     clearTimeout(ovTimer);
     if(e.type==='ready'){ovShow('듣는 중… 말씀해 주세요','','')}
     else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
@@ -315,9 +317,9 @@ button.main-btn:active{background:var(--fg-dim)}
   };
   $('bVoice').addEventListener('click',function(){
     if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
-    ovShow('마이크 준비 중…','','');A.listen();
+    ovClosed=false;ovShow('마이크 준비 중…','','');A.listen();
   });
-  $('ovClose').addEventListener('click',function(){ovHide();if(A)try{A.stopListening()}catch(e){}});
+  $('ovClose').addEventListener('click',function(){ovClosed=true;ovHide();if(A)try{A.stopListening()}catch(e){}});
 
   /* ---------- 진단 ---------- */
   function showDiag(){

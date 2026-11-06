@@ -524,6 +524,7 @@ class MainActivity : Activity() {
         JSONObject().put("type", type).put("text", text)
 
     private var sttRetry = 0
+    private var sttCancelled = false
     private var focusReq: AudioFocusRequest? = null
     private val focusRelease = Runnable { abandonFocus() }
 
@@ -570,6 +571,7 @@ class MainActivity : Activity() {
         val r = SpeechRecognizer.createSpeechRecognizer(this)
         r.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
+                if (sttCancelled) return
                 js("onNativeSpeech", speechEvent("ready", ""))
             }
 
@@ -581,6 +583,7 @@ class MainActivity : Activity() {
             }
 
             override fun onError(error: Int) {
+                if (sttCancelled) return
                 // 11: 인식 서비스 연결 끊김, 5: 인식기 오류, 8: 사용 중 -> 인식기를 새로 만들어 한 번 자동 재시도
                 if ((error == 11 || error == SpeechRecognizer.ERROR_CLIENT ||
                         error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) && sttRetry < 1
@@ -596,6 +599,7 @@ class MainActivity : Activity() {
             }
 
             override fun onResults(results: Bundle?) {
+                if (sttCancelled) return
                 sttRetry = 0
                 abandonFocus()
                 val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -604,6 +608,7 @@ class MainActivity : Activity() {
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
+                if (sttCancelled) return
                 val list = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = if (list != null && list.isNotEmpty()) list[0] else ""
                 if (text.isNotEmpty()) js("onNativeSpeech", speechEvent("partial", text))
@@ -623,12 +628,16 @@ class MainActivity : Activity() {
     }
 
     private fun startListening(fromUser: Boolean = false) {
-        if (fromUser) sttRetry = 0
+        if (fromUser) {
+            sttRetry = 0
+            sttCancelled = false
+        }
         if (!granted(Manifest.permission.RECORD_AUDIO)) {
             js("onNativeSpeech", speechEvent("error", "마이크 권한이 없습니다"))
             requestPermissions(perms, reqCode)
             return
         }
+        if (sttCancelled && !fromUser) return
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             js("onNativeSpeech", speechEvent("error", "이 기기에는 음성 인식 서비스가 없습니다"))
             return
@@ -649,6 +658,7 @@ class MainActivity : Activity() {
     }
 
     private fun beginRecognition(r: SpeechRecognizer) {
+        if (sttCancelled) return
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
@@ -672,7 +682,15 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun stopListening() {
-            main.post { recognizer?.stopListening(); abandonFocus() }
+            main.post {
+                // 사용자가 닫기를 눌렀다: 이후 오는 오류·결과·자동 재시도를 모두 무시한다.
+                sttCancelled = true
+                try {
+                    recognizer?.cancel()
+                } catch (e: Exception) {
+                }
+                abandonFocus()
+            }
         }
 
         @JavascriptInterface
