@@ -224,6 +224,16 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 .root[data-theme=b] .wl2{font-size:calc(var(--s)*25);color:var(--fg-dim)}
 .root[data-theme=b] .empty{font-size:calc(var(--s)*28);white-space:normal}
 
+/* 하위 화면 공통: 내용이 길면 위쪽이 잘리지 않고 스크롤, 짧으면 가운데 */
+.ov:not(#ov){align-items:flex-start;padding-top:max(14px,2.4vh);padding-bottom:max(14px,2.4vh)}
+.ov:not(#ov) .ov-in{margin:auto}
+#dg .dg-list,#dg .dg-list{max-height:none!important;overflow:visible!important}
+.pl-list{max-height:none!important;overflow:visible!important}
+#sd .ov-resp,#ak .ov-resp,#kk .ov-resp,#md .ov-resp{font-size:max(15px,min(4vh,3.4vw))}
+.ap-row.slot .mini{font-size:15px}
+.ap-row.slot{position:relative;padding-right:104px}
+.ap-row.slot .mini{position:absolute;right:0;top:50%;transform:translateY(-50%);float:none;margin:0}
+
 /* ===== 옵션 화면 ===== */
 #op{align-items:flex-start;padding:max(14px,2.4vh) 22px}
 .op-in{width:100%;max-width:1180px;margin:auto;display:flex;flex-direction:column;gap:max(8px,1.4vh)}
@@ -381,19 +391,18 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   </div>
 </div>
 
+<div hidden aria-hidden="true">
+  <button id="dgAi" type="button"></button><button id="dgSound" type="button"></button><button id="dgFull" type="button"></button><button id="dgModels" type="button"></button><button id="dgUpd" type="button"></button>
+</div>
+
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
     <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
     <div class="dg-list" id="dgList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
-      <button id="dgAi" type="button">AI 키 설정</button>
-      <button id="dgSound" type="button">소리 설정</button>
-      <button id="dgFull" type="button">전체화면</button>
-      <button id="dgModels" type="button">AI 모델</button>
       <button id="dgApps" type="button">앱 목록</button>
       <button id="dgKeys" type="button">버튼 점검</button>
-      <button id="dgUpd" type="button">업데이트 확인</button>
       <button id="dgRefresh" type="button">새로 확인</button>
       <button id="dgClose" type="button">닫기</button>
     </div>
@@ -777,7 +786,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     var cur=chosenModels(),h='';
     cur.forEach(function(id,i){
       var m=mdInfo(id);
-      h+='<div class="ap-row" data-i="'+i+'"><button class="mini" type="button" data-t="'+i+'">시험</button><span class="rk">'+(i+1)+'순위</span>'+esc(m.name)+'<small>'+esc(id)+(m.ctx?' · 문맥 '+Math.round(m.ctx/1000)+'K':'')+'</small></div>';
+      h+='<div class="ap-row slot" data-i="'+i+'"><button class="mini" type="button" data-t="'+i+'">시험</button><span class="rk">'+(i+1)+'순위</span>'+esc(m.name)+'<small>'+esc(id)+(m.ctx?' · 문맥 '+Math.round(m.ctx/1000)+'K':'')+'</small></div>';
     });
     h+='<div class="ap-row"><small>1순위가 실패하면 2순위, 3순위, 마지막으로 자동 선택 무료 모델(openrouter/free)을 씁니다. 줄을 누르면 모델을 바꿀 수 있고, "시험"은 그 모델로 짧게 한 번 물어봅니다.</small></div>';
     $('mdList').innerHTML=h;
