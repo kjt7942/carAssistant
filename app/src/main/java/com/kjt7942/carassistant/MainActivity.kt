@@ -84,7 +84,7 @@ class MainActivity : Activity() {
     private val checkRunnable = object : Runnable {
         override fun run() {
             checkUpdates(false)
-            main.postDelayed(this, 6L * 60 * 60 * 1000)
+            main.postDelayed(this, 3L * 60 * 1000)
         }
     }
 
@@ -182,7 +182,7 @@ class MainActivity : Activity() {
         super.onResume()
         applyFullscreen()
         startLocation()
-        if (System.currentTimeMillis() - lastCheckAt > 60L * 60 * 1000 && lastCheckAt != 0L) {
+        if (System.currentTimeMillis() - lastCheckAt > 30L * 1000 && lastCheckAt != 0L) {
             checkUpdates(false)
         }
     }
