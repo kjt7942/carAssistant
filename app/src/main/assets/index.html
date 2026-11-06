@@ -42,7 +42,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);overflow:hid
 .place{font-size:min(4vh,2.4vw);color:var(--fg-dim);text-align:right}
 .empty{color:var(--fg-dim);font-size:min(5vh,2.8vw);line-height:1.5}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px}
-.status{font-size:min(3.8vh,2.3vw);color:var(--fg-dim);min-width:0;line-height:1.35}
+.status{font-size:min(3.8vh,2.3vw);color:var(--fg-dim);min-width:0;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status.stale{color:var(--warn)}
 .btns{display:flex;gap:12px;flex:none;flex-wrap:wrap;justify-content:flex-end}
 button{font:inherit;font-size:22px;font-weight:500;color:var(--fg-dim);background:transparent;border:1px solid var(--line);
@@ -289,11 +289,11 @@ button.main-btn:active{background:var(--fg-dim)}
     var s=$('status'),parts=[],stale=false;
     if(gpsFresh()){
       var sp=num(loc.speed)&&loc.speed>=1?' · '+Math.round(loc.speed*3.6)+'km/h':'';
-      parts.push('GPS 정상'+(num(loc.acc)?' · 정확도 '+Math.round(loc.acc)+'m':'')+sp);
+      parts.push('GPS 정상'+(num(loc.acc)?' '+Math.round(loc.acc)+'m':'')+sp);
     }else parts.push('GPS 신호 찾는 중 · 기본 위치(문경) 사용');
     if(wx){
       var m=Math.round((Date.now()-wx.at)/60000),t=new Date(wx.at),tt=seoulNowFrom(wx.at);
-      parts.push('날씨 '+tt+' 갱신');if(m>90)stale=true;
+      parts.push('날씨 '+tt);if(m>90)stale=true;
     }else if(wxErr)parts.push('날씨 연결 실패');
     s.textContent=parts.join(' · ');s.className='status'+(stale?' stale':'');
   }
