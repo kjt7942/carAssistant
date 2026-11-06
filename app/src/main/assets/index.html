@@ -129,6 +129,31 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
   .ov-text{font-size:max(20px,8vh)}
   .ov-resp{font-size:max(16px,6vh)}
 }
+
+/* 음성 명령: 메인 화면(시계·날씨)을 그대로 두고 아래쪽에 작은 박스로 표시 */
+#ov{background:rgba(5,7,10,.45);align-items:flex-end;justify-content:center;padding:0 16px max(14px,3.5vh);overflow:visible}
+#ov .ov-in{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:max(14px,2.4vh) max(18px,2.4vw);gap:1.2vh;max-width:900px}
+#ov .ov-state{font-size:max(15px,min(3.6vh,2.4vw))}
+#ov .ov-text{font-size:max(20px,min(5.4vh,3.4vw))}
+#ov .ov-resp{font-size:max(16px,min(4vh,2.6vw))}
+#ov .ov-text:empty,#ov .ov-resp:empty{display:none}
+#ov button{min-height:0;padding:1.2vh 22px;font-size:max(15px,min(3.2vh,2.2vw))}
+@media (orientation:portrait){
+  #ov{align-items:flex-end;padding:0 12px max(14px,3vh)}
+  #ov .ov-in{padding:16px 18px;gap:1.2vh}
+  #ov .ov-state{font-size:max(15px,4vw)}
+  #ov .ov-text{font-size:max(20px,6vw)}
+  #ov .ov-resp{font-size:max(16px,4.2vw)}
+  #ov button{font-size:max(15px,3.8vw)}
+}
+@media (orientation:landscape) and (max-height:520px){
+  #ov{padding-bottom:8px}
+  #ov .ov-in{padding:8px 16px;gap:.6vh}
+  #ov .ov-state{font-size:max(14px,4vh)}
+  #ov .ov-text{font-size:max(18px,6.4vh)}
+  #ov .ov-resp{font-size:max(15px,4.6vh)}
+  #ov button{font-size:max(14px,4vh)}
+}
 </style>
 </head>
 <body>
