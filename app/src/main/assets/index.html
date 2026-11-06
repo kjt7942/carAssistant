@@ -74,6 +74,9 @@ button.main-btn:active{background:var(--fg-dim)}
 .ap-row small{display:block;color:var(--fg-dim);font-size:.72em}
 .kk-row{display:grid;grid-template-columns:4.2em 1fr auto;gap:4px 12px;padding:.8vh 0;border-bottom:1px solid var(--line);font-size:max(14px,min(3.4vh,2.1vw))}
 .kk-row small{color:var(--fg-dim)}
+.ap-row .rk{color:var(--accent);font-weight:700;margin-right:.6em}
+.ap-row.cur{border-left:3px solid var(--accent);padding-left:10px}
+.ap-row .mini{float:right;font-size:.8em;min-width:0;min-height:0;padding:.5vh 12px;margin-left:8px}
 input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1.4vh 14px;width:100%;box-sizing:border-box;-webkit-user-select:text;user-select:text}
 .upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
 .upd[hidden]{display:none}
@@ -195,6 +198,19 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
   </div>
 </div>
 
+<div class="ov" id="md" hidden>
+  <div class="ov-in">
+    <div class="ov-state" id="mdTitle">AI 모델 선택 — 무료 모델</div>
+    <div class="ov-resp" id="mdMsg"></div>
+    <div class="pl-list" id="mdList"></div>
+    <div class="btns" style="justify-content:flex-start">
+      <button id="mdDefault" type="button">기본값으로</button>
+      <button id="mdReload" type="button">목록 새로고침</button>
+      <button id="mdClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
     <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
@@ -202,6 +218,7 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
       <button id="dgAi" type="button">AI 키 설정</button>
+      <button id="dgModels" type="button">AI 모델</button>
       <button id="dgApps" type="button">앱 목록</button>
       <button id="dgKeys" type="button">버튼 점검</button>
       <button id="dgUpd" type="button">업데이트 확인</button>
@@ -386,7 +403,18 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 
   /* ---------- AI 대화 (오픈라우터 무료 모델) ---------- */
   /* 모델 목록은 화면 업데이트만으로 바꿀 수 있다. 앞에서부터 시도하고 실패하면 다음 모델로 넘어간다. */
-  var AI_MODELS=['google/gemma-4-31b-it:free','nvidia/nemotron-3-ultra-550b-a55b:free','google/gemma-4-26b-a4b-it:free','openrouter/free'];
+  var DEFAULT_MODELS=['google/gemma-4-31b-it:free','nvidia/nemotron-3-ultra-550b-a55b:free','google/gemma-4-26b-a4b-it:free'];
+  function chosenModels(){
+    var m=null;try{m=JSON.parse(store.get('aiModels')||'null')}catch(e){}
+    if(!m||m.length!==3)m=DEFAULT_MODELS.slice();
+    return m;
+  }
+  /* 1~3순위를 차례로 시도하고, 모두 실패하면 마지막으로 자동 선택 무료 모델을 쓴다. */
+  function aiModels(){
+    var out=[];chosenModels().forEach(function(x){if(x&&out.indexOf(x)<0)out.push(x)});
+    if(out.indexOf('openrouter/free')<0)out.push('openrouter/free');
+    return out;
+  }
   var aiHist=[],aiPending=0;
   function aiContext(){
     var n=seoulNow(),c='현재 시각 '+koTime()+', 오늘 '+n.mo+'월 '+n.d+'일 '+DOW[n.wk]+'.';
@@ -402,11 +430,17 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
     var msgs=[{role:'system',content:sys}].concat(aiHist.slice(-6),[{role:'user',content:text}]);
     aiPending=Date.now();var my=aiPending;
     aiLast=text;
-    try{A.ask(JSON.stringify(AI_MODELS),JSON.stringify(msgs))}catch(e){return 'AI 호출에 실패했습니다.'}
+    try{A.ask(JSON.stringify(aiModels()),JSON.stringify(msgs))}catch(e){return 'AI 호출에 실패했습니다.'}
     return '\u0000AI';
   }
   var aiLast='';
+  var aiTest=null;
   window.onNativeAi=function(e){
+    if(aiTest){
+      var tt=aiTest;aiTest=null;var sec=((Date.now()-tt.t)/1000).toFixed(1);
+      $('mdMsg').textContent=e.ok?(tt.slot+'순위 응답('+sec+'초): '+e.text.slice(0,160)):(tt.slot+'순위 실패('+sec+'초): '+(e.err||'알 수 없는 오류'));
+      return;
+    }
     if(ovClosed||!aiPending)return;
     aiPending=0;clearTimeout(ovTimer);
     if(e.ok){
@@ -517,6 +551,70 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
   });
   $('kkClear').addEventListener('click',function(){kkLog=[];kkDraw()});
   $('kkClose').addEventListener('click',function(){try{A.setKeyProbe(false)}catch(e){}$('kk').hidden=true});
+  /* ---------- AI 모델 선택 (무료 모델 목록) ---------- */
+  var mdList=[],mdMode='slots',mdSlot=0,mdLoaded=false;
+  function mdInfo(id){for(var i=0;i<mdList.length;i++)if(mdList[i].id===id)return mdList[i];return {id:id,name:id}}
+  function mdDrawSlots(){
+    mdMode='slots';$('mdTitle').textContent='AI 모델 선택 — 무료 모델';
+    var cur=chosenModels(),h='';
+    cur.forEach(function(id,i){
+      var m=mdInfo(id);
+      h+='<div class="ap-row" data-i="'+i+'"><button class="mini" type="button" data-t="'+i+'">시험</button><span class="rk">'+(i+1)+'순위</span>'+esc(m.name)+'<small>'+esc(id)+(m.ctx?' · 문맥 '+Math.round(m.ctx/1000)+'K':'')+'</small></div>';
+    });
+    h+='<div class="ap-row"><small>1순위가 실패하면 2순위, 3순위, 마지막으로 자동 선택 무료 모델(openrouter/free)을 씁니다. 줄을 누르면 모델을 바꿀 수 있고, "시험"은 그 모델로 짧게 한 번 물어봅니다.</small></div>';
+    $('mdList').innerHTML=h;
+  }
+  function mdDrawPick(){
+    mdMode='pick';$('mdTitle').textContent=(mdSlot+1)+'순위 모델 고르기 — '+mdList.length+'개';
+    var cur=chosenModels()[mdSlot],h='';
+    mdList.forEach(function(m){
+      h+='<div class="ap-row'+(m.id===cur?' cur':'')+'" data-id="'+esc(m.id)+'">'+esc(m.name)+'<small>'+esc(m.id)+(m.ctx?' · 문맥 '+Math.round(m.ctx/1000)+'K':'')+(m.tools?' · 도구 지원':'')+'</small></div>';
+    });
+    $('mdList').innerHTML=h||'<div class="ov-resp">모델 목록이 비어 있습니다.</div>';
+  }
+  function mdLoad(force){
+    if(mdLoaded&&!force)return Promise.resolve();
+    $('mdMsg').textContent='무료 모델 목록을 불러오는 중…';
+    return fetch('https://openrouter.ai/api/v1/models').then(function(r){return r.json()}).then(function(j){
+      var arr=(j.data||[]).filter(function(m){
+        var o=(m.architecture&&m.architecture.output_modalities)||['text'];
+        return /:free$/.test(m.id)&&o.indexOf('text')>=0&&o.length===1;
+      }).map(function(m){return {id:m.id,name:m.name||m.id,ctx:m.context_length||0,tools:(m.supported_parameters||[]).indexOf('tools')>=0}});
+      arr.sort(function(a,b){return b.ctx-a.ctx||(a.id<b.id?-1:1)});
+      arr.unshift({id:'openrouter/free',name:'자동 선택 (무료 모델 중 가능한 것)',ctx:0,tools:false});
+      mdList=arr;mdLoaded=true;$('mdMsg').textContent='무료 모델 '+(arr.length-1)+'개를 불러왔습니다.';
+    }).catch(function(){
+      mdLoaded=false;$('mdMsg').textContent='목록을 불러오지 못했습니다 (인터넷 확인). 지금 선택된 모델은 그대로 쓸 수 있습니다.';
+    });
+  }
+  $('dgModels').addEventListener('click',function(){
+    $('dg').hidden=true;$('md').hidden=false;mdDrawSlots();mdLoad(false).then(function(){if(mdMode==='slots')mdDrawSlots()});
+  });
+  $('mdList').addEventListener('click',function(ev){
+    var t=ev.target.closest('[data-t]');
+    if(t){
+      var i=+t.getAttribute('data-t'),model=chosenModels()[i];
+      if(!A||!A.ask||!A.hasApiKey||!A.hasApiKey()){$('mdMsg').textContent='시험하려면 먼저 AI 키를 저장해야 합니다.';return}
+      aiTest={slot:i+1,t:Date.now()};$('mdMsg').textContent=(i+1)+'순위 시험 중… (최대 40초)';
+      A.ask(JSON.stringify([model]),JSON.stringify([{role:'system',content:'한국어로 한 문장으로만 답한다.'},{role:'user',content:'안녕, 간단히 자기소개해 줘.'}]));
+      return;
+    }
+    var r=ev.target.closest('.ap-row');if(!r)return;
+    if(mdMode==='slots'){
+      var si=r.getAttribute('data-i');if(si===null)return;
+      mdSlot=+si;mdLoad(false).then(function(){mdDrawPick()});
+    }else{
+      var id=r.getAttribute('data-id');if(!id)return;
+      var cur=chosenModels();cur[mdSlot]=id;store.set('aiModels',JSON.stringify(cur));
+      $('mdMsg').textContent=(mdSlot+1)+'순위를 바꿨습니다.';mdDrawSlots();
+    }
+  });
+  $('mdDefault').addEventListener('click',function(){store.set('aiModels',JSON.stringify(DEFAULT_MODELS));$('mdMsg').textContent='기본값으로 되돌렸습니다.';mdDrawSlots()});
+  $('mdReload').addEventListener('click',function(){mdLoad(true).then(function(){if(mdMode==='pick')mdDrawPick();else mdDrawSlots()})});
+  $('mdClose').addEventListener('click',function(){
+    if(mdMode==='pick'){mdDrawSlots();return}
+    $('md').hidden=true;
+  });
   $('dgUpd').addEventListener('click',function(){if(A){A.checkUpdate();$('dg').hidden=true}});
   $('dgClose').addEventListener('click',function(){$('dg').hidden=true});
 
