@@ -81,6 +81,9 @@ button.main-btn:active{background:var(--fg-dim)}
 .ap-row .rk{color:var(--accent);font-weight:700;margin-right:.6em}
 .ap-row.cur{border-left:3px solid var(--accent);padding-left:10px}
 .ap-row .mini{float:right;font-size:.8em;min-width:0;min-height:0;padding:.5vh 12px;margin-left:8px}
+.sd-grp{display:flex;flex-direction:column;gap:1vh}
+.sd-t{color:var(--fg-dim);font-size:max(14px,min(3.4vh,2.1vw))}
+#sd button.on{background:var(--accent);border-color:var(--accent);color:#031318;font-weight:700}
 input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1.4vh 14px;width:100%;box-sizing:border-box;-webkit-user-select:text;user-select:text}
 .upd{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 16px;background:var(--line);color:var(--fg);font-size:18px;z-index:5}
 .upd[hidden]{display:none}
@@ -141,8 +144,8 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 #ov{background:rgba(5,7,10,.45);align-items:flex-end;justify-content:center;padding:0 16px max(14px,3.5vh);overflow:visible}
 #ov .ov-in{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:max(14px,2.4vh) max(18px,2.4vw);gap:1.2vh;max-width:900px}
 #ov .ov-state{font-size:max(15px,min(3.6vh,2.4vw))}
-#ov .ov-text{font-size:max(20px,min(5.4vh,3.4vw))}
-#ov .ov-resp{font-size:max(16px,min(4vh,2.6vw))}
+#ov .ov-text{font-size:max(19px,min(4.4vh,2.9vw))}
+#ov .ov-resp{font-size:max(15px,min(3.5vh,2.3vw));max-height:34vh;overflow:auto}
 #ov .ov-text:empty,#ov .ov-resp:empty{display:none}
 #ov button{min-height:0;padding:1.2vh 22px;font-size:max(15px,min(3.2vh,2.2vw))}
 @media (orientation:portrait){
@@ -267,6 +270,25 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
   </div>
 </div>
 
+<div class="ov" id="sd" hidden>
+  <div class="ov-in">
+    <div class="ov-state">소리 설정 — 음성 명령 중 라디오·음악 처리</div>
+    <div class="ov-resp" id="sdMsg"></div>
+    <div class="sd-grp"><div class="sd-t">듣는 동안</div>
+      <div class="btns" id="sdDuck" style="justify-content:flex-start">
+        <button type="button" data-d="0">그대로 두기</button>
+        <button type="button" data-d="1">볼륨 0으로</button>
+        <button type="button" data-d="2">오디오 포커스</button>
+      </div></div>
+    <div class="sd-grp"><div class="sd-t">끝난 뒤</div>
+      <div class="btns" id="sdRes" style="justify-content:flex-start">
+        <button type="button" data-r="0">아무것도 안 함</button>
+        <button type="button" data-r="1">재생 키 보내기</button>
+      </div></div>
+    <div class="btns" style="justify-content:flex-start"><button id="sdClose" type="button">닫기</button></div>
+  </div>
+</div>
+
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
     <div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div>
@@ -274,6 +296,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
       <button id="dgAi" type="button">AI 키 설정</button>
+      <button id="dgSound" type="button">소리 설정</button>
       <button id="dgModels" type="button">AI 모델</button>
       <button id="dgApps" type="button">앱 목록</button>
       <button id="dgKeys" type="button">버튼 점검</button>
@@ -671,6 +694,27 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     if(mdMode==='pick'){mdDrawSlots();return}
     $('md').hidden=true;
   });
+  /* ---------- 소리 설정 ---------- */
+  function sdDraw(msg){
+    var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
+    [].forEach.call($('sdDuck').children,function(b){b.classList.toggle('on',+b.getAttribute('data-d')===a.duck)});
+    [].forEach.call($('sdRes').children,function(b){b.classList.toggle('on',(+b.getAttribute('data-r')===1)===!!a.resume)});
+    $('sdMsg').textContent=msg||('현재 미디어 볼륨 '+(a.vol!=null?a.vol+'/'+a.max:'-')+' · 소리 재생 감지: '+(a.active?'예':'아니오')+'. 라디오 소리가 돌아오는 조합을 찾아 보세요.');
+  }
+  $('dgSound').addEventListener('click',function(){
+    if(!A||!A.getAudio){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 설정은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}
+    $('dg').hidden=true;sdDraw();$('sd').hidden=false;
+  });
+  $('sd').addEventListener('click',function(ev){
+    var b=ev.target.closest('button');if(!b||b.id==='sdClose')return;
+    var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
+    var d=a.duck,r=!!a.resume;
+    if(b.hasAttribute('data-d'))d=+b.getAttribute('data-d');
+    if(b.hasAttribute('data-r'))r=+b.getAttribute('data-r')===1;
+    try{A.setAudio(d,r)}catch(e){}
+    sdDraw('저장했습니다. 음성 명령으로 라디오가 돌아오는지 확인해 보세요.');
+  });
+  $('sdClose').addEventListener('click',function(){$('sd').hidden=true});
   $('dgUpd').addEventListener('click',function(){if(A){A.checkUpdate();$('dg').hidden=true}});
   $('dgClose').addEventListener('click',function(){$('dg').hidden=true});
 

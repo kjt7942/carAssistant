@@ -12,6 +12,8 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.location.Location
 import android.bluetooth.BluetoothAdapter
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -546,25 +548,46 @@ class MainActivity : Activity() {
     private var sttCancelled = false
     private val focusRelease = Runnable { abandonFocus() }
     private var ducked = false
+    private var focusReq: AudioFocusRequest? = null
+    private var focusHeld = false
+    private var resumePending = false
 
-    /**
-     * 음성 인식 중에는 미디어 볼륨을 0으로 내리고, 끝나면 원래대로 되돌린다.
-     * (오디오 포커스 요청은 이 헤드유닛 라디오가 '다시 재생'을 따르지 않아 쓰지 않는다.)
-     */
+    // 소리 처리 설정 (차량 라디오가 어떤 방식에 반응하는지 시험하려고 선택 가능하게 둔다)
+    //  duck: 0 그대로 / 1 볼륨 0으로 낮췄다가 복구 / 2 오디오 포커스 요청
+    //  resume: 인식이 끝난 뒤 '재생' 미디어 키를 보내 라디오를 다시 켜 보기
+    private fun audioDuck(): Int = getSharedPreferences("audio", MODE_PRIVATE).getInt("duck", 1)
+    private fun audioResume(): Boolean = getSharedPreferences("audio", MODE_PRIVATE).getBoolean("resume", false)
+
     private fun requestFocus() {
+        val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         try {
-            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            if (!ducked) {
-                val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-                if (cur > 0) {
-                    getSharedPreferences("upd", MODE_PRIVATE).edit().putInt("savedVol", cur).apply()
-                    am.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
-                    ducked = true
-                    getSharedPreferences("upd", MODE_PRIVATE).edit().putBoolean("ducking", true).apply()
+            when (audioDuck()) {
+                1 -> if (!ducked) {
+                    val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                    if (cur > 0) {
+                        getSharedPreferences("upd", MODE_PRIVATE).edit()
+                            .putInt("savedVol", cur).putBoolean("ducking", true).apply()
+                        am.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+                        ducked = true
+                    }
+                }
+                2 -> if (!focusHeld) {
+                    if (focusReq == null) {
+                        val attrs = AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                        focusReq = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                            .setAudioAttributes(attrs)
+                            .setOnAudioFocusChangeListener { }
+                            .build()
+                    }
+                    focusHeld = am.requestAudioFocus(focusReq!!) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
                 }
             }
         } catch (e: Exception) {
         }
+        if (audioResume()) resumePending = true
         main.removeCallbacks(focusRelease)
         main.postDelayed(focusRelease, 25000)
     }
@@ -572,14 +595,34 @@ class MainActivity : Activity() {
     private fun abandonFocus() {
         main.removeCallbacks(focusRelease)
         val pr = getSharedPreferences("upd", MODE_PRIVATE)
-        if (!ducked && !pr.getBoolean("ducking", false)) return
-        ducked = false
-        pr.edit().putBoolean("ducking", false).apply()
-        try {
-            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val saved = getSharedPreferences("upd", MODE_PRIVATE).getInt("savedVol", -1)
-            if (saved > 0) am.setStreamVolume(AudioManager.STREAM_MUSIC, saved, 0)
-        } catch (e: Exception) {
+        val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (ducked || pr.getBoolean("ducking", false)) {
+            ducked = false
+            pr.edit().putBoolean("ducking", false).apply()
+            try {
+                val saved = pr.getInt("savedVol", -1)
+                if (saved > 0) am.setStreamVolume(AudioManager.STREAM_MUSIC, saved, 0)
+            } catch (e: Exception) {
+            }
+        }
+        if (focusHeld) {
+            focusHeld = false
+            try {
+                focusReq?.let { am.abandonAudioFocusRequest(it) }
+            } catch (e: Exception) {
+            }
+        }
+        if (resumePending) {
+            resumePending = false
+            // 복구가 끝난 뒤 잠깐 있다가 '재생' 키를 보낸다.
+            main.postDelayed({
+                try {
+                    val t = android.os.SystemClock.uptimeMillis()
+                    am.dispatchMediaKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY, 0))
+                    am.dispatchMediaKeyEvent(KeyEvent(t, t, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY, 0))
+                } catch (e: Exception) {
+                }
+            }, 500)
         }
     }
 
@@ -937,6 +980,25 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun setKeyProbe(on: Boolean) {
             main.post { this@MainActivity.setKeyProbe(on) }
+        }
+
+        @JavascriptInterface
+        fun setAudio(duck: Int, resume: Boolean) {
+            getSharedPreferences("audio", MODE_PRIVATE).edit()
+                .putInt("duck", duck).putBoolean("resume", resume).apply()
+        }
+
+        @JavascriptInterface
+        fun getAudio(): String {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val o = JSONObject().put("duck", audioDuck()).put("resume", audioResume())
+            try {
+                o.put("vol", am.getStreamVolume(AudioManager.STREAM_MUSIC))
+                o.put("max", am.getStreamMaxVolume(AudioManager.STREAM_MUSIC))
+                o.put("active", am.isMusicActive)
+            } catch (e: Exception) {
+            }
+            return o.toString()
         }
 
         @JavascriptInterface
