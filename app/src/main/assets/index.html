@@ -272,6 +272,15 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 #sd .sd-t{font-size:max(19px,4.6vw)}
 #ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose{min-width:max(96px,22vw)}
 }
+#sd .sd-cols{display:grid;grid-template-columns:1fr 1fr;gap:max(14px,2.4vw)}
+#sd .sd-col{display:flex;flex-direction:column;gap:max(12px,2vh);border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 18px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
+#sd .sd-colh{color:var(--accent);font-weight:700;font-size:max(16px,min(3.2vh,2.1vw));letter-spacing:1px}
+#sd .sd-grp{gap:max(6px,1vh)}
+#sd .sd-t{color:var(--fg)}
+#sd .sd-t small{display:block;font-size:.62em;color:var(--fg-dim);margin-top:3px;line-height:1.35}
+#sd .btns{justify-content:flex-start;gap:10px}
+#sd .btns button{padding:0 16px;font-size:max(15px,min(3.2vh,2vw))}
+@media (orientation:portrait){#sd .sd-cols{grid-template-columns:1fr}#sd .btns button{font-size:max(14px,3.4vw);padding:0 10px;flex:1 1 auto;min-width:0;white-space:nowrap}}
 </style>
 </head>
 <body>
@@ -358,30 +367,38 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 
 <div class="ov" id="sd" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">소리 설정 — 음성 명령 중 라디오·음악 처리</div><button id="sdClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state">소리 설정</div><button id="sdClose" type="button">닫기</button></div>
     <div class="ov-resp" id="sdMsg"></div>
-    <div class="sd-grp"><div class="sd-t">듣는 동안</div>
-      <div class="btns" id="sdDuck" style="justify-content:flex-start">
-        <button type="button" data-d="0">그대로 두기</button>
-        <button type="button" data-d="1">볼륨 0으로</button>
-        <button type="button" data-d="2">오디오 포커스</button>
-      </div></div>
-    <div class="sd-grp"><div class="sd-t">끝난 뒤</div>
-      <div class="btns" id="sdRes" style="justify-content:flex-start">
-        <button type="button" data-r="0">아무것도 안 함</button>
-        <button type="button" data-r="1">재생 키 보내기</button>
-      </div></div>
-    <div class="sd-grp"><div class="sd-t">음성 명령이 끝나면 자동으로 열기</div>
-      <div class="btns" id="sdRet" style="justify-content:flex-start">
-        <button type="button" data-a="">안 함</button>
-        <button type="button" data-a="com.syu.radio">라디오</button>
-        <button type="button" data-a="com.syu.music">뮤직 플레이어</button>
-      </div></div>
-    <div class="sd-grp"><div class="sd-t">열고 난 뒤 화면</div>
-      <div class="btns" id="sdFront" style="justify-content:flex-start">
-        <button type="button" data-f="1">비서 화면 유지(소리만)</button>
-        <button type="button" data-f="0">그 앱 화면으로</button>
-      </div></div>
+    <div class="sd-cols">
+      <div class="sd-col">
+        <div class="sd-colh">음성 명령 중</div>
+        <div class="sd-grp"><div class="sd-t">① 듣는 동안 라디오 소리<small>말할 때 라디오가 방해되지 않게 합니다.</small></div>
+          <div class="btns" id="sdDuck">
+            <button type="button" data-d="0">그대로 두기</button>
+            <button type="button" data-d="1">볼륨 0으로</button>
+            <button type="button" data-d="2">오디오 포커스</button>
+          </div></div>
+        <div class="sd-grp"><div class="sd-t">② 끝난 뒤 소리 되살리기<small>라디오가 멈춘 채로 있으면 재생 신호를 보냅니다.</small></div>
+          <div class="btns" id="sdRes">
+            <button type="button" data-r="0">아무것도 안 함</button>
+            <button type="button" data-r="1">재생 키 보내기</button>
+          </div></div>
+      </div>
+      <div class="sd-col">
+        <div class="sd-colh">음성 명령 후</div>
+        <div class="sd-grp"><div class="sd-t">③ 자동으로 열 앱<small>끝나면 선택한 앱을 다시 엽니다.</small></div>
+          <div class="btns" id="sdRet">
+            <button type="button" data-a="">안 함</button>
+            <button type="button" data-a="com.syu.radio">라디오</button>
+            <button type="button" data-a="com.syu.music">뮤직 플레이어</button>
+          </div></div>
+        <div class="sd-grp"><div class="sd-t">④ 열고 난 뒤 보이는 화면<small>소리만 켜고 비서 화면을 유지할 수 있습니다.</small></div>
+          <div class="btns" id="sdFront">
+            <button type="button" data-f="1">비서 화면 유지(소리만)</button>
+            <button type="button" data-f="0">그 앱 화면으로</button>
+          </div></div>
+      </div>
+    </div>
   </div>
 </div>
 
