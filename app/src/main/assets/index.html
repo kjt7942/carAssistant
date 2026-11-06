@@ -291,6 +291,11 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
         <button type="button" data-a="com.syu.radio">라디오</button>
         <button type="button" data-a="com.syu.music">뮤직 플레이어</button>
       </div></div>
+    <div class="sd-grp"><div class="sd-t">열고 난 뒤 화면</div>
+      <div class="btns" id="sdFront" style="justify-content:flex-start">
+        <button type="button" data-f="1">비서 화면 유지(소리만)</button>
+        <button type="button" data-f="0">그 앱 화면으로</button>
+      </div></div>
     <div class="btns" style="justify-content:flex-start"><button id="sdClose" type="button">닫기</button></div>
   </div>
 </div>
@@ -303,6 +308,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
       <button id="dgPerm" type="button">권한 다시 요청</button>
       <button id="dgAi" type="button">AI 키 설정</button>
       <button id="dgSound" type="button">소리 설정</button>
+      <button id="dgFull" type="button">전체화면</button>
       <button id="dgModels" type="button">AI 모델</button>
       <button id="dgApps" type="button">앱 목록</button>
       <button id="dgKeys" type="button">버튼 점검</button>
@@ -467,7 +473,11 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     if(retPending){
       retPending=false;
       var pk=retApp();
-      if(pk&&!retSkip&&A){setTimeout(function(){try{A.launchApp(pk)}catch(e){}},700)}
+      if(pk&&!retSkip&&A){
+        setTimeout(function(){try{A.launchApp(pk)}catch(e){}},700);
+        /* 라디오 소리만 되살리고 비서 화면은 앞에 그대로 둔다 */
+        if(store.get('retFront')!=='0')setTimeout(function(){try{A.launchApp('com.kjt7942.carassistant')}catch(e){}},2200);
+      }
       retSkip=false;
     }
   }
@@ -587,6 +597,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
 
   /* ---------- 진단 ---------- */
   function showDiag(){
+    if(A&&A.getFullscreen)fullLabel();
     var d={};try{d=JSON.parse(A?A.diag():'{}')}catch(e){}
     var l=d.loc,rows=[
       ['위치 권한',!!(d.fine||d.coarse),d.fine?'정확한 위치 허용':d.coarse?'대략적 위치만 허용':'허용 안 됨'],
@@ -741,6 +752,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
     [].forEach.call($('sdDuck').children,function(b){b.classList.toggle('on',+b.getAttribute('data-d')===a.duck)});
     [].forEach.call($('sdRes').children,function(b){b.classList.toggle('on',(+b.getAttribute('data-r')===1)===!!a.resume)});
+    [].forEach.call($('sdFront').children,function(b){b.classList.toggle('on',(b.getAttribute('data-f')!=='0')===(store.get('retFront')!=='0'))});
     [].forEach.call($('sdRet').children,function(b){b.classList.toggle('on',b.getAttribute('data-a')===retApp())});
     $('sdMsg').textContent=msg||('현재 미디어 볼륨 '+(a.vol!=null?a.vol+'/'+a.max:'-')+' · 소리 재생 감지: '+(a.active?'예':'아니오')+'. 라디오 소리가 돌아오는 조합을 찾아 보세요.');
   }
@@ -750,6 +762,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
   });
   $('sd').addEventListener('click',function(ev){
     var b=ev.target.closest('button');if(!b||b.id==='sdClose')return;
+    if(b.hasAttribute('data-f')){store.set('retFront',b.getAttribute('data-f'));sdDraw('저장했습니다.');return}
     if(b.hasAttribute('data-a')){store.set('retApp',b.getAttribute('data-a'));sdDraw('저장했습니다. 음성 명령이 끝나면 선택한 앱을 다시 엽니다.');return}
     var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
     var d=a.duck,r=!!a.resume;
@@ -759,6 +772,12 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
     sdDraw('저장했습니다. 음성 명령으로 라디오가 돌아오는지 확인해 보세요.');
   });
   $('sdClose').addEventListener('click',function(){$('sd').hidden=true});
+  function fullLabel(){var on=true;try{on=A.getFullscreen()}catch(e){}$('dgFull').textContent='전체화면: '+(on?'켜짐':'꺼짐');return on}
+  $('dgFull').addEventListener('click',function(){
+    if(!A||!A.setFullscreen){ovShow('앱을 업데이트해 주세요','','이 설정은 최신 앱에서 가능합니다.');return}
+    var on=true;try{on=A.getFullscreen()}catch(e){}
+    try{A.setFullscreen(!on)}catch(e){}fullLabel();
+  });
   $('dgUpd').addEventListener('click',function(){if(A){A.checkUpdate();$('dg').hidden=true}});
   $('dgClose').addEventListener('click',function(){$('dg').hidden=true});
 

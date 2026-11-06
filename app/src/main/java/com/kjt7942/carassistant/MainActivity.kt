@@ -32,6 +32,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.view.View
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -133,6 +134,37 @@ class MainActivity : Activity() {
         main.postDelayed({ emitIntent(intent) }, 1800)
     }
 
+    private fun fullscreenOn(): Boolean = getSharedPreferences("ui", MODE_PRIVATE).getBoolean("full", true)
+
+    /** 상태줄·내비게이션 막대를 숨기고 화면 전체를 쓴다. */
+    @Suppress("DEPRECATION")
+    private fun applyFullscreen() {
+        val dv = window.decorView
+        if (fullscreenOn()) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            dv.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            dv.setOnSystemUiVisibilityChangeListener { v ->
+                if (fullscreenOn() && (v and View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                    main.postDelayed({ applyFullscreen() }, 1500)
+                }
+            }
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            dv.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            dv.setOnSystemUiVisibilityChangeListener(null)
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyFullscreen()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -148,6 +180,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        applyFullscreen()
         startLocation()
         if (System.currentTimeMillis() - lastCheckAt > 60L * 60 * 1000 && lastCheckAt != 0L) {
             checkUpdates(false)
@@ -995,6 +1028,15 @@ class MainActivity : Activity() {
         fun setKeyProbe(on: Boolean) {
             main.post { this@MainActivity.setKeyProbe(on) }
         }
+
+        @JavascriptInterface
+        fun setFullscreen(on: Boolean) {
+            getSharedPreferences("ui", MODE_PRIVATE).edit().putBoolean("full", on).apply()
+            main.post { applyFullscreen() }
+        }
+
+        @JavascriptInterface
+        fun getFullscreen(): Boolean = fullscreenOn()
 
         @JavascriptInterface
         fun setAudio(duck: Int, resume: Boolean) {
