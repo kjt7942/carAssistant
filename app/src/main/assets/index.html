@@ -855,12 +855,19 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     });
     $('kkList').innerHTML=h||'<div class="ov-resp">아직 입력이 없습니다.</div>';
   }
+  var voiceT=0;
   window.onNativeIntent=function(e){
     var a=(e.action||'').replace('android.intent.action.','');
     kkLog.unshift({src:'intent',name:a,code:'-',scan:0,action:'호출',dev:(e.cats||'')});
     if(kkLog.length>14)kkLog.pop();
     if(!$('kk').hidden){kkDraw();return}
-    if(/VOICE_COMMAND|ASSIST|SEARCH|VOICE_ASSIST|WEB_SEARCH|VOICE_SEARCH/.test(e.action||'')&&$('ov').hidden&&$('dg').hidden){$('bVoice').click()}
+    if(/VOICE_COMMAND|ASSIST|SEARCH|VOICE_ASSIST|WEB_SEARCH|VOICE_SEARCH/.test(e.action||'')&&$('dg').hidden){
+      var now=Date.now();
+      if(now-voiceT<1200)return; /* 한 번 누른 신호가 겹쳐 오는 경우 무시 */
+      voiceT=now;
+      if(!$('ov').hidden){$('ovClose').click();try{if(A&&A.stopSpeaking)A.stopSpeaking()}catch(x){}return} /* 인식 화면에서 다시 누르면 즉시 취소 */
+      $('bVoice').click();
+    }
   };
   window.onNativeKey=function(k){kkLog.unshift(k);if(kkLog.length>14)kkLog.pop();if(!$('kk').hidden)kkDraw()};
   $('dgKeys').addEventListener('click',function(){

@@ -933,11 +933,20 @@ class MainActivity : Activity() {
                 // 사용자가 닫기를 눌렀다: 이후 오는 오류·결과·자동 재시도를 모두 무시한다.
                 sttCancelled = true
                 try {
+                    tts?.stop()
+                } catch (e: Exception) {
+                }
+                try {
                     recognizer?.cancel()
                 } catch (e: Exception) {
                 }
                 abandonFocus()
             }
+        }
+
+        @JavascriptInterface
+        fun stopSpeaking() {
+            main.post { try { tts?.stop() } catch (e: Exception) { } }
         }
 
         @JavascriptInterface
