@@ -652,7 +652,9 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
       var pk=retApp();
       if(pk==='prev'){
         /* MP3·라디오 등 이전에 쓰던 앱 위에서 호출됐다면, 끝난 뒤 그 앱으로 돌려보낸다 */
-        if(!retSkip&&A&&A.cameFromBack&&A.cameFromBack())setTimeout(function(){try{A.backToPrev()}catch(e){}},350);
+        var cb=A&&A.cameFromBack&&A.cameFromBack();
+        /* 비서 화면 유지를 골랐으면 그대로 두고, 아니면 이전 앱으로 돌려보낸다 */
+        if(!retSkip&&cb&&store.get('retFront')==='0')setTimeout(function(){try{A.backToPrev()}catch(e){}},350);
       }else if(pk&&!retSkip&&A){
         setTimeout(function(){try{A.launchApp(pk)}catch(e){}},700);
         /* 라디오 소리만 되살리고 비서 화면은 앞에 그대로 둔다 */
@@ -860,6 +862,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     $('kkList').innerHTML=h||'<div class="ov-resp">아직 입력이 없습니다.</div>';
   }
   var voiceT=0;
+  window.onEndKey=function(){if(!$('ov').hidden){ovClosed=true;ovHide();try{A.stopListening()}catch(x){}}};
   window.onNativeIntent=function(e){
     var a=(e.action||'').replace('android.intent.action.','');
     kkLog.unshift({src:'intent',name:a,code:'-',scan:0,action:'호출',dev:(e.cats||'')});

@@ -818,8 +818,31 @@ class MainActivity : Activity() {
         )
     }
 
+    /** 전화 통화 중(일반 통화·블루투스 통화·벨 울림)인지 */
+    private fun inCall(): Boolean {
+        return try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val m = am.mode
+            if (m == AudioManager.MODE_IN_CALL || m == AudioManager.MODE_IN_COMMUNICATION || m == AudioManager.MODE_RINGTONE) true
+            else {
+                val tm = getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
+                tm.callState != android.telephony.TelephonyManager.CALL_STATE_IDLE
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (keyProbe) keyEmit("key", event)
+        // 비서 화면에서 전화 종료 버튼: 통화 중이 아니면 비서 화면을 닫고 이전 앱으로 돌아간다.
+        if (!keyProbe && event.keyCode == KeyEvent.KEYCODE_ENDCALL && inFront && !inCall()) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                js("onEndKey", JSONObject())
+                main.postDelayed({ moveTaskToBack(true) }, 250)
+            }
+            return true
+        }
         return super.dispatchKeyEvent(event)
     }
 
