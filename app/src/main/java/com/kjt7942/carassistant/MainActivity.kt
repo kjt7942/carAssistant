@@ -165,8 +165,13 @@ class MainActivity : Activity() {
         if (hasFocus) applyFullscreen()
     }
 
+    private var inFront = false
+    private var backAt = 0L
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // 다른 앱(MP3 등) 위에서 호출됐는지 기억해 두었다가, 끝나면 그 앱으로 돌려보낸다.
+        if (!inFront) backAt = System.currentTimeMillis()
         setIntent(intent)
         emitIntent(intent)
     }
@@ -180,6 +185,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        inFront = true
         applyFullscreen()
         startLocation()
         if (System.currentTimeMillis() - lastCheckAt > 30L * 1000 && lastCheckAt != 0L) {
@@ -188,6 +194,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        inFront = false
         setKeyProbe(false)
         abandonFocus()
         stopLocation()
@@ -941,6 +948,23 @@ class MainActivity : Activity() {
                 } catch (e: Exception) {
                 }
                 abandonFocus()
+            }
+        }
+
+        @JavascriptInterface
+        fun cameFromBack(): Boolean {
+            val ok = backAt != 0L && System.currentTimeMillis() - backAt < 120_000
+            backAt = 0L
+            return ok
+        }
+
+        @JavascriptInterface
+        fun backToPrev(): Boolean {
+            return try {
+                main.post { moveTaskToBack(true) }
+                true
+            } catch (e: Exception) {
+                false
             }
         }
 

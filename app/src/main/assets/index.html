@@ -416,8 +416,9 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
       </div>
       <div class="sd-col">
         <div class="sd-colh">음성 명령 후</div>
-        <div class="sd-grp"><div class="sd-t">③ 자동으로 열 앱<small>끝나면 선택한 앱을 다시 엽니다.</small></div>
+        <div class="sd-grp"><div class="sd-t">③ 끝난 뒤 돌아갈 앱<small>"이전 앱으로"는 호출 직전에 쓰던 앱(MP3 등)으로 돌아갑니다.</small></div>
           <div class="btns" id="sdRet">
+            <button type="button" data-a="prev">이전 앱으로</button>
             <button type="button" data-a="">안 함</button>
             <button type="button" data-a="com.syu.radio">라디오</button>
             <button type="button" data-a="com.syu.music">뮤직 플레이어</button>
@@ -643,13 +644,16 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     $('ov').hidden=false;$('ovState').textContent=state||'';$('ovText').textContent=text||'';$('ovResp').textContent=resp||'';
   }
   var retPending=false,retSkip=false;
-  function retApp(){return store.get('retApp')||''}
+  function retApp(){var v=store.get('retApp');return v===null?'prev':v}
   function ovHide(){
     $('ov').hidden=true;clearTimeout(ovTimer);
     if(retPending){
       retPending=false;
       var pk=retApp();
-      if(pk&&!retSkip&&A){
+      if(pk==='prev'){
+        /* MP3·라디오 등 이전에 쓰던 앱 위에서 호출됐다면, 끝난 뒤 그 앱으로 돌려보낸다 */
+        if(!retSkip&&A&&A.cameFromBack&&A.cameFromBack())setTimeout(function(){try{A.backToPrev()}catch(e){}},350);
+      }else if(pk&&!retSkip&&A){
         setTimeout(function(){try{A.launchApp(pk)}catch(e){}},700);
         /* 라디오 소리만 되살리고 비서 화면은 앞에 그대로 둔다 */
         if(store.get('retFront')!=='0')setTimeout(function(){try{A.launchApp('com.kjt7942.carassistant')}catch(e){}},2200);
