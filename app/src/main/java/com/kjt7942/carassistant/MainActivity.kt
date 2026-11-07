@@ -835,11 +835,10 @@ class MainActivity : Activity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (keyProbe) keyEmit("key", event)
-        // 비서 화면에서 전화 종료 버튼: 통화 중이 아니면 비서 화면을 닫고 이전 앱으로 돌아간다.
+        // 전화 종료 버튼(통화 중이 아닐 때): 뒤로 가기 역할. 맨 처음 화면이면 비서 앱을 닫고 이전 앱으로 간다.
         if (!keyProbe && event.keyCode == KeyEvent.KEYCODE_ENDCALL && inFront && !inCall()) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                 js("onEndKey", JSONObject())
-                main.postDelayed({ moveTaskToBack(true) }, 250)
             }
             return true
         }

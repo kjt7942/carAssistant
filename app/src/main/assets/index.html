@@ -862,7 +862,15 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     $('kkList').innerHTML=h||'<div class="ov-resp">아직 입력이 없습니다.</div>';
   }
   var voiceT=0;
-  window.onEndKey=function(){if(!$('ov').hidden){ovClosed=true;ovHide();try{A.stopListening()}catch(x){}}};
+  /* 전화 종료 버튼 = 뒤로 가기. 열린 화면을 하나 닫고, 아무것도 없으면 비서 앱을 닫아 이전 앱으로 돌아간다 */
+  window.onEndKey=function(){
+    var ids=['ov','dg','kk','md','ak','ap','sd','op'];
+    for(var i=0;i<ids.length;i++){
+      var el=$(ids[i]);
+      if(el&&!el.hidden){var b=$(ids[i]+'Close');if(b){b.click();return}el.hidden=true;return}
+    }
+    try{if(A&&A.backToPrev)A.backToPrev()}catch(x){}
+  };
   window.onNativeIntent=function(e){
     var a=(e.action||'').replace('android.intent.action.','');
     kkLog.unshift({src:'intent',name:a,code:'-',scan:0,action:'호출',dev:(e.cats||'')});
