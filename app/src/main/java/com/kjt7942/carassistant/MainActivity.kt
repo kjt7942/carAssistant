@@ -22,6 +22,8 @@ import android.view.KeyEvent
 import android.media.ToneGenerator
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -34,17 +36,23 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.view.View
 import android.view.WindowManager
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.security.MessageDigest
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.zip.GZIPInputStream
 
 /**
  * 차량 비서: WebView(화면) + 네이티브 기능(GPS, 음성 인식, 음성 출력, 자동 업데이트)을 연결하는 단일 화면 앱.
@@ -81,11 +89,94 @@ class MainActivity : Activity() {
     private var lastCheckAt = 0L
     private var apkFile: File? = null
 
-    private val checkRunnable = object : Runnable {
-        override fun run() {
-            checkUpdates(false)
-            main.postDelayed(this, 3L * 60 * 1000)
+    // 평소에는 통신을 거의 쓰지 않도록, 자동 확인은 시동(앱 시작) 때 한 번과 그 뒤 3시간 간격으로만 한다.
+    // 실패하면 2분·10분·60분 뒤 다시 해 보고, 통신이 다시 붙는 순간에도 한 번 해 본다.
+    private val checkEvery = 3L * 60 * 60 * 1000
+    private val checkEveryColdStart = 30L * 60 * 1000
+    private var coldStart = true
+    private var schedulerOn = false
+    private var checking = false
+    private var checkFails = 0
+    private var checkPending = false
+    private var autoPromptedVer = 0
+    private var installWaitVer = 0
+    private var stillCount = 0
+    private var netCallback: ConnectivityManager.NetworkCallback? = null
+
+    private val checkRunnable = Runnable { autoCheck() }
+
+    private fun updPrefs() = getSharedPreferences("upd", MODE_PRIVATE)
+
+    /** 자동 확인: 마지막 성공 뒤 충분히 지났을 때만 실제로 통신한다. */
+    private fun autoCheck() {
+        schedulerOn = true
+        main.removeCallbacks(checkRunnable)
+        val gap = if (coldStart) checkEveryColdStart else checkEvery
+        coldStart = false
+        val since = System.currentTimeMillis() - updPrefs().getLong("lastOkAt", 0L)
+        if (since in 0 until gap) {
+            main.postDelayed(checkRunnable, gap - since + 1000)
+            offerPendingApk()
+            return
         }
+        checkUpdates(false)
+    }
+
+    private fun afterCheck(ok: Boolean) {
+        checking = false
+        main.removeCallbacks(checkRunnable)
+        if (ok) {
+            checkFails = 0
+            checkPending = false
+            updPrefs().edit().putLong("lastOkAt", System.currentTimeMillis()).apply()
+            main.postDelayed(checkRunnable, checkEvery)
+        } else {
+            checkFails += 1
+            checkPending = true
+            val wait = when (checkFails) {
+                1 -> 2L
+                2 -> 10L
+                else -> 60L
+            }
+            main.postDelayed(checkRunnable, wait * 60 * 1000)
+        }
+    }
+
+    private fun watchNetwork() {
+        try {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val cb = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    main.postDelayed({
+                        // 통신이 막 붙었다: 아까 실패한 확인이 있으면 지금 다시 한다.
+                        if (checkPending && !checking && System.currentTimeMillis() - lastCheckAt > 20_000) autoCheck()
+                        js("onNativeNet", JSONObject().put("on", true))
+                    }, 3000)
+                }
+            }
+            cm.registerDefaultNetworkCallback(cb)
+            netCallback = cb
+        } catch (e: Exception) {
+        }
+    }
+
+    private fun apkDest(): File = File(File(cacheDir, "update"), "carAssistant.apk")
+
+    /** 이미 받아 둔 새 버전 파일이 있으면 다시 받지 않고 설치만 이어서 한다. 지난 파일은 지운다. */
+    private fun offerPendingApk() {
+        val pr = updPrefs()
+        val v = pr.getInt("apkVer", 0)
+        val f = apkDest()
+        if (v <= installedVersionCode()) {
+            if (f.exists()) f.delete()
+            if (v != 0) pr.edit().remove("apkVer").apply()
+            return
+        }
+        if (!f.exists()) return
+        apkFile = f
+        updState = "설치 대기 (v$v)"
+        if (autoPromptedVer != v) upd("ready", "", v)
+        tryAutoInstall(v)
     }
 
     private val reqCode = 7
@@ -115,7 +206,13 @@ class MainActivity : Activity() {
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
         web.settings.mediaPlaybackRequiresUserGesture = false
-        web.webViewClient = WebViewClient()
+        web.webViewClient = object : WebViewClient() {
+            // 화면 엔진이 죽으면(메모리 부족 등) 앱이 같이 죽지 않도록 화면을 새로 만든다.
+            override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+                main.post { recreate() }
+                return true
+            }
+        }
         web.webChromeClient = WebChromeClient()
         web.addJavascriptInterface(Bridge(), "Android")
         loadUi()
@@ -130,7 +227,9 @@ class MainActivity : Activity() {
         abandonFocus() // 앱이 볼륨을 낮춘 채로 종료됐다면 원래 볼륨으로 복구
         initTts()
         if (!hasAll()) requestPermissions(perms, reqCode)
-        main.postDelayed(checkRunnable, 5000)
+        watchNetwork()
+        main.postDelayed(checkRunnable, 8000)
+        main.postDelayed({ announceUpdated() }, 6000)
         main.postDelayed({ emitIntent(intent) }, 1800)
     }
 
@@ -188,9 +287,24 @@ class MainActivity : Activity() {
         inFront = true
         applyFullscreen()
         startLocation()
-        if (System.currentTimeMillis() - lastCheckAt > 30L * 1000 && lastCheckAt != 0L) {
-            checkUpdates(false)
-        }
+        // 오래 켜 둔 뒤(절전에서 깨어난 뒤 포함) 화면이 다시 보이면 확인 주기가 지났는지 본다.
+        if (schedulerOn && !checking) autoCheck()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        js("onNativeVisible", JSONObject().put("on", true))
+    }
+
+    override fun onStop() {
+        js("onNativeVisible", JSONObject().put("on", false))
+        super.onStop()
+    }
+
+    /** 뒤로 버튼: 열린 화면을 하나 닫고, 첫 화면이면 앱을 끄지 않고 뒤로 보낸다. */
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        js("onEndKey", JSONObject())
     }
 
     override fun onPause() {
@@ -204,15 +318,26 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         stopLocation()
         main.removeCallbacks(checkRunnable)
+        main.removeCallbacksAndMessages(null)
         try {
             unregisterReceiver(installReceiver)
         } catch (e: Exception) {
         }
+        try {
+            netCallback?.let { (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).unregisterNetworkCallback(it) }
+        } catch (e: Exception) {
+        }
+        netCallback = null
         abandonFocus()
         recognizer?.destroy()
         recognizer = null
         tts?.shutdown()
         tts = null
+        try {
+            (web.parent as? ViewGroup)?.removeView(web)
+            web.destroy()
+        } catch (e: Exception) {
+        }
         super.onDestroy()
     }
 
@@ -365,21 +490,61 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+    private fun sha256(f: File): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        f.inputStream().use { ins ->
+            val buf = ByteArray(65536)
+            while (true) {
+                val n = ins.read(buf)
+                if (n < 0) break
+                md.update(buf, 0, n)
+            }
+        }
+        return md.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /** 새 화면 내려받기: 압축본이 있으면 그것을 받는다(약 1/3 크기). */
+    private fun fetchUi(j: JSONObject): String {
+        val gz = j.optString("uiGzUrl", "")
+        if (gz.isNotEmpty()) {
+            try {
+                return GZIPInputStream(ByteArrayInputStream(httpGet(gz))).use { String(it.readBytes(), Charsets.UTF_8) }
+            } catch (e: Exception) {
+                // 압축본을 못 받으면 원본으로 받는다
+            }
+        }
+        return String(httpGet(j.getString("uiUrl")), Charsets.UTF_8)
+    }
+
     private fun checkUpdates(manual: Boolean) {
+        if (checking) {
+            if (manual) upd("none", "확인하는 중입니다", 0)
+            return
+        }
+        checking = true
         lastCheckAt = System.currentTimeMillis()
         ioExec.execute {
+            var ok = false
             try {
                 val j = JSONObject(String(httpGet(versionUrl), Charsets.UTF_8))
                 val nativeV = j.optInt("native", 0)
                 val uiV = j.optInt("ui", 0)
                 val minNative = j.optInt("minNative", 1)
                 val inst = installedVersionCode()
-                val bad = getSharedPreferences("upd", MODE_PRIVATE).getInt("badUi", -1)
+                val pr = updPrefs()
+                val bad = pr.getInt("badUi", -1)
 
-                // 1) 화면 업데이트: 조용히 내려받아 바로 적용한다.
+                // 1) 화면 업데이트: 조용히 내려받아, 음성 명령·설정 화면을 쓰고 있지 않을 때 적용한다.
                 var uiUpdated = false
                 if (uiV > curUi && uiV != bad && minNative <= inst) {
-                    val html = String(httpGet(j.getString("uiUrl")), Charsets.UTF_8)
+                    val html = fetchUi(j)
+                    val want = j.optString("uiSha", "")
+                    if (want.isNotEmpty() && sha256(html.toByteArray(Charsets.UTF_8)) != want) {
+                        throw RuntimeException("받은 화면 파일이 손상되었습니다")
+                    }
                     if (html.length > 5000 && html.contains("</html>") &&
                         uiBuildOf(html) == uiV && minNativeOf(html) <= inst
                     ) {
@@ -390,25 +555,138 @@ class MainActivity : Activity() {
                     }
                 }
 
-                // 2) 앱 업데이트: 내려받기까지 자동, 설치는 확인 버튼 한 번.
+                // 2) 앱 업데이트: 한 번만 내려받고(이미 받은 파일은 다시 받지 않는다), 정차 중에 설치를 자동으로 시작한다.
                 if (nativeV > inst) {
-                    updState = "새 버전 내려받는 중"
-                    upd("downloading", "", nativeV)
-                    val dest = File(File(cacheDir, "update"), "carAssistant.apk")
-                    download(j.getString("apkUrl"), dest) { p -> upd("downloading", "$p%", nativeV) }
-                    if (dest.length() < 500_000) throw RuntimeException("받은 파일이 올바르지 않습니다")
+                    val dest = apkDest()
+                    val size = j.optLong("apkSize", 0L)
+                    val have = pr.getInt("apkVer", 0) == nativeV && dest.exists() &&
+                        dest.length() > 100_000 && (size <= 0L || dest.length() == size)
+                    if (!have) {
+                        updState = "새 버전 내려받는 중"
+                        upd("downloading", "", nativeV)
+                        download(j.getString("apkUrl"), dest) { p -> upd("downloading", "$p%", nativeV) }
+                        val want = j.optString("apkSha", "")
+                        if (dest.length() < 100_000 || (size > 0L && dest.length() != size) ||
+                            (want.isNotEmpty() && sha256(dest) != want)
+                        ) {
+                            dest.delete()
+                            throw RuntimeException("받은 설치 파일이 올바르지 않습니다")
+                        }
+                        pr.edit().putInt("apkVer", nativeV).apply()
+                    }
                     apkFile = dest
                     updState = "설치 대기 (v$nativeV)"
                     upd("ready", "", nativeV)
+                    main.post {
+                        if (manual) { // 직접 확인을 눌렀으면 기다리지 않고 바로 설치를 시작한다
+                            autoPromptedVer = nativeV
+                            installUpdate(true)
+                        } else {
+                            tryAutoInstall(nativeV)
+                        }
+                    }
                 } else {
                     updState = if (uiUpdated) "화면 업데이트됨" else "최신 버전"
                     if (manual) upd("none", "최신 버전입니다", inst)
+                    main.post { offerPendingApk() }
                 }
-                if (uiUpdated) main.post { loadUi() }
+                if (uiUpdated) main.post { if (manual) loadUi() else applyUiWhenIdle(0) }
+                ok = true
             } catch (e: Exception) {
                 updState = "확인 실패"
                 if (manual) upd("error", "업데이트 확인 실패: ${e.message}", 0)
+            } finally {
+                main.post { afterCheck(ok) }
             }
+        }
+    }
+
+    private val busyJs = "(function(){try{return (window.uiBusy&&window.uiBusy())?1:0}catch(e){return 0}})()"
+
+    /** 새 화면은 사용 중(음성 명령·설정 화면)이 아닐 때 바꾼다. 최대 10분 기다린다. */
+    private fun applyUiWhenIdle(tries: Int) {
+        web.evaluateJavascript(busyJs) { r ->
+            if (r == "1" && tries < 30) main.postDelayed({ applyUiWhenIdle(tries + 1) }, 20_000) else loadUi()
+        }
+    }
+
+    /** 앱이 새 버전으로 바뀐 뒤 처음 켜졌을 때 한 번 알린다. */
+    private fun announceUpdated() {
+        val pr = updPrefs()
+        val now = installedVersionCode()
+        val seen = pr.getInt("seenVer", 0)
+        if (seen != now) {
+            pr.edit().putInt("seenVer", now).apply()
+            if (seen != 0 && now > seen) upd("updated", "앱을 v$now(으)로 업데이트했습니다", now)
+        }
+    }
+
+    /**
+     * 새 버전 설치를 자동으로 시작한다. 운전 중에 설치 창이 뜨지 않도록,
+     * 비서 화면이 앞에 있고 · 차가 서 있고 · 통화나 음성 명령 중이 아닐 때까지 기다린다.
+     */
+    private fun tryAutoInstall(v: Int, tries: Int = 0) {
+        if (autoPromptedVer == v) return
+        if (tries == 0) {
+            if (installWaitVer == v) return
+            installWaitVer = v
+            stillCount = 0
+        }
+        val f = apkFile
+        if (f == null || !f.exists() || v <= installedVersionCode()) {
+            installWaitVer = 0
+            return
+        }
+        val l = lastLoc
+        val moving = l != null && System.currentTimeMillis() - lastLocAt < 15_000 && l.hasSpeed() && l.speed > 1.5f
+        if (!inFront || moving || inCall()) {
+            stillCount = 0
+            if (tries < 480) main.postDelayed({ tryAutoInstall(v, tries + 1) }, 15_000) else installWaitVer = 0
+            return
+        }
+        stillCount += 1
+        if (stillCount < 2) { // 15초 이상 계속 서 있을 때만
+            main.postDelayed({ tryAutoInstall(v, tries + 1) }, 15_000)
+            return
+        }
+        web.evaluateJavascript(busyJs) { r ->
+            if (r == "1") {
+                stillCount = 0
+                main.postDelayed({ tryAutoInstall(v, tries + 1) }, 15_000)
+            } else {
+                autoPromptedVer = v
+                installWaitVer = 0
+                installUpdate(true)
+            }
+        }
+    }
+
+    private fun suPath(): String? =
+        listOf("/system/xbin/su", "/system/bin/su", "/sbin/su", "/su/bin/su", "/vendor/bin/su")
+            .firstOrNull { try { File(it).exists() } catch (e: Exception) { false } }
+
+    /** 관리자 권한(root)이 열려 있는 기기라면 확인 창 없이 설치한다. 안 되면 false. */
+    private fun rootInstall(f: File): Boolean {
+        val su = suPath() ?: return false
+        return try {
+            val p = ProcessBuilder(su, "-c", "cat '${f.absolutePath}' | pm install -r -S ${f.length()}")
+                .redirectErrorStream(true).start()
+            val out = StringBuilder()
+            val t = Thread {
+                try {
+                    out.append(p.inputStream.bufferedReader().readText())
+                } catch (e: Exception) {
+                }
+            }
+            t.start()
+            if (!p.waitFor(90, TimeUnit.SECONDS)) {
+                p.destroy()
+                return false
+            }
+            t.join(2000)
+            out.contains("Success")
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -428,6 +706,10 @@ class MainActivity : Activity() {
                     }
                 }
                 PackageInstaller.STATUS_SUCCESS -> upd("done", "설치 완료", 0)
+                PackageInstaller.STATUS_FAILURE_ABORTED -> {
+                    updState = "설치 대기"
+                    upd("ready", "설치를 취소했습니다. 나중에 '지금 설치'를 누르면 됩니다", 0)
+                }
                 else -> upd(
                     "error",
                     "설치 실패: " + (intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: ""),
@@ -437,7 +719,7 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun installUpdate() {
+    private fun installUpdate(auto: Boolean = false) {
         val f = apkFile
         if (f == null || !f.exists()) {
             upd("error", "설치할 파일이 없습니다. 업데이트 확인을 먼저 해 주세요", 0)
@@ -445,6 +727,7 @@ class MainActivity : Activity() {
         }
         if (!packageManager.canRequestPackageInstalls()) {
             upd("needPermission", "이 앱의 '출처를 알 수 없는 앱 설치'를 허용한 뒤 다시 눌러 주세요", 0)
+            if (auto) return // 자동으로는 설정 화면을 띄우지 않는다. 버튼을 누르면 연다.
             try {
                 startActivity(
                     Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
@@ -455,6 +738,10 @@ class MainActivity : Activity() {
         }
         ioExec.execute {
             try {
+                if (suPath() != null) {
+                    upd("installing", "새 버전을 설치하는 중입니다", 0)
+                    if (rootInstall(f)) return@execute
+                }
                 val pi = packageManager.packageInstaller
                 val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
                 params.setAppPackageName(packageName)
@@ -474,7 +761,7 @@ class MainActivity : Activity() {
                     this, id, intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
                 )
-                upd("installing", "설치 확인 화면이 나오면 '설치'를 눌러 주세요", 0)
+                upd("installing", "새 버전 설치 창이 뜨면 '설치'를 눌러 주세요", 0)
                 s.commit(pending.intentSender)
                 s.close()
             } catch (e: Exception) {
@@ -532,7 +819,12 @@ class MainActivity : Activity() {
         for (p in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
             if (!providers.contains(p)) continue
             try {
-                lm.requestLocationUpdates(p, 2000L, 0f, listener, Looper.getMainLooper())
+                // GPS는 2초마다, 통신을 쓰는 네트워크 위치는 GPS가 안 잡힐 때를 대비해 30초마다만 받는다.
+                if (p == LocationManager.GPS_PROVIDER) {
+                    lm.requestLocationUpdates(p, 2000L, 0f, listener, Looper.getMainLooper())
+                } else {
+                    lm.requestLocationUpdates(p, 30_000L, 200f, listener, Looper.getMainLooper())
+                }
                 val last = lm.getLastKnownLocation(p)
                 val cur = lastLoc
                 if (last != null && (cur == null || last.time > cur.time)) {
@@ -1021,12 +1313,34 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun checkUpdate() {
-            this@MainActivity.checkUpdates(true)
+            main.post { this@MainActivity.checkUpdates(true) }
         }
 
         @JavascriptInterface
         fun installUpdate() {
             main.post { this@MainActivity.installUpdate() }
+        }
+
+        /** 업데이트 뒤 앱을 자동으로 다시 켜려면 '다른 앱 위에 표시' 권한이 필요하다. */
+        @JavascriptInterface
+        fun canOverlay(): Boolean = try {
+            Settings.canDrawOverlays(this@MainActivity)
+        } catch (e: Exception) {
+            false
+        }
+
+        @JavascriptInterface
+        fun askOverlay() {
+            main.post {
+                try {
+                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                } catch (e: Exception) {
+                    try {
+                        startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+                    } catch (e2: Exception) {
+                    }
+                }
+            }
         }
 
         @JavascriptInterface
@@ -1218,6 +1532,9 @@ class MainActivity : Activity() {
             o.put("uiSource", uiSource)
             o.put("updState", updState)
             o.put("canInstall", packageManager.canRequestPackageInstalls())
+            o.put("overlay", try { Settings.canDrawOverlays(this@MainActivity) } catch (e: Exception) { false })
+            o.put("root", suPath() != null)
+            o.put("updLastOk", updPrefs().getLong("lastOkAt", 0L))
             o.put("aiKey", aiKey().isNotEmpty())
             try {
                 val ba = BluetoothAdapter.getDefaultAdapter()

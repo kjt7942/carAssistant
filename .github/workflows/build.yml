@@ -60,11 +60,17 @@ jobs:
           # 서명 키가 없는 빌드는 APK 업데이트를 알리지 않는다(native=0). 화면 업데이트만 나간다.
           if [ "$SIGNED" != "true" ]; then NATIVE=0; fi
           BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/latest"
-          printf '{"native":%s,"ui":%s,"minNative":%s,"apkUrl":"%s/carAssistant.apk","uiUrl":"%s/index.html"}\n' \
-            "$NATIVE" "${{ github.run_number }}" "${MINNATIVE:-1}" "$BASE" "$BASE" > version.json
+          # 통신량을 줄이려고 화면 파일은 압축본도 올리고, 받은 파일이 온전한지 확인할 크기·해시를 함께 적는다.
+          gzip -9 -k -n index.html
+          APKSIZE=$(stat -c %s carAssistant.apk)
+          APKSHA=$(sha256sum carAssistant.apk | cut -d' ' -f1)
+          UISHA=$(sha256sum index.html | cut -d' ' -f1)
+          printf '{"native":%s,"ui":%s,"minNative":%s,"apkUrl":"%s/carAssistant.apk","apkSize":%s,"apkSha":"%s","uiUrl":"%s/index.html","uiGzUrl":"%s/index.html.gz","uiSha":"%s"}\n' \
+            "$NATIVE" "${{ github.run_number }}" "${MINNATIVE:-1}" "$BASE" "$APKSIZE" "$APKSHA" "$BASE" "$BASE" "$UISHA" > version.json
           cat version.json
+          ls -l carAssistant.apk index.html index.html.gz
           gh release delete latest --cleanup-tag -y || true
-          gh release create latest carAssistant.apk index.html version.json \
+          gh release create latest carAssistant.apk index.html index.html.gz version.json \
             --prerelease \
             --target "${GITHUB_SHA}" \
             --title "carAssistant 최신 빌드" \

@@ -35,6 +35,9 @@ android {
     buildTypes {
         debug {
             signingConfigs.findByName("fixed")?.let { signingConfig = it }
+            // 쓰지 않는 코드를 덜어 내 설치 파일(업데이트 때 받는 양)을 줄인다.
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         release {
             isMinifyEnabled = false
