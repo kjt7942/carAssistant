@@ -41,6 +41,11 @@ jobs:
       - name: Stamp UI build number
         run: sed -i "s/__UI_BUILD__/${{ github.run_number }}/" app/src/main/assets/index.html
 
+      # v20 이하 앱은 500KB보다 작은 설치 파일을 '올바르지 않다'며 거부한다.
+      # 그 버전들이 새 버전으로 넘어올 수 있도록 당분간 채움 파일을 넣어 크기를 맞춘다. (모든 기기가 v22 이상이 되면 이 단계를 지운다)
+      - name: Pad APK for old updaters
+        run: head -c 420000 /dev/urandom > app/src/main/assets/pad.bin
+
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
 
