@@ -272,6 +272,11 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 #sd .sd-t{font-size:max(19px,4.6vw)}
 #ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose,#pf #pfCancel{min-width:max(96px,22vw)}
 }
+#tv{margin-bottom:max(14px,2.4vh);padding-bottom:max(12px,2vh);border-bottom:1px solid rgba(255,255,255,.08)}
+#tv .btns{justify-content:flex-start;flex-wrap:wrap}
+
+.tv-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tv-l{color:var(--fg-dim);min-width:4.5em;font-size:max(15px,min(3vh,2vw))}
 #sd .sd-cols{display:grid;grid-template-columns:1fr 1fr;gap:max(14px,2.4vw)}
 #sd .sd-col{display:flex;flex-direction:column;gap:max(12px,2vh);border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 18px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
 #sd .sd-colh{color:var(--accent);font-weight:700;font-size:max(16px,min(3.2vh,2.1vw));letter-spacing:1px}
@@ -559,6 +564,16 @@ html[data-dim="3"] .gd{opacity:.8}
 
     <div class="op-pane" data-p="a" hidden>
       <div id="sd">
+    <div class="sd-grp" id="tv">
+      <div class="sd-t">목소리<small id="tvMsg">안내 음성의 목소리·빠르기·높이. 누르면 바로 들려 드립니다.</small></div>
+      <div class="btns" id="tvEng"></div>
+      <div class="btns" id="tvVoice"></div>
+      <div class="tv-row"><span class="tv-l">빠르기</span><div class="btns" id="tvRate">
+        <button type="button" data-v="0.85">느리게</button><button type="button" data-v="1">보통</button><button type="button" data-v="1.15">조금 빠르게</button><button type="button" data-v="1.3">빠르게</button></div></div>
+      <div class="tv-row"><span class="tv-l">높이</span><div class="btns" id="tvPitch">
+        <button type="button" data-v="0.9">낮게</button><button type="button" data-v="1">보통</button><button type="button" data-v="1.1">조금 높게</button><button type="button" data-v="1.2">높게</button></div></div>
+      <div class="btns"><button type="button" id="tvTest">들어보기</button><button type="button" id="tvStore" hidden>Google 음성 서비스 설치</button><button type="button" id="tvSys">기기 음성 설정 열기</button></div>
+    </div>
     <div class="ov-resp" id="sdMsg"></div>
     <div class="sd-cols">
       <div class="sd-col">
@@ -1381,8 +1396,42 @@ html[data-dim="3"] .gd{opacity:.8}
     [].forEach.call($('sdRet').children,function(b){b.classList.toggle('on',b.getAttribute('data-a')===retApp())});
     $('sdMsg').textContent=msg||('현재 미디어 볼륨 '+(a.vol!=null?a.vol+'/'+a.max:'-')+' · 소리 재생 감지: '+(a.active?'예':'아니오')+'. 라디오 소리가 돌아오는 조합을 찾아 보세요.');
   }
+  /* ---------- 목소리 설정 ---------- */
+  var TV_SAMPLE='안녕하세요, 종태님. 오늘도 안전 운전하세요.';
+  function tvInfo(){try{return JSON.parse(A.ttsInfo())}catch(e){return null}}
+  function tvDraw(msg){
+    var t=A&&A.ttsInfo?tvInfo():null;
+    if(!t){$('tvMsg').textContent='목소리 선택은 최신 앱에서 가능합니다. 시스템 탭에서 "업데이트 확인"을 눌러 주세요.';['tvEng','tvVoice'].forEach(function(i){$(i).innerHTML=''});$('tvStore').hidden=true;return}
+    var eh='';(t.engines||[]).forEach(function(e){eh+='<button type="button" data-eng="'+esc(e.p)+'" class="'+(e.p===t.engine?'on':'')+'">'+esc(e.n)+'</button>'});
+    $('tvEng').innerHTML=(t.engines||[]).length>1?eh:'';
+    var vh='<button type="button" data-voice="" class="'+(!t.voice||!(t.voices||[]).some(function(v){return v.name===t.voice})?'on':'')+'">기본</button>',n=0;
+    (t.voices||[]).forEach(function(v){
+      n++;var tag=v.net?' · 온라인':'';if(!v.inst)tag+=' · 받기 필요';
+      vh+='<button type="button" data-voice="'+esc(v.name)+'" class="'+(v.name===t.voice?'on':'')+'" title="'+esc(v.name)+'">목소리 '+n+tag+'</button>';
+    });
+    $('tvVoice').innerHTML=vh;
+    function mark(id,val){[].forEach.call($(id).children,function(b){b.classList.toggle('on',Math.abs(+b.getAttribute('data-v')-val)<0.01)})}
+    mark('tvRate',t.rate||1);mark('tvPitch',t.pitch||1);
+    $('tvStore').hidden=!!t.googleTts;
+    $('tvMsg').textContent=msg||(t.ko<0?'지금 음성 엔진에 한국어가 없습니다. 아래 "Google 음성 서비스 설치"를 눌러 주세요.':
+      (n?'한국어 목소리 '+n+'개. 누르면 바로 들려 드립니다. "온라인"은 인터넷이 될 때 더 자연스럽습니다.':'고를 수 있는 한국어 목소리가 없습니다.'+(t.googleTts?' "기기 음성 설정 열기"에서 Google 엔진을 고르고 한국어 음성을 받아 주세요.':' "Google 음성 서비스 설치"를 눌러 주세요.')));
+  }
+  window.onNativeTtsReady=function(){if(!$('op').hidden&&opTab==='a')tvDraw()};
+  $('tv').addEventListener('click',function(ev){
+    var b=ev.target.closest('button');if(!b||!A)return;
+    if(b.id==='tvTest'){say(TV_SAMPLE);return}
+    if(b.id==='tvStore'){A.openStore&&A.openStore('com.google.android.tts');return}
+    if(b.id==='tvSys'){A.openTtsSettings&&A.openTtsSettings();return}
+    if(b.hasAttribute('data-eng')){A.setTtsEngine(b.getAttribute('data-eng'));tvDraw('음성 엔진을 바꾸는 중…');setTimeout(function(){tvDraw();say(TV_SAMPLE)},1500);return}
+    var t=tvInfo()||{};
+    if(b.hasAttribute('data-voice')){A.setTtsVoice(b.getAttribute('data-voice'));setTimeout(function(){tvDraw();say(TV_SAMPLE)},150);return}
+    var r=t.rate||1,pi=t.pitch||1;
+    if(b.parentNode.id==='tvRate')r=+b.getAttribute('data-v');
+    if(b.parentNode.id==='tvPitch')pi=+b.getAttribute('data-v');
+    A.setTtsRate(r,pi);setTimeout(function(){tvDraw();say(TV_SAMPLE)},150);
+  });
   $('sd').addEventListener('click',function(ev){
-    var b=ev.target.closest('button');if(!b)return;
+    var b=ev.target.closest('button');if(!b||b.closest('#tv'))return;
     if(b.hasAttribute('data-f')){store.set('retFront',b.getAttribute('data-f'));sdDraw('저장했습니다.');return}
     if(b.hasAttribute('data-a')){store.set('retApp',b.getAttribute('data-a'));sdDraw('저장했습니다. 음성 명령이 끝나면 선택한 앱을 다시 엽니다.');return}
     var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
@@ -1853,7 +1902,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var opTab='f';
   function tabShow(){
     [].forEach.call($('opTabs').children,function(b){b.classList.toggle('on',b.getAttribute('data-t')===opTab)});
-    if(opTab==='a')sdDraw();
+    if(opTab==='a'){sdDraw();tvDraw()}
     [].forEach.call(document.querySelectorAll('.op-pane'),function(p){p.hidden=p.getAttribute('data-p')!==opTab});
   }
   /* 기능 탭 카드와 알림: 평소에는 알림이 없고, 연결 문제나 정비 예정이 있을 때만 나타난다 */

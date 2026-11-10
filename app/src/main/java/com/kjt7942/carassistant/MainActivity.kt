@@ -71,6 +71,7 @@ class MainActivity : Activity() {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var ttsKo = -99
+    private var ttsGen = 0
 
     private var recognizer: SpeechRecognizer? = null
 
@@ -1004,12 +1005,38 @@ class MainActivity : Activity() {
 
     // ---------- 음성 출력 ----------
 
+    private fun ttsPrefs() = getSharedPreferences("tts", MODE_PRIVATE)
+
+    // 저장된 목소리·빠르기·높이를 적용한다
+    private fun applyTtsPrefs() {
+        val t = tts ?: return
+        val p = ttsPrefs()
+        val vn = p.getString("voice", "") ?: ""
+        if (vn.isNotEmpty()) try {
+            t.voices?.firstOrNull { it.name == vn }?.let { t.voice = it }
+        } catch (e: Exception) {
+        }
+        t.setSpeechRate(p.getFloat("rate", 1.0f))
+        t.setPitch(p.getFloat("pitch", 1.0f))
+    }
+
     private fun initTts() {
         try {
-            tts = TextToSpeech(this) { status ->
+            val eng = ttsPrefs().getString("engine", "") ?: ""
+            val has = eng.isNotEmpty() && try {
+                packageManager.getPackageInfo(eng, 0); true
+            } catch (e: Exception) {
+                false
+            }
+            // 엔진에 따라 생성 도중에 바로 불리는 경우가 있어, tts 변수가 채워진 뒤에 처리한다
+            val gen = ++ttsGen
+            val onInit = TextToSpeech.OnInitListener { status -> main.post {
+                if (gen != ttsGen || destroyed) return@post
                 ttsReady = status == TextToSpeech.SUCCESS
                 if (ttsReady) {
                     ttsKo = tts?.setLanguage(Locale.KOREAN) ?: -99
+                    applyTtsPrefs()
+                    js("onNativeTtsReady", JSONObject().put("ko", ttsKo))
                     tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {}
                         override fun onDone(utteranceId: String?) {
@@ -1026,10 +1053,41 @@ class MainActivity : Activity() {
                         }
                     })
                 }
-            }
+            } }
+            tts = if (has) TextToSpeech(this, onInit, eng) else TextToSpeech(this, onInit)
         } catch (e: Exception) {
             ttsReady = false
         }
+    }
+
+    private fun ttsInfo(): String {
+        val o = JSONObject()
+        val t = tts
+        o.put("ready", ttsReady).put("ko", ttsKo)
+        val p = ttsPrefs()
+        o.put("rate", p.getFloat("rate", 1.0f).toDouble()).put("pitch", p.getFloat("pitch", 1.0f).toDouble())
+        try {
+            o.put("engine", t?.defaultEngine ?: "")
+            val cur = p.getString("engine", "") ?: ""
+            o.put("chosen", cur)
+            val ea = org.json.JSONArray()
+            t?.engines?.forEach { ea.put(JSONObject().put("p", it.name).put("n", it.label)) }
+            o.put("engines", ea)
+            val va = org.json.JSONArray()
+            t?.voices?.filter { it.locale?.language == "ko" }?.sortedBy { it.name }?.forEach {
+                va.put(
+                    JSONObject().put("name", it.name).put("q", it.quality)
+                        .put("net", it.isNetworkConnectionRequired)
+                        .put("inst", !(it.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) ?: false))
+                )
+            }
+            o.put("voices", va)
+            o.put("voice", try { t?.voice?.name ?: "" } catch (e: Exception) { "" })
+        } catch (e: Exception) {
+            o.put("err", e.message ?: "")
+        }
+        o.put("googleTts", try { packageManager.getPackageInfo("com.google.android.tts", 0); true } catch (e: Exception) { false })
+        return o.toString()
     }
 
     private fun speak(text: String) {
@@ -1466,6 +1524,61 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun hasTtsDone(): Boolean = true
+
+        // ---- 목소리 설정 ----
+        @JavascriptInterface
+        fun ttsInfo(): String = this@MainActivity.ttsInfo()
+
+        @JavascriptInterface
+        fun setTtsEngine(pkg: String) {
+            main.post {
+                ttsPrefs().edit().putString("engine", pkg).putString("voice", "").apply()
+                try { tts?.shutdown() } catch (e: Exception) { }
+                tts = null; ttsReady = false; ttsKo = -99
+                initTts()
+            }
+        }
+
+        @JavascriptInterface
+        fun setTtsVoice(name: String) {
+            main.post {
+                ttsPrefs().edit().putString("voice", name).apply()
+                if (name.isEmpty()) tts?.setLanguage(Locale.KOREAN) else applyTtsPrefs()
+            }
+        }
+
+        @JavascriptInterface
+        fun setTtsRate(rate: Float, pitch: Float) {
+            main.post {
+                ttsPrefs().edit().putFloat("rate", rate.coerceIn(0.5f, 2.0f)).putFloat("pitch", pitch.coerceIn(0.5f, 2.0f)).apply()
+                applyTtsPrefs()
+            }
+        }
+
+        @JavascriptInterface
+        fun openStore(pkg: String) {
+            main.post {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (e: Exception) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (e2: Exception) {
+                    }
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun openTtsSettings() {
+            main.post {
+                try {
+                    startActivity(Intent("com.android.settings.TTS_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (e: Exception) {
+                    try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e2: Exception) { }
+                }
+            }
+        }
 
         @JavascriptInterface
         fun canSpeak(): Boolean = ttsReady && ttsKo >= 0
