@@ -89,11 +89,11 @@ class MainActivity : Activity() {
     private var lastCheckAt = 0L
     private var apkFile: File? = null
 
-    // 평소에는 통신을 거의 쓰지 않도록, 자동 확인은 시동(앱 시작) 때 한 번과 그 뒤 3시간 간격으로만 한다.
-    // 실패하면 2분·10분·60분 뒤 다시 해 보고, 통신이 다시 붙는 순간에도 한 번 해 본다.
-    private val checkEvery = 3L * 60 * 60 * 1000
-    private val checkEveryColdStart = 30L * 60 * 1000
-    private var coldStart = true
+    // 통신을 거의 쓰지 않도록, 자동 확인은 시동을 걸 때 한 번만 한다(주기적 확인 없음).
+    // 실패했을 때만 2분·10분·60분 뒤 다시 해 보고, 통신이 다시 붙는 순간에도 한 번 해 본다.
+    // 기기가 꺼지지 않고 절전했다가 깨어나는 경우도 시동으로 본다: 절전한 시간이 늘었는지로 구분한다.
+    private var checkedSleep = -1L
+    private fun sleepGap(): Long = android.os.SystemClock.elapsedRealtime() - android.os.SystemClock.uptimeMillis()
     private var schedulerOn = false
     private var checking = false
     private var checkFails = 0
@@ -107,15 +107,11 @@ class MainActivity : Activity() {
 
     private fun updPrefs() = getSharedPreferences("upd", MODE_PRIVATE)
 
-    /** 자동 확인: 마지막 성공 뒤 충분히 지났을 때만 실제로 통신한다. */
+    /** 자동 확인: 이번 시동에서 이미 확인했으면 통신하지 않는다. */
     private fun autoCheck() {
         schedulerOn = true
         main.removeCallbacks(checkRunnable)
-        val gap = if (coldStart) checkEveryColdStart else checkEvery
-        coldStart = false
-        val since = System.currentTimeMillis() - updPrefs().getLong("lastOkAt", 0L)
-        if (since in 0 until gap) {
-            main.postDelayed(checkRunnable, gap - since + 1000)
+        if (checkedSleep >= 0 && sleepGap() - checkedSleep < 60_000) {
             offerPendingApk()
             return
         }
@@ -128,8 +124,8 @@ class MainActivity : Activity() {
         if (ok) {
             checkFails = 0
             checkPending = false
+            checkedSleep = sleepGap()
             updPrefs().edit().putLong("lastOkAt", System.currentTimeMillis()).apply()
-            main.postDelayed(checkRunnable, checkEvery)
         } else {
             checkFails += 1
             checkPending = true
@@ -140,6 +136,143 @@ class MainActivity : Activity() {
             }
             main.postDelayed(checkRunnable, wait * 60 * 1000)
         }
+    }
+
+    // ---------- 폰 연결: 같은 와이파이(핫스팟)에 있는 폰 브라우저에서 연동 정보를 보내 준다 ----------
+    private var pairSock: java.net.ServerSocket? = null
+
+    private fun pairStop() {
+        try {
+            pairSock?.close()
+        } catch (e: Exception) {
+        }
+        pairSock = null
+    }
+
+    private fun localIps(): String {
+        val out = ArrayList<String>()
+        try {
+            val en = java.net.NetworkInterface.getNetworkInterfaces()
+            while (en.hasMoreElements()) {
+                val ni = en.nextElement()
+                if (!ni.isUp || ni.isLoopback) continue
+                val ad = ni.inetAddresses
+                while (ad.hasMoreElements()) {
+                    val a = ad.nextElement()
+                    if (a is java.net.Inet4Address && !a.isLoopbackAddress) out.add(a.hostAddress ?: "")
+                }
+            }
+        } catch (e: Exception) {
+        }
+        return out.filter { it.isNotEmpty() }.joinToString(",")
+    }
+
+    private val pairPage = """<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>차량 비서 연결</title>
+<body style="font-family:sans-serif;background:#05070a;color:#e6eef2;padding:24px;line-height:1.6">
+<h2>차량 비서 연결</h2><p id="m">연동 정보를 차로 보냅니다.</p>
+<form id="f" method="post"><p>토큰<br><input name="t" id="t" style="width:100%;font-size:16px;padding:10px" autocomplete="off"></p>
+<p>저장소 (계정/이름)<br><input name="r" id="r" style="width:100%;font-size:16px;padding:10px" autocomplete="off"></p>
+<p><button style="font-size:18px;padding:12px 24px">차로 보내기</button></p></form>
+<script>var h=new URLSearchParams(location.hash.slice(1));if(h.get('t')){document.getElementById('t').value=h.get('t');document.getElementById('r').value=h.get('r')||'';history.replaceState(null,'',location.pathname);document.getElementById('f').submit()}</script>
+</body></html>"""
+
+    private fun pairReply(o: java.io.OutputStream, body: String) {
+        val b = body.toByteArray(Charsets.UTF_8)
+        o.write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ${b.size}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n").toByteArray())
+        o.write(b)
+        o.flush()
+    }
+
+    private fun pairHandle(sock: java.net.Socket, code: String): Boolean {
+        sock.soTimeout = 8000
+        val inp = java.io.BufferedInputStream(sock.getInputStream())
+        val out = sock.getOutputStream()
+        val head = java.io.ByteArrayOutputStream()
+        var st = 0
+        while (st < 4 && head.size() < 16384) {
+            val c = inp.read()
+            if (c < 0) break
+            head.write(c)
+            st = if ((st % 2 == 0 && c == 13) || (st % 2 == 1 && c == 10)) st + 1 else if (c == 13) 1 else 0
+        }
+        val lines = String(head.toByteArray(), Charsets.ISO_8859_1).split("\r\n")
+        val first = lines.firstOrNull()?.split(" ") ?: return false
+        if (first.size < 2) return false
+        val path = first[1].substringBefore('?')
+        if (path.trim('/') != code) {
+            pairReply(out, "<meta charset=utf-8><body style='font-family:sans-serif;padding:24px'>주소 끝의 숫자가 맞지 않습니다. 차 화면에 나온 주소를 다시 확인해 주세요.")
+            return false
+        }
+        if (first[0] != "POST") {
+            pairReply(out, pairPage)
+            return false
+        }
+        var len = 0
+        for (l in lines) if (l.startsWith("content-length:", true)) len = l.substring(15).trim().toIntOrNull() ?: 0
+        if (len <= 0 || len > 8192) return false
+        val buf = ByteArray(len)
+        var got = 0
+        while (got < len) {
+            val n = inp.read(buf, got, len - got)
+            if (n < 0) break
+            got += n
+        }
+        var tok = ""
+        var repo = ""
+        for (kv in String(buf, 0, got, Charsets.UTF_8).split("&")) {
+            val k = kv.substringBefore('=')
+            val v = java.net.URLDecoder.decode(kv.substringAfter('=', ""), "UTF-8").trim()
+            if (k == "t") tok = v else if (k == "r") repo = v
+        }
+        if (tok.length < 20) {
+            pairReply(out, "<meta charset=utf-8><body style='font-family:sans-serif;padding:24px'>토큰이 비어 있거나 너무 짧습니다. 뒤로 가서 다시 입력해 주세요.")
+            return false
+        }
+        js("onPairToken", JSONObject().put("token", tok).put("repo", repo))
+        pairReply(out, "<meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:sans-serif;background:#05070a;color:#e6eef2;padding:24px'><h2>차에 연결했습니다</h2>이 창은 닫아도 됩니다.")
+        return true
+    }
+
+    /** 10분 동안만 열어 둔다. 주소 끝의 숫자(code)를 아는 기기만 보낼 수 있다. 돌려주는 값: 이 기기의 주소 목록 */
+    private fun pairStart(code: String): String {
+        pairStop()
+        val ss = try {
+            java.net.ServerSocket(8765)
+        } catch (e: Exception) {
+            return ""
+        }
+        pairSock = ss
+        Thread {
+            val end = System.currentTimeMillis() + 10 * 60 * 1000
+            try {
+                ss.soTimeout = 15000
+                while (!ss.isClosed && System.currentTimeMillis() < end) {
+                    val sock = try {
+                        ss.accept()
+                    } catch (e: java.net.SocketTimeoutException) {
+                        continue
+                    }
+                    var done = false
+                    try {
+                        done = pairHandle(sock, code)
+                    } catch (e: Exception) {
+                    } finally {
+                        try {
+                            sock.close()
+                        } catch (e: Exception) {
+                        }
+                    }
+                    if (done) break
+                }
+            } catch (e: Exception) {
+            }
+            try {
+                ss.close()
+            } catch (e: Exception) {
+            }
+            if (pairSock === ss) pairSock = null
+        }.start()
+        return localIps()
     }
 
     private fun watchNetwork() {
@@ -287,7 +420,7 @@ class MainActivity : Activity() {
         inFront = true
         applyFullscreen()
         startLocation()
-        // 오래 켜 둔 뒤(절전에서 깨어난 뒤 포함) 화면이 다시 보이면 확인 주기가 지났는지 본다.
+        // 절전에서 깨어났으면(다시 시동) 한 번 확인한다. 같은 시동 안에서는 다시 확인하지 않는다.
         if (schedulerOn && !checking) autoCheck()
     }
 
@@ -317,6 +450,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         stopLocation()
+        pairStop()
         main.removeCallbacks(checkRunnable)
         main.removeCallbacksAndMessages(null)
         try {
@@ -1388,6 +1522,15 @@ class MainActivity : Activity() {
                 sb.append("목록 수집 실패: ").append(e.message)
             }
             return sb.toString()
+        }
+
+        @JavascriptInterface
+        fun pairStart(code: String): String =
+            if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
+
+        @JavascriptInterface
+        fun pairStop() {
+            this@MainActivity.pairStop()
         }
 
         @JavascriptInterface

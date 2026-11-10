@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<meta name="robots" content="noindex">
+<title>차량 비서 · 폰 연동</title>
+<style>
+:root{color-scheme:dark;--bg:#05070a;--panel:#0c1117;--line:#1c262f;--fg:#dbe3e9;--dim:#87939d;--accent:#74b6c6;--good:#58b883;--bad:#d9776c;--warn:#c79a4e}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:16px;line-height:1.5;padding:0 16px calc(96px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto;-webkit-text-size-adjust:100%}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:18px 0 10px}
+h1{font-size:20px;margin:0;letter-spacing:.5px}
+#st{font-size:13px;color:var(--dim);text-align:right}
+#st.ok{color:var(--good)}#st.err{color:var(--bad)}
+h2{font-size:17px;margin:0 0 4px}
+p{margin:6px 0}
+.dim{color:var(--dim);font-size:14px}
+a{color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.item{display:flex;gap:10px;align-items:flex-start;border-left:2px solid var(--accent);background:linear-gradient(90deg,rgba(116,182,198,.1),transparent);padding:10px 8px 10px 14px;margin:8px 0;border-radius:0 10px 10px 0}
+.item .tx{flex:1;min-width:0;overflow-wrap:anywhere}
+.item .tx small{display:block;color:var(--dim);font-size:13px;margin-top:2px}
+.item.done .tx b{text-decoration:line-through;color:var(--dim)}
+.item.due{border-left-color:var(--warn)}.item.due small em{color:var(--warn);font-style:normal}
+.item b{font-weight:600}
+.tag{display:inline-block;font-size:12px;color:var(--accent);border:1px solid rgba(116,182,198,.45);border-radius:999px;padding:0 8px;margin-left:6px;vertical-align:1px}
+button{font:inherit;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 14px}
+button:active{background:var(--line)}
+button.pri{background:var(--accent);border-color:var(--accent);color:#031318;font-weight:700}
+button.sm{min-height:38px;padding:0 10px;font-size:14px;color:var(--dim);flex:none}
+button.warn{color:var(--bad)}
+label{display:block;font-size:14px;color:var(--dim);margin:12px 0 4px}
+input,textarea{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+textarea{min-height:150px;resize:vertical;line-height:1.6}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.acts{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}.acts .sp{flex:1}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chips button{min-height:34px;font-size:13px;padding:0 10px;border-radius:999px;color:var(--accent);border-color:rgba(116,182,198,.4)}
+.chk{display:flex;gap:10px;align-items:center;margin-top:14px;color:var(--fg);font-size:16px}
+.chk input{width:22px;height:22px;flex:none}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#080c11;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;border-radius:0;min-height:60px;color:var(--dim);font-size:15px;padding:0}
+nav button.on{color:var(--accent);font-weight:700;box-shadow:inset 0 2px 0 var(--accent)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 4px}
+.sum{font-size:14px;color:var(--dim)}
+ol{padding-left:20px;margin:8px 0}li{margin:6px 0}
+code{background:#111922;border-radius:6px;padding:1px 6px;font-size:14px}
+</style>
+</head>
+<body>
+<header><h1>차량 비서 · 폰 연동</h1><div id="st"></div></header>
+
+<section id="setup" hidden>
+  <div class="card">
+    <h2>처음 한 번만 연결하면 됩니다</h2>
+    <p class="dim">루틴·정비 내역·메모는 내 깃허브의 <b>비공개 저장소</b>에만 저장됩니다. 이 페이지에는 아무것도 저장되지 않고, 토큰은 이 폰 브라우저 안에만 보관됩니다.</p>
+    <ol>
+      <li><a href="https://github.com/new?name=carAssistant-data&visibility=private" target="_blank" rel="noopener">비공개 저장소 만들기</a> — 이름 <code>carAssistant-data</code>, <b>Private</b> 선택 후 Create.</li>
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만들기</a> — Repository access: <b>Only select repositories → carAssistant-data</b>, Permissions → Repository permissions → <b>Contents: Read and write</b>. 만료일은 길게(예: 1년).</li>
+      <li>만들어진 토큰(<code>github_pat_…</code>)을 복사해 아래에 붙여 넣습니다.</li>
+    </ol>
+    <label for="sTok">토큰</label>
+    <input id="sTok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…">
+    <label for="sRepo">저장소 (계정/이름)</label>
+    <input id="sRepo" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" value="kjt7942/carAssistant-data">
+    <div class="acts"><button class="pri" id="sGo" type="button">연결</button></div>
+    <p class="dim" id="sMsg"></p>
+  </div>
+</section>
+
+<main id="app" hidden>
+  <section id="tRt">
+    <div class="top"><div class="sum">말 한마디로 여러 동작을 차례로 실행합니다.</div><button class="pri" id="rtAdd" type="button">+ 루틴</button></div>
+    <div id="rtList"></div>
+  </section>
+  <section id="tMt" hidden>
+    <div class="top"><div class="sum" id="mtSum"></div><button class="pri" id="mtAdd" type="button">+ 정비 기록</button></div>
+    <div id="mtList"></div>
+  </section>
+  <section id="tMm" hidden>
+    <div class="row" style="margin-top:14px"><input id="mmIn" type="text" placeholder="메모 추가" enterkeyhint="done"><button class="pri" id="mmAdd" type="button" style="flex:none">추가</button></div>
+    <p class="dim">차에서 "메모 ○○○"라고 말한 내용도 여기에 나타납니다.</p>
+    <div id="mmList"></div>
+  </section>
+  <section id="tSt" hidden>
+    <div class="card">
+      <h2>차에 연결</h2>
+      <p class="dim">차 화면의 <b>옵션 → 폰 연동 → 연동 설정 → 폰으로 연결</b>을 누르면 주소가 나옵니다. 폰을 차와 같은 와이파이(핫스팟)에 연결한 뒤, 그 주소를 아래에 입력하세요. 토큰이 차로 전달됩니다.</p>
+      <label for="cAddr">차 화면에 나온 주소</label>
+      <input id="cAddr" type="text" inputmode="url" autocomplete="off" placeholder="예: 192.168.43.25:8765/4821">
+      <div class="acts"><button class="pri" id="cGo" type="button">차로 보내기</button></div>
+      <p class="dim" id="cMsg"></p>
+    </div>
+    <div class="card">
+      <h2>연결 정보</h2>
+      <p class="dim" id="info"></p>
+      <div class="acts"><button id="reload" type="button">새로 받아오기</button><span class="sp"></span><button class="warn" id="logout" type="button">이 폰에서 연결 해제</button></div>
+    </div>
+  </section>
+</main>
+
+<section id="form" hidden>
+  <div class="card">
+    <h2 id="fTitle"></h2>
+    <div id="fBody"></div>
+    <div class="acts"><button class="warn" id="fDel" type="button">삭제</button><span class="sp"></span><button id="fCancel" type="button">취소</button><button class="pri" id="fSave" type="button">저장</button></div>
+  </div>
+</section>
+
+<nav id="nav" hidden>
+  <button type="button" data-t="tRt">루틴</button><button type="button" data-t="tMt">정비</button><button type="button" data-t="tMm">메모</button><button type="button" data-t="tSt">설정</button>
+</nav>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var store={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML.replace(/"/g,'&quot;')}
+  function pad(n){return n<10?'0'+n:''+n}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  function won(n){return Number(n).toLocaleString('ko-KR')}
+  function nz(t){return String(t||'').replace(/[\s.,!?~]+/g,'')}
+
+  /* ----- 저장소(data.json) ----- */
+  var tok=store.get('ghTok')||'',repo=store.get('ghRepo')||'kjt7942/carAssistant-data';
+  function arrOk(x){return Array.isArray(x)?x.filter(function(i){return i&&i.id}):[]}
+  function normD(o){o=o||{};return {v:1,routines:arrOk(o.routines),maint:arrOk(o.maint),memos:arrOk(o.memos)}}
+  function mergeList(a,b){
+    var m={},cut=Date.now()-90*864e5;
+    a.concat(b).forEach(function(x){var o=m[x.id];if(!o||(x.u||0)>(o.u||0))m[x.id]=x});
+    return Object.keys(m).map(function(k){return m[k]}).filter(function(x){return !(x.del&&(x.u||0)<cut)});
+  }
+  function mergeD(a,b){return {v:1,routines:mergeList(a.routines,b.routines),maint:mergeList(a.maint,b.maint),memos:mergeList(a.memos,b.memos)}}
+  function live(l){return l.filter(function(x){return !x.del})}
+  function b64e(t){return btoa(unescape(encodeURIComponent(t)))}
+  function b64d(t){return decodeURIComponent(escape(atob(String(t).replace(/\s/g,''))))}
+  var D=normD(null),sha=null,dirty=store.get('phDirty')==='1',busy=false,again=false;
+  try{D=normD(JSON.parse(store.get('phData')||'null'))}catch(e){}
+  function keep(){store.set('phData',JSON.stringify(D));store.set('phDirty',dirty?'1':'0')}
+  function status(t,c){$('st').textContent=t;$('st').className=c||''}
+  function api(path,method,body){
+    var o={method:method||'GET',headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},cache:'no-store'};
+    if(body)o.body=JSON.stringify(body);
+    return fetch('https://api.github.com'+path,o);
+  }
+  function fileApi(method,body){return api('/repos/'+repo+'/contents/data.json',method,body)}
+  function errText(e){var m=e&&e.message||'오류';return /Failed to fetch|NetworkError|Load failed/i.test(m)?'인터넷 연결을 확인해 주세요':m}
+  /* 받아서 합치고, 이 폰에서 바꾼 것이 있으면 올린다. 다른 기기와 겹치면 다시 받아 합친 뒤 올린다 */
+  function sync(tries){
+    if(!tok)return Promise.resolve(false);
+    if(busy){again=true;return Promise.resolve(false)}
+    busy=true;status(dirty?'저장 중…':'받는 중…');
+    return fileApi('GET').then(function(r){
+      if(r.status===401)throw new Error('토큰이 올바르지 않거나 만료되었습니다');
+      if(r.status===403)throw new Error('접근 거부 — 토큰 권한(Contents: Read and write)을 확인해 주세요');
+      if(r.status===404){sha=null;return null}
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(j){
+      if(j){sha=j.sha;var remote=normD(null);try{remote=normD(JSON.parse(b64d(j.content)))}catch(e){}D=mergeD(remote,D)}
+      keep();draw();
+      if(!dirty&&j)return true;
+      if(!dirty&&!j)return true;
+      var body={message:'폰에서 저장',content:b64e(JSON.stringify(D,null,1))};if(sha)body.sha=sha;
+      return fileApi('PUT',body).then(function(r){
+        if((r.status===409||r.status===422)&&(tries||0)<3){busy=false;return sync((tries||0)+1)}
+        if(r.status===404)throw new Error('저장소를 찾을 수 없습니다 ('+repo+')');
+        if(!r.ok)throw new Error('저장 실패 (HTTP '+r.status+')');
+        return r.json().then(function(x){sha=x.content&&x.content.sha||sha;dirty=false;keep();return true});
+      });
+    }).then(function(ok){
+      busy=false;
+      if(ok===true){var d=new Date();status('저장됨 '+pad(d.getHours())+':'+pad(d.getMinutes()),'ok')}
+      if(again){again=false;return sync()}
+      return ok;
+    }).catch(function(e){busy=false;again=false;status(errText(e),'err');return false});
+  }
+  var saveT=null;
+  function changed(){dirty=true;keep();draw();status('저장 중…');clearTimeout(saveT);saveT=setTimeout(function(){sync()},700)}
+
+  /* ----- 처음 연결 ----- */
+  function showSetup(msg){$('setup').hidden=false;$('app').hidden=true;$('nav').hidden=true;$('form').hidden=true;$('sMsg').textContent=msg||'';status('')}
+  function showApp(){$('setup').hidden=true;$('app').hidden=false;$('nav').hidden=false;tab(store.get('phTab')||'tRt')}
+  $('sGo').addEventListener('click',function(){
+    var t=$('sTok').value.trim(),r=$('sRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,'');
+    if(t.length<20||/\s/.test(t)){$('sMsg').textContent='토큰을 붙여 넣어 주세요.';return}
+    if(!/^[\w.-]+\/[\w.-]+$/.test(r)){$('sMsg').textContent='저장소는 "계정/이름" 형식입니다. 예: kjt7942/carAssistant-data';return}
+    tok=t;repo=r;$('sMsg').textContent='확인하는 중…';
+    api('/repos/'+repo).then(function(res){
+      if(res.status===401)throw new Error('토큰이 올바르지 않습니다. 다시 복사해 붙여 넣어 주세요.');
+      if(res.status===404){
+        /* 저장소가 없으면 만들어 본다(토큰 종류에 따라 안 될 수 있다) */
+        return api('/user/repos','POST',{name:repo.split('/')[1],private:true,description:'차량 비서 데이터',auto_init:true}).then(function(c){
+          if(!c.ok)throw new Error('저장소 '+repo+' 가 없거나 이 토큰으로는 볼 수 없습니다. 위 1번으로 비공개 저장소를 만들고, 2번에서 그 저장소를 선택했는지 확인해 주세요.');
+          return true;
+        });
+      }
+      if(!res.ok)throw new Error('확인 실패 (HTTP '+res.status+')');
+      return res.json().then(function(j){
+        if(j.private===false)throw new Error('이 저장소는 공개(Public) 상태입니다. 개인 정보가 들어가므로 비공개(Private) 저장소를 써 주세요.');
+        if(j.permissions&&j.permissions.push===false)throw new Error('이 토큰에는 쓰기 권한이 없습니다. Contents: Read and write 로 다시 만들어 주세요.');
+        return true;
+      });
+    }).then(function(){
+      store.set('ghTok',tok);store.set('ghRepo',repo);$('sTok').value='';
+      showApp();sync();
+    }).catch(function(e){tok='';$('sMsg').textContent=errText(e)});
+  });
+
+  /* ----- 탭 ----- */
+  var TABS=['tRt','tMt','tMm','tSt'],cur='tRt';
+  function tab(t){
+    if(TABS.indexOf(t)<0)t='tRt';cur=t;store.set('phTab',t);$('form').hidden=true;$('app').hidden=false;
+    TABS.forEach(function(x){$(x).hidden=x!==t});
+    [].forEach.call($('nav').children,function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
+    draw();
+  }
+  $('nav').addEventListener('click',function(ev){var b=ev.target.closest('button');if(b)tab(b.getAttribute('data-t'))});
+
+  /* ----- 그리기 ----- */
+  function dayDiff(a,b){return Math.round((Date.parse(a+'T00:00:00Z')-Date.parse(b+'T00:00:00Z'))/864e5)}
+  function maintSorted(){return live(D.maint).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||(b.u||0)-(a.u||0)})}
+  function draw(){
+    if($('app').hidden)return;
+    var h='';
+    live(D.routines).sort(function(a,b){return String(a.name).localeCompare(String(b.name))}).forEach(function(r){
+      h+='<div class="item"><div class="tx"><b>'+esc(r.name)+'</b>'+(r.auto?'<span class="tag">시동 때 자동</span>':'')+'<small>호출말: '+esc((r.say||[]).join(', ')||r.name)+'</small><small>'+esc((r.steps||[]).join(' → '))+'</small></div><button class="sm" type="button" data-k="rt" data-id="'+esc(r.id)+'">수정</button></div>';
+    });
+    $('rtList').innerHTML=h||'<p class="dim">아직 루틴이 없습니다. 예: 호출말 "출근" → 날씨 → 말하기: 오늘도 안전 운전하세요 → 라디오 켜</p>';
+    h='';var seen={},td=today(),yr=td.slice(0,4),sum=0,cnt=0;
+    maintSorted().forEach(function(x){
+      var k=nz(x.item),latest=k&&!seen[k];if(k)seen[k]=1;
+      if(String(x.date||'').slice(0,4)===yr&&x.cost){sum+=Number(x.cost)||0}
+      cnt++;
+      var sub=[];if(x.km)sub.push(won(x.km)+'km');if(x.cost)sub.push(won(x.cost)+'원');if(x.shop)sub.push(esc(x.shop));
+      var due='',cls='';
+      if(x.next){var df=dayDiff(x.next,td);due='다음 '+esc(x.next);if(latest&&df<=30){cls=' due';due='<em>'+due+' ('+(df<0?(-df)+'일 지남':df===0?'오늘':df+'일 남음')+')</em>'}}
+      h+='<div class="item'+cls+'"><div class="tx"><b>'+esc(x.item||'')+'</b><small>'+esc(x.date||'')+(sub.length?' · '+sub.join(' · '):'')+'</small>'+(x.memo?'<small>'+esc(x.memo)+'</small>':'')+(due?'<small>'+due+'</small>':'')+'</div><button class="sm" type="button" data-k="mt" data-id="'+esc(x.id)+'">수정</button></div>';
+    });
+    $('mtList').innerHTML=h||'<p class="dim">아직 정비 기록이 없습니다. 차에서 "엔진오일 언제 갈았지?"처럼 물어볼 수 있습니다.</p>';
+    $('mtSum').textContent=cnt?('기록 '+cnt+'건 · 올해 비용 '+won(sum)+'원'):'정비·교환 기록을 남겨 두세요.';
+    h='';
+    live(D.memos).sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(b.ts||0)-(a.ts||0)}).forEach(function(x){
+      var d=new Date(x.ts||x.u||0);
+      h+='<div class="item'+(x.done?' done':'')+'"><div class="tx"><b>'+esc(x.text)+'</b><small>'+(d.getMonth()+1)+'월 '+d.getDate()+'일 '+pad(d.getHours())+':'+pad(d.getMinutes())+(x.place?' · '+esc(x.place):'')+'</small></div><button class="sm" type="button" data-k="mmDone" data-id="'+esc(x.id)+'">'+(x.done?'되돌리기':'완료')+'</button><button class="sm warn" type="button" data-k="mmDel" data-id="'+esc(x.id)+'">삭제</button></div>';
+    });
+    $('mmList').innerHTML=h||'<p class="dim">메모가 없습니다.</p>';
+    $('info').textContent='저장소 '+repo+' · 토큰 끝 '+tok.slice(-4);
+  }
+
+  /* ----- 입력 폼 ----- */
+  var fKind='',fId='';
+  function byId(l,id){return l.filter(function(x){return x.id===id})[0]}
+  function field(id,label,val,attr){return '<label for="'+id+'">'+label+'</label><input id="'+id+'" value="'+esc(val==null?'':val)+'" '+(attr||'type="text"')+'>'}
+  function openForm(kind,id){
+    fKind=kind;fId=id||'';var h='';
+    if(kind==='rt'){
+      var r=byId(D.routines,id)||{name:'',say:[],steps:[],auto:false};
+      $('fTitle').textContent=id?'루틴 수정':'새 루틴';
+      h=field('fName','이름',r.name,'type="text" placeholder="예: 출근"')+
+        field('fSay','호출말 — 이렇게 말하면 실행 (쉼표로 여러 개)',(r.say||[]).join(', '),'type="text" placeholder="예: 출근, 출근하자"')+
+        '<label for="fSteps">동작 — 한 줄에 하나씩, 위에서부터 차례로 실행</label><textarea id="fSteps" placeholder="날씨&#10;말하기: 오늘도 안전 운전하세요&#10;기다리기: 2&#10;라디오 켜">'+esc((r.steps||[]).join('\n'))+'</textarea>'+
+        '<div class="chips" id="fChips">'+['말하기: ','기다리기: 3','날씨','시간','날짜','메모 읽어줘','라디오 켜','음악 틀어','지도 열어','네비 켜','블루투스 열어','밝기 어둡게','밝기 자동'].map(function(c){return '<button type="button">'+esc(c)+'</button>'}).join('')+'</div>'+
+        '<p class="dim">동작에는 차에서 음성으로 쓰는 명령을 그대로 적으면 됩니다. "말하기: 문장"은 그 문장을 읽어 줍니다.</p>'+
+        '<label class="chk"><input id="fAuto" type="checkbox"'+(r.auto?' checked':'')+'>시동을 걸면 자동으로 실행</label>';
+    }else{
+      var x=byId(D.maint,id)||{date:today(),item:'',km:'',cost:'',shop:'',memo:'',next:''};
+      $('fTitle').textContent=id?'정비 기록 수정':'새 정비 기록';
+      h='<div class="row"><div>'+field('fDate','날짜',x.date,'type="date"')+'</div><div>'+field('fItem','항목',x.item,'type="text" list="items" placeholder="예: 엔진오일"')+'</div></div>'+
+        '<datalist id="items">'+['엔진오일','타이어','브레이크 패드','배터리','와이퍼','에어컨 필터','미션오일','냉각수','점화플러그','브레이크액','정기검사','자동차 보험','세차'].map(function(i){return '<option value="'+i+'">'}).join('')+'</datalist>'+
+        '<div class="row"><div>'+field('fKm','주행거리 (km)',x.km,'type="text" inputmode="numeric"')+'</div><div>'+field('fCost','비용 (원)',x.cost,'type="text" inputmode="numeric"')+'</div></div>'+
+        field('fShop','정비소',x.shop)+field('fMemo','메모',x.memo)+
+        field('fNext','다음 예정일 (선택) — 2주 전부터 차에서 알려 줍니다',x.next,'type="date"');
+    }
+    $('fBody').innerHTML=h;$('fDel').hidden=!id;$('app').hidden=true;$('form').hidden=false;window.scrollTo(0,0);
+  }
+  function closeForm(){$('form').hidden=true;$('app').hidden=false;draw()}
+  $('fCancel').addEventListener('click',closeForm);
+  $('fBody').addEventListener('click',function(ev){
+    var b=ev.target.closest('#fChips button');if(!b)return;
+    var ta=$('fSteps'),v=ta.value.replace(/\s+$/,'');ta.value=(v?v+'\n':'')+b.textContent;ta.focus();
+  });
+  function numOf(v){var n=String(v||'').replace(/[^\d]/g,'');return n?Number(n):''}
+  $('fSave').addEventListener('click',function(){
+    var now=Date.now(),list,o,old=byId(fKind==='rt'?D.routines:D.maint,fId);
+    if(old)now=Math.max(now,(old.u||0)+1);
+    if(fKind==='rt'){
+      var name=$('fName').value.trim();if(!name){$('fName').focus();return}
+      o={id:fId||uid(),u:now,name:name,
+        say:$('fSay').value.split(/[,，\n]/).map(function(s){return s.trim()}).filter(Boolean),
+        steps:$('fSteps').value.split('\n').map(function(s){return s.trim()}).filter(Boolean),auto:$('fAuto').checked};
+      list=D.routines;
+    }else{
+      var item=$('fItem').value.trim();if(!item){$('fItem').focus();return}
+      o={id:fId||uid(),u:now,date:$('fDate').value||today(),item:item,km:numOf($('fKm').value),cost:numOf($('fCost').value),shop:$('fShop').value.trim(),memo:$('fMemo').value.trim(),next:$('fNext').value||''};
+      list=D.maint;
+    }
+    var i=list.findIndex(function(x){return x.id===o.id});if(i>=0)list[i]=o;else list.push(o);
+    closeForm();changed();
+  });
+  $('fDel').addEventListener('click',function(){
+    if(!fId)return;
+    var list=fKind==='rt'?D.routines:D.maint,x=byId(list,fId);
+    if(x){x.del=true;x.u=Math.max(Date.now(),(x.u||0)+1)}
+    closeForm();changed();
+  });
+  $('rtAdd').addEventListener('click',function(){openForm('rt')});
+  $('mtAdd').addEventListener('click',function(){openForm('mt')});
+  $('app').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-k]');if(!b)return;
+    var k=b.getAttribute('data-k'),id=b.getAttribute('data-id');
+    if(k==='rt'||k==='mt'){openForm(k,id);return}
+    var m=byId(D.memos,id);if(!m)return;
+    m.u=Math.max(Date.now(),(m.u||0)+1);if(k==='mmDel')m.del=true;else m.done=!m.done;
+    changed();
+  });
+  function addMemo(){
+    var v=$('mmIn').value.trim();if(!v)return;
+    var now=Date.now();D.memos.push({id:uid(),u:now,ts:now,text:v,place:'',done:false});$('mmIn').value='';changed();
+  }
+  $('mmAdd').addEventListener('click',addMemo);
+  $('mmIn').addEventListener('keydown',function(ev){if(ev.key==='Enter')addMemo()});
+
+  /* ----- 설정 ----- */
+  $('cGo').addEventListener('click',function(){
+    var a=$('cAddr').value.trim().replace(/^https?:\/\//,'').replace(/\s/g,'');
+    if(!/^\d{1,3}(\.\d{1,3}){3}:\d{2,5}\/\d{4,8}$/.test(a)){$('cMsg').textContent='차 화면에 나온 주소를 그대로 입력해 주세요. 예: 192.168.43.25:8765/4821';return}
+    $('cMsg').textContent='차로 보내는 중… 새 창에 "차에 연결했습니다"가 나오면 끝입니다. 열리지 않으면 폰과 차가 같은 와이파이인지 확인해 주세요.';
+    window.open('http://'+a+'#t='+encodeURIComponent(tok)+'&r='+encodeURIComponent(repo),'_blank');
+  });
+  $('reload').addEventListener('click',function(){sync()});
+  $('logout').addEventListener('click',function(){
+    if(!confirm('이 폰에 저장된 토큰을 지웁니다. 저장소의 내용은 그대로 남습니다.'))return;
+    ['ghTok','phData','phDirty'].forEach(store.del);tok='';D=normD(null);dirty=false;showSetup('연결을 해제했습니다.');
+  });
+
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&tok&&$('form').hidden)sync()});
+  if(tok){showApp();sync()}else showSetup();
+})();
+</script>
+</body>
+</html>

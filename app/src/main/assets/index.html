@@ -159,7 +159,7 @@ button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-hei
 .dow{margin-left:.3em}
 .sep{font-style:normal}
 .only-a{display:none}.only-b{display:none}
-.root[data-theme=a] .only-a,.root[data-theme=b] .only-b{display:revert}
+.root[data-theme=a] .only-a,.root[data-theme=d] .only-a,.root[data-theme=b] .only-b{display:revert}
 .wl1,.wl2{white-space:nowrap}
 .empty{color:var(--fg-dim)}
 html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
@@ -255,22 +255,22 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 .op-t{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 22px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
 @media (orientation:portrait){.op-n{font-size:max(19px,4.6vw)}.sg button{flex:1 1 22%;min-width:0;padding:0 8px;font-size:max(16px,3.8vw)}#opClose{flex:none;min-width:max(96px,22vw)}.op-r .sg{width:100%}.pvc{font-size:max(16px,3.8vw)}}
 /* 하위 화면 — 옵션 화면과 같은 틀 */
-#ak,#ap,#kk,#md,#sd,#dg{align-items:flex-start;padding:max(14px,2.4vh) 22px}
-#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in{width:100%;max-width:1180px;margin:auto;gap:max(8px,1.4vh)}
-#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h{gap:16px}
-#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state{font-size:max(22px,min(4.6vh,3vw))!important;letter-spacing:0;min-width:0;line-height:1.25}
+#ak,#ap,#kk,#md,#sd,#dg,#ph{align-items:flex-start;padding:max(14px,2.4vh) 22px}
+#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in,#ph .ov-in{width:100%;max-width:1180px;margin:auto;gap:max(8px,1.4vh)}
+#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h,#ph .op-h{gap:16px}
+#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state,#ph .op-h .ov-state{font-size:max(22px,min(4.6vh,3vw))!important;letter-spacing:0;min-width:0;line-height:1.25}
 .op-h button{flex:none}
-#ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp{font-size:max(16px,min(3.4vh,2.3vw))!important}
-#ap .ap-row,#kk .ap-row,#md .ap-row,#kk .kk-row{font-size:max(17px,min(3.6vh,2.4vw))}
+#ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp,#ph .ov-resp{font-size:max(16px,min(3.4vh,2.3vw))!important}
+#ap .ap-row,#kk .ap-row,#md .ap-row,#ph .ap-row,#kk .kk-row{font-size:max(17px,min(3.6vh,2.4vw))}
 #dg .dg-row{font-size:max(16px,min(3.4vh,2.3vw))!important}
 #sd .sd-t{font-size:max(19px,min(4.2vh,2.7vw))}
 @media (orientation:portrait){
-#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state{font-size:max(19px,4.8vw)!important}
-#ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp{font-size:max(16px,3.8vw)!important}
-#ap .ap-row,#kk .ap-row,#md .ap-row,#kk .kk-row{font-size:max(17px,4.2vw)}
+#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state,#ph .op-h .ov-state{font-size:max(19px,4.8vw)!important}
+#ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp,#ph .ov-resp{font-size:max(16px,3.8vw)!important}
+#ap .ap-row,#kk .ap-row,#md .ap-row,#ph .ap-row,#kk .kk-row{font-size:max(17px,4.2vw)}
 #dg .dg-row{font-size:max(15px,3.7vw)!important}
 #sd .sd-t{font-size:max(19px,4.6vw)}
-#ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose{min-width:max(96px,22vw)}
+#ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose{min-width:max(96px,22vw)}
 }
 #sd .sd-cols{display:grid;grid-template-columns:1fr 1fr;gap:max(14px,2.4vw)}
 #sd .sd-col{display:flex;flex-direction:column;gap:max(12px,2vh);border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 18px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
@@ -300,6 +300,43 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 .cal td.sa{color:#7F9BBA}.cal td.su{color:#BC8383}.cal td.o{opacity:.28}
 .cal td span{display:inline-block;min-width:calc(var(--s)*46);padding:calc(var(--s)*2) 0;border-radius:calc(var(--s)*23)}
 .cal td.t span{background:var(--accent);color:#031318;font-weight:700}
+/* --- 테마 D (쏘나타 계기판: 검정 바탕 · 푸른 조명 · 붉은 바늘) --- */
+.only-d{display:none}
+.root[data-theme=d]{background:#000 radial-gradient(ellipse at 50% 125%,#08203f 0,#000 62%)}
+.root[data-theme=d] .scene{position:relative;gap:calc(var(--s)*70);padding-bottom:calc(var(--s)*62)}
+.root[data-theme=d][data-o=p] .scene{flex-direction:column;gap:calc(var(--s)*24)}
+.root[data-theme=d] .face,.root[data-theme=d] .info{width:calc(var(--s)*452);height:calc(var(--s)*452);flex:none}
+.root[data-theme=d][data-o=p] .face,.root[data-theme=d][data-o=p] .info{width:calc(var(--s)*500);height:calc(var(--s)*500)}
+.root[data-theme=d] .ring,.root[data-theme=d] .clock,.root[data-theme=d] .date,.root[data-theme=d] .spcard,.root[data-theme=d] .gpcard{display:none}
+.root[data-theme=d] .gd{display:block;width:100%;height:100%}
+.gd-bz{fill:none;stroke:#16263a;stroke-width:2}
+.gd-tr{fill:none;stroke:#0e1a2a;stroke-width:14}
+.gd-gl{fill:none;stroke:#2f9bff;stroke-width:28;stroke-opacity:.16}
+.gd-fl{fill:none;stroke:#3aa2ff;stroke-width:14}
+.gd-tk{stroke:#56708d;stroke-width:2}.gd-tk.M{stroke:#e3ebf4;stroke-width:4}
+.gd-n{fill:#c5d2e0;font-family:var(--f-disp);font-size:27px;font-weight:700}
+.gd-nd{stroke:#ff4032;stroke-width:6;stroke-linecap:round}
+.gd-hub{fill:#0a111b;stroke:#3a516c;stroke-width:3}
+.gd-big{fill:#fff;font-family:var(--f-disp);font-weight:700;font-size:80px}
+.gd-sub{fill:#6fb6ff;font-family:var(--f-body);font-size:25px;letter-spacing:1px}
+.gd-cap{fill:#56708d;font-family:var(--f-disp);font-size:20px;letter-spacing:5px}
+html[data-dim="3"] .gd{opacity:.8}
+.root[data-theme=d] .wcard{position:absolute;left:0;right:0;bottom:calc(var(--s)*10)}
+.root[data-theme=d] .wl1{display:flex;align-items:baseline;justify-content:center;font-size:calc(var(--s)*30);color:#8496aa}
+.root[data-theme=d] .wl1 .wt{font-family:var(--f-disp);font-weight:700;font-size:calc(var(--s)*40);color:#fff;margin-right:.15em}
+.root[data-theme=d] .wl1 b{color:#dfe8f2;font-weight:500}
+.root[data-theme=d] .sep{margin:0 calc(var(--s)*16);color:#1d3554}
+.root[data-theme=d] .empty{font-size:calc(var(--s)*26);text-align:center}
+.root[data-theme=d] .vbtn,.root[data-theme=d] .obtn{background:#02060c;border-color:#143a66;color:#6fb6ff}
+/* 폰 연동 화면 */
+#ov{z-index:7}
+#ph .sg button{min-width:max(96px,10vw)}
+#ph .ap-row b{font-weight:500;color:var(--fg)}
+#ph .ap-row.dn b{text-decoration:line-through;color:var(--fg-dim)}
+#ph .ap-row.due small{color:var(--warn)}
+#phSet{display:flex;flex-direction:column;gap:max(8px,1.4vh)}
+#phPairMsg{white-space:pre-line}
+#phPairMsg b{color:var(--accent);font-size:1.25em}
 </style>
 </head>
 <body>
@@ -321,11 +358,35 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
         <text class="adate" id="adate" x="250" y="338" text-anchor="middle"></text>
         <circle cx="250" cy="250" r="9" fill="#839B84"/>
       </svg>
+<svg class="gd only-d" viewBox="0 0 500 500" aria-hidden="true">
+        <circle class="gd-bz" cx="250" cy="250" r="240"/>
+        <circle class="gd-tr" cx="250" cy="250" r="205" transform="rotate(135 250 250)" stroke-dasharray="966 1288"/>
+        <circle class="gd-gl" id="dArcHg" cx="250" cy="250" r="205" transform="rotate(135 250 250)" stroke-dasharray="0 1288"/>
+        <circle class="gd-fl" id="dArcH" cx="250" cy="250" r="205" transform="rotate(135 250 250)" stroke-dasharray="0 1288"/>
+        <g id="dTkH"></g>
+        <text class="gd-cap" x="250" y="188" text-anchor="middle">TIME</text>
+        <text class="gd-big" id="dHm" x="250" y="436" text-anchor="middle"></text>
+        <text class="gd-sub" id="dDt" x="250" y="478" text-anchor="middle"></text>
+        <line class="gd-nd" id="dNdH" x1="222" y1="250" x2="418" y2="250" transform="rotate(135 250 250)"/>
+        <circle class="gd-hub" cx="250" cy="250" r="20"/>
+      </svg>
       <div class="clock"><span class="ampm" id="ampm"></span><span id="hm">--:--</span></div>
       <div class="date"><span class="dt" id="dt"></span><span class="dow" id="dow"></span></div>
     </div>
     <div class="info">
       <div class="cal only-c" id="calw"></div>
+<svg class="gd only-d" viewBox="0 0 500 500" aria-hidden="true">
+        <circle class="gd-bz" cx="250" cy="250" r="240"/>
+        <circle class="gd-tr" cx="250" cy="250" r="205" transform="rotate(135 250 250)" stroke-dasharray="966 1288"/>
+        <circle class="gd-gl" id="dArcSg" cx="250" cy="250" r="205" transform="rotate(135 250 250)" stroke-dasharray="0 1288"/>
+        <circle class="gd-fl" id="dArcS" cx="250" cy="250" r="205" transform="rotate(135 250 250)" stroke-dasharray="0 1288"/>
+        <g id="dTkS"></g>
+        <text class="gd-cap" x="250" y="188" text-anchor="middle">SPEED</text>
+        <text class="gd-big" id="dSp" x="250" y="436" text-anchor="middle"></text>
+        <text class="gd-sub" id="dKm" x="250" y="478" text-anchor="middle">km/h</text>
+        <line class="gd-nd" id="dNdS" x1="222" y1="250" x2="418" y2="250" transform="rotate(135 250 250)"/>
+        <circle class="gd-hub" cx="250" cy="250" r="20"/>
+      </svg>
       <div class="card wcard" id="wx"><div class="empty">날씨를 불러오는 중입니다.</div></div>
       <div class="card spcard"><div class="k">SPEED</div><div class="v"><span id="spv">0</span><small> km/h</small></div></div>
       <div class="card gpcard"><div class="k">GPS</div><div class="v warn" id="gpv">수신 중</div></div>
@@ -441,6 +502,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
         <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
         <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
         <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
+        <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타 계기판</div></div>
       </div></div>
     <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
     <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
@@ -448,13 +510,34 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 2초 길게 눌러 옵션을 엽니다 · 핸들 음성 버튼은 그대로 사용</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
     <div class="op-r"><div class="op-n">소리<small>음성 명령 중·후 라디오/음악 처리</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정 ›</button></div></div>
     <div class="op-r"><div class="op-n">AI<small>오픈라우터 API키, 모델 연결</small></div><div class="sg"><button type="button" class="go" data-go="dgAi">AI 키 ›</button><button type="button" class="go" data-go="dgModels">AI 모델 ›</button></div></div>
+    <div class="op-r"><div class="op-n">폰 연동<small id="opPh">루틴 · 정비 내역 · 메모 — 폰에서 등록하면 차에 나타납니다</small></div><div class="sg"><button type="button" class="go" data-go="phRt">루틴 ›</button><button type="button" class="go" data-go="phMt">정비 ›</button><button type="button" class="go" data-go="phMm">메모 ›</button><button type="button" class="go" data-go="phSt">연동 설정 ›</button></div></div>
     <div class="op-r"><div class="op-n">진단<small>GPS·마이크 점검 · 앱 목록 · 핸들 버튼 점검</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단 열기 ›</button></div></div>
     <div class="op-r"><div class="op-n">업데이트<small id="opVer">현재 버전 확인 중…</small></div><div class="sg"><button type="button" id="opOvl" hidden>자동 재실행 허용</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
   </div>
 </div>
 
 <div hidden aria-hidden="true">
-  <button id="dgAi" type="button"></button><button id="dgSound" type="button"></button><button id="dgFull" type="button"></button><button id="dgModels" type="button"></button><button id="dgUpd" type="button"></button>
+  <button id="dgAi" type="button"></button><button id="dgSound" type="button"></button><button id="dgFull" type="button"></button><button id="dgModels" type="button"></button><button id="dgUpd" type="button"></button><button id="phRt" type="button"></button><button id="phMt" type="button"></button><button id="phMm" type="button"></button><button id="phSt" type="button"></button>
+</div>
+
+<div class="ov" id="ph" hidden>
+  <div class="ov-in">
+    <div class="op-h"><div class="ov-state">폰 연동</div><button id="phClose" type="button">닫기</button></div>
+    <div class="sg" id="phTabs"><button type="button" data-v="rt">루틴</button><button type="button" data-v="mt">정비 내역</button><button type="button" data-v="mm">메모</button><button type="button" data-v="st">연동 설정</button></div>
+    <div class="ov-resp" id="phMsg"></div>
+    <div class="pl-list" id="phList"></div>
+    <div id="phSet" hidden>
+      <div class="btns" style="justify-content:flex-start">
+        <button id="phPair" type="button" class="main-btn">폰으로 연결</button>
+        <button id="phSync" type="button">지금 동기화</button>
+        <button id="phOff" type="button">연결 해제</button>
+      </div>
+      <div class="ov-resp" id="phPairMsg"></div>
+      <input class="ak-in" id="phRepo" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="저장소 (예: kjt7942/carAssistant-data)">
+      <input class="ak-in" id="phTok" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="토큰 직접 입력 (github_pat_… 또는 ghp_…)">
+      <div class="btns" style="justify-content:flex-start"><button id="phSave" type="button">직접 입력한 내용 저장</button></div>
+    </div>
+  </div>
 </div>
 
 <div class="ov" id="dg" hidden>
@@ -539,6 +622,28 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     }
     $('calw').innerHTML=h2+'</table>';
   }
+  /* 테마 D: 계기판 눈금(0~12시, 0~240km/h)은 한 번만 만들고, 바늘과 푸른 호만 움직인다 */
+  function gdTicks(id,max,major,label,minor){
+    var h='';
+    for(var v=0;v<=max+1e-9;v+=minor){
+      var a=(135+270*v/max)*Math.PI/180,M=Math.abs(v/major-Math.round(v/major))<1e-6,r1=M?166:176;
+      h+='<line class="gd-tk'+(M?' M':'')+'" x1="'+(250+190*Math.cos(a)).toFixed(1)+'" y1="'+(250+190*Math.sin(a)).toFixed(1)+'" x2="'+(250+r1*Math.cos(a)).toFixed(1)+'" y2="'+(250+r1*Math.sin(a)).toFixed(1)+'"/>';
+      if(Math.abs(v/label-Math.round(v/label))<1e-6)h+='<text class="gd-n" text-anchor="middle" x="'+(250+138*Math.cos(a)).toFixed(1)+'" y="'+(250+138*Math.sin(a)+9).toFixed(1)+'">'+Math.round(v)+'</text>';
+    }
+    $(id).innerHTML=h;
+  }
+  gdTicks('dTkH',12,1,3,0.5);gdTicks('dTkS',240,20,40,10);
+  function gdSet(arc,nd,f){
+    f=Math.max(0,Math.min(1,f));
+    var d=(966.04*f).toFixed(1)+' 1288';
+    $(arc).setAttribute('stroke-dasharray',d);$(arc+'g').setAttribute('stroke-dasharray',d);
+    $(nd).setAttribute('transform','rotate('+(135+270*f).toFixed(1)+' 250 250)');
+  }
+  function drawD(t,h,ap){
+    gdSet('dArcH','dNdH',((t.h%12)+t.mi/60)/12);
+    $('dHm').textContent=h+':'+pad(t.mi);
+    $('dDt').textContent=(ap?ap+' · ':'')+t.mo+'월 '+t.d+'일 '+DOW[t.wk];
+  }
   function drawClock(){
     var t=seoulNow(),h=t.h,ap='';
     if(!use24){ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12}else{h=pad(h)}
@@ -547,7 +652,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     $('dt').textContent=t.mo+'월 '+t.d+'일';
     $('dow').textContent=DOW[t.wk];
     document.documentElement.style.setProperty('--day',t.wk===6?DAYC.sat:t.wk===0?DAYC.sun:DAYC.wk);
-    drawRing(t);drawAna(t);
+    drawRing(t);drawAna(t);drawD(t,h,ap);
     applyDim(t);drawStatus();
     if(!$('op').hidden)opPreviews();
   }
@@ -664,6 +769,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     var fresh=gpsFresh();
     var sp=fresh&&num(loc.speed)&&loc.speed>=1?Math.round(loc.speed*3.6):0;
     $('spv').textContent=fresh?sp:'-';
+    $('dSp').textContent=fresh?sp:'--';gdSet('dArcS','dNdS',sp/240);
     var g=$('gpv');
     if(fresh){g.textContent='정상'+(num(loc.acc)?' · '+Math.round(loc.acc)+'m':'');g.className='v ok'}
     else{g.textContent='수신 중';g.className='v warn'}
@@ -681,7 +787,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   window.onNativeNet=function(){if(wxFail){wxNext=0;maybeFetch(false)}};
   /* 새 화면 적용·설치 창 띄우기를 미뤄야 하는 상태인지(음성 명령 중이거나 설정 화면을 보는 중) */
   window.uiBusy=function(){
-    var ids=['ov','op','dg','kk','md','ak','ap','sd'];
+    var ids=['ov','op','dg','kk','md','ak','ap','sd','ph'];
     for(var i=0;i<ids.length;i++){var el=$(ids[i]);if(el&&!el.hidden)return true}
     return false;
   };
@@ -814,7 +920,8 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
     else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
     else if(e.type==='result'){
       if(!e.text){ovShow('알아듣지 못했습니다','','다시 눌러서 말씀해 주세요.');ovTimer=setTimeout(ovHide,4000);return}
-      var r=command(e.text);
+      var rt=findRoutine(e.text);if(rt){runRoutine(rt);return}
+      var r=dataCommand(e.text);if(r===null)r=command(e.text);
       if(r===null)r=aiAsk(e.text);
       if(r==='\u0000AI'){ovShow('생각하는 중…',e.text,'');ovTimer=setTimeout(function(){if(aiPending){aiPending=0;ovShow('AI 응답 지연',e.text,'응답이 오지 않았습니다. 다시 말씀해 주세요.');ovTimer=setTimeout(ovHide,6000)}},60000);return}
       ovShow('인식 완료',e.text,r);say(r);ovTimer=setTimeout(ovHide,9000);
@@ -914,7 +1021,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   var voiceT=0;
   /* 전화 종료 버튼 = 뒤로 가기. 열린 화면을 하나 닫고, 아무것도 없으면 비서 앱을 닫아 이전 앱으로 돌아간다 */
   window.onEndKey=function(){
-    var ids=['ov','dg','kk','md','ak','ap','sd','op'];
+    var ids=['ov','dg','kk','md','ak','ap','sd','ph','op'];
     for(var i=0;i<ids.length;i++){
       var el=$(ids[i]);
       if(el&&!el.hidden){var b=$(ids[i]+'Close');if(b){b.click();return}el.hidden=true;return}
@@ -1061,9 +1168,283 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   $('updBtn').addEventListener('click',function(){if(A)A.installUpdate()});
   $('opOvl').addEventListener('click',function(ev){ev.stopPropagation();try{A.askOverlay()}catch(e){}});
 
+  /* ---------- 폰 연동: 루틴 · 정비 내역 · 메모 (비공개 저장소의 data.json 한 파일) ----------
+     통신: 시동 때 1번 받아 오고(바뀐 게 없으면 내용 없이 끝남), 차에서 메모를 남기거나 고쳤을 때만 올린다. 주기적 통신 없음. */
+  var DREPO_DEF='kjt7942/carAssistant-data',PHONE_URL='kjt7942.github.io/carAssistant';
+  function ghTok(){return store.get('ghTok')||''}
+  function ghRepo(){return store.get('ghRepo')||DREPO_DEF}
+  function arrOk(x){return Array.isArray(x)?x.filter(function(i){return i&&i.id}):[]}
+  function normD(o){o=o||{};return {v:1,routines:arrOk(o.routines),maint:arrOk(o.maint),memos:arrOk(o.memos)}}
+  function mergeList(a,b){
+    var m={},cut=Date.now()-90*864e5;
+    a.concat(b).forEach(function(x){var o=m[x.id];if(!o||(x.u||0)>(o.u||0))m[x.id]=x});
+    return Object.keys(m).map(function(k){return m[k]}).filter(function(x){return !(x.del&&(x.u||0)<cut)});
+  }
+  function mergeD(a,b){return {v:1,routines:mergeList(a.routines,b.routines),maint:mergeList(a.maint,b.maint),memos:mergeList(a.memos,b.memos)}}
+  function live(l){return l.filter(function(x){return !x.del})}
+  function b64e(t){return btoa(unescape(encodeURIComponent(t)))}
+  function b64d(t){return decodeURIComponent(escape(atob(String(t).replace(/\s/g,''))))}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  var D=normD(null);
+  try{D=normD(JSON.parse(store.get('cad')||'null'))}catch(e){}
+  function dSave(){store.set('cad',JSON.stringify(D))}
+  function dTouch(){dSave();store.set('cadDirty','1');phDraw();sync()}
+  var syncAgain=false,syncBusy=false,syncMsg='',syncFail=0,syncAt=+store.get('cadAt')||0;
+  function ghReq(method,body,etag){
+    var h={Authorization:'Bearer '+ghTok(),Accept:'application/vnd.github+json'};
+    if(etag)h['If-None-Match']=etag;
+    var o={method:method,headers:h,cache:'no-store'};
+    if(body)o.body=JSON.stringify(body);
+    return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/data.json',o);
+  }
+  function sync(cb,depth){
+    if(!ghTok()){if(cb)cb(false,'연동 설정이 필요합니다');return}
+    if(syncBusy){syncAgain=true;if(cb)cb(false,'동기화하는 중입니다');return}
+    syncBusy=true;syncMsg='동기화하는 중…';phDraw();
+    var dirty=store.get('cadDirty')==='1';
+    function fin(ok,msg,again){
+      syncBusy=false;syncMsg=msg;
+      if(ok){syncFail=0;syncAt=Date.now();store.set('cadAt',''+syncAt)}else syncFail++;
+      if(again&&(depth||0)<2){sync(cb,(depth||0)+1);return}
+      phDraw();dueCheck();if(cb)cb(ok,msg);
+      if(syncAgain){syncAgain=false;if(ok&&store.get('cadDirty')==='1')sync()}
+    }
+    function put(sha){
+      var body={message:'차량에서 저장',content:b64e(JSON.stringify(D))};
+      if(sha)body.sha=sha;
+      return ghReq('PUT',body).then(function(r){
+        if(r.status===409||r.status===422){fin(false,'다른 기기와 겹쳐 다시 맞추는 중…',true);return}
+        if(r.status===404)throw new Error('저장소를 찾을 수 없습니다 ('+ghRepo()+')');
+        if(!r.ok)throw new Error('저장 실패 (HTTP '+r.status+')');
+        store.set('cadDirty','0');store.set('cadEtag','');
+        fin(true,'동기화했습니다');
+      });
+    }
+    ghReq('GET',null,dirty?'':store.get('cadEtag')).then(function(r){
+      if(r.status===304){fin(true,'바뀐 내용이 없습니다');return}
+      if(r.status===401)throw new Error('토큰이 올바르지 않거나 만료되었습니다');
+      if(r.status===403)throw new Error('접근이 거부되었습니다 (토큰 권한을 확인해 주세요)');
+      if(r.status===404){
+        if(dirty)return put(null);
+        fin(true,'아직 등록된 내용이 없습니다');return;
+      }
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      var et=r.headers.get('ETag')||'';
+      return r.json().then(function(j){
+        var remote=normD(null);
+        try{remote=normD(JSON.parse(b64d(j.content)))}catch(e){}
+        D=mergeD(remote,D);dSave();
+        if(dirty)return put(j.sha);
+        store.set('cadEtag',et);fin(true,'동기화했습니다');
+      });
+    }).catch(function(e){
+      var m=e&&e.message||'오류';
+      fin(false,/Failed to fetch|NetworkError|Load failed/i.test(m)?'인터넷에 연결되지 않았습니다. 연결되면 다시 맞춥니다.':m);
+    });
+  }
+  function hmOf(ms){return seoulNowFrom(ms)}
+  function mdOf(ms){var p={};fmt.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return (+p.month)+'월 '+(+p.day)+'일'}
+  function todayStr(){var t=seoulNow();return t.y+'-'+pad(t.mo)+'-'+pad(t.d)}
+  function dayDiff(a,b){return Math.round((Date.parse(a+'T00:00:00Z')-Date.parse(b+'T00:00:00Z'))/864e5)}
+  function koDate(s){var m=/^(\d{4})-(\d\d)-(\d\d)/.exec(String(s||''));return m?(+m[1])+'년 '+(+m[2])+'월 '+(+m[3])+'일':String(s||'')}
+  function nz(t){return String(t||'').replace(/[\s.,!?~]+/g,'')}
+
+  /* 메모 */
+  function memoList(){return live(D.memos).sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||(b.ts||0)-(a.ts||0)})}
+  function addMemo(text){
+    text=String(text||'').trim();if(!text)return '메모할 내용을 듣지 못했습니다.';
+    var now=Date.now();
+    D.memos.push({id:uid(),u:now,ts:now,text:text,place:gpsFresh()?placeShort():'',done:false});
+    dTouch();
+    return '메모했습니다. '+text;
+  }
+  function readMemos(){
+    var l=memoList().filter(function(x){return !x.done});
+    if(!l.length)return '남아 있는 메모가 없습니다.';
+    var ord=['첫째','둘째','셋째'];
+    return '메모가 '+l.length+'건 있습니다. '+l.slice(0,3).map(function(x,i){return ord[i]+', '+x.text}).join('. ')+'.';
+  }
+  /* 정비 내역 */
+  function maintList(){return live(D.maint).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||(b.u||0)-(a.u||0)})}
+  /* 항목마다 가장 최근 기록의 '다음 예정일'만 본다 */
+  function maintDue(days){
+    var seen={},out=[],td=todayStr();
+    maintList().forEach(function(x){
+      var k=nz(x.item);if(!k||seen[k])return;seen[k]=1;
+      if(/^\d{4}-\d\d-\d\d$/.test(x.next||'')){var df=dayDiff(x.next,td);if(df<=days)out.push({x:x,df:df})}
+    });
+    return out.sort(function(a,b){return a.df-b.df});
+  }
+  function dueText(o){return o.x.item+' '+(o.df<0?(-o.df)+'일 지남':o.df===0?'오늘':o.df+'일 남음')}
+  var dueShown=false;
+  function dueCheck(){
+    if(dueShown)return;var du=maintDue(14);if(!du.length)return;
+    dueShown=true;
+    updShow('정비 예정 — '+du.slice(0,3).map(dueText).join(' · '),false,15000);
+  }
+  function maintAnswer(t){
+    var hit=null;
+    maintList().forEach(function(x){var k=nz(x.item);if(!hit&&k.length>=2&&t.indexOf(k)>=0)hit=x});
+    if(!hit)return null;
+    var lc=String(hit.item).charCodeAt(String(hit.item).length-1),bt=lc>=0xAC00&&lc<=0xD7A3&&(lc-0xAC00)%28!==0;
+    var r=hit.item+(bt?'은 ':'는 ')+koDate(hit.date)+(hit.km?', '+Number(hit.km).toLocaleString('ko-KR')+'킬로미터에':'에')+' 했습니다.';
+    if(hit.shop)r+=' 정비소는 '+hit.shop+'입니다.';
+    if(hit.next)r+=' 다음 예정일은 '+koDate(hit.next)+'입니다.';
+    return r;
+  }
+  /* 루틴 */
+  function findRoutine(raw){
+    var t=nz(raw),best=null;if(!t)return null;
+    live(D.routines).forEach(function(r){
+      (r.say||[]).concat([r.name]).forEach(function(p){
+        p=nz(p);
+        if(p.length>=2&&(t===p||(t.indexOf(p)>=0&&t.length<=p.length+4))&&(!best||p.length>best.l))best={r:r,l:p.length};
+      });
+    });
+    return best&&best.r;
+  }
+  function runRoutine(r){
+    var steps=(r.steps||[]).slice(),i=0;
+    ovClosed=false;clearTimeout(ovTimer);
+    function next(){
+      if(ovClosed)return;
+      if(i>=steps.length){ovTimer=setTimeout(ovHide,2000);return}
+      var st=String(steps[i++]).trim(),m,wait;
+      if(!st){next();return}
+      if((m=/^(?:기다리기|대기)\s*[:：]?\s*(\d+)/.exec(st))){
+        wait=Math.min(60,+m[1])*1000;ovShow('루틴 · '+r.name,'',m[1]+'초 기다리는 중');
+      }else{
+        var tx;
+        if((m=/^(?:말하기|말)\s*[:：]\s*(.+)$/.exec(st)))tx=m[1];
+        else{tx=dataCommand(st);if(tx===null)tx=command(st);if(tx===null)tx='"'+st+'" 동작은 알 수 없어 건너뜁니다.'}
+        ovShow('루틴 · '+r.name+' ('+i+'/'+steps.length+')',st,tx);say(tx);
+        wait=Math.max(1800,tx.length*230+900);
+      }
+      ovTimer=setTimeout(next,wait);
+    }
+    if(!steps.length){ovShow('루틴 · '+r.name,'','등록된 동작이 없습니다.');ovTimer=setTimeout(ovHide,4000);return}
+    next();
+  }
+  /* 음성 명령 중 폰 연동 기능에 해당하는 말. 해당 없으면 null */
+  function dataCommand(raw){
+    var tt=String(raw||'').trim(),t=tt.replace(/\s+/g,''),m;
+    if(t==='메모'||/^메모(읽어|보여|목록|알려|열어|확인|뭐)/.test(t)){phOpen('mm');return readMemos()}
+    if((m=/^메모(?:해\s*줘|해|추가|저장)?\s+(.+)$/.exec(tt)))return addMemo(m[1]);
+    if((m=/^(.+?)\s*(?:이라고|라고)?\s*메모\s*(?:해\s*줘|해|남겨\s*줘|저장해\s*줘|추가해\s*줘)?$/.exec(tt))&&m[1].replace(/\s/g,'').length>=2)return addMemo(m[1]);
+    if(/^동기화/.test(t)){
+      if(!ghTok())return '폰 연동 설정이 아직 안 되어 있습니다. 옵션의 연동 설정에서 연결해 주세요.';
+      sync();return '폰과 맞춥니다.';
+    }
+    if(/^루틴/.test(t)){phOpen('rt');var n=live(D.routines).length;return n?'루틴이 '+n+'개 있습니다.':'등록된 루틴이 없습니다. 폰에서 등록해 주세요.'}
+    if(/정비|언제|교환|교체|갈았|바꿨/.test(t)){
+      var a=maintAnswer(t);if(a)return a;
+      if(/정비/.test(t)){
+        phOpen('mt');var l=maintList(),du=maintDue(30);
+        if(!l.length)return '등록된 정비 내역이 없습니다. 폰에서 등록해 주세요.';
+        return '정비 내역이 '+l.length+'건 있습니다.'+(du.length?' 다가오는 정비는 '+du.slice(0,2).map(dueText).join(', ')+'입니다.':'');
+      }
+    }
+    return null;
+  }
+  /* 화면 */
+  var phTab='rt';
+  function phOpen(tab){phTab=tab||phTab;$('ph').hidden=false;phDraw()}
+  function phDraw(){
+    if($('ph').hidden)return;
+    [].forEach.call($('phTabs').children,function(b){b.classList.toggle('on',b.getAttribute('data-v')===phTab)});
+    var isSet=phTab==='st',h='',msg='';
+    $('phSet').hidden=!isSet;$('phList').hidden=isSet;
+    var hint=ghTok()?'':' 먼저 "연동 설정"에서 폰과 연결해 주세요.';
+    if(phTab==='rt'){
+      var rl=live(D.routines).sort(function(a,b){return String(a.name).localeCompare(String(b.name))});
+      msg=rl.length?'누르면 바로 실행합니다. 음성으로는 호출말을 말하면 됩니다.':'등록된 루틴이 없습니다. 폰('+PHONE_URL+')에서 등록하면 여기에 나타납니다.'+hint;
+      rl.forEach(function(r){
+        h+='<div class="ap-row" data-id="'+esc(r.id)+'" data-act="run"><b>'+esc(r.name)+'</b>'+(r.auto?' <span class="rk">시동 때 자동</span>':'')+'<small>호출말: '+esc((r.say||[]).join(', ')||r.name)+' · 동작 '+(r.steps||[]).length+'개</small></div>';
+      });
+    }else if(phTab==='mt'){
+      var ml=maintList(),du={};maintDue(30).forEach(function(o){du[o.x.id]=o});
+      msg=ml.length?'최근 순서입니다. 등록·수정은 폰에서 합니다.':'등록된 정비 내역이 없습니다. 폰('+PHONE_URL+')에서 등록하면 여기에 나타납니다.'+hint;
+      ml.forEach(function(x){
+        var sub=[];if(x.km)sub.push(Number(x.km).toLocaleString('ko-KR')+'km');if(x.cost)sub.push(Number(x.cost).toLocaleString('ko-KR')+'원');
+        if(x.shop)sub.push(x.shop);if(x.memo)sub.push(x.memo);
+        var d=du[x.id];if(x.next)sub.push('다음 '+x.next+(d?' ('+dueText(d).replace(x.item+' ','')+')':''));
+        h+='<div class="ap-row'+(d?' due':'')+'"><span class="rk">'+esc(x.date||'')+'</span><b>'+esc(x.item||'')+'</b><small>'+esc(sub.join(' · '))+'</small></div>';
+      });
+    }else if(phTab==='mm'){
+      var mm=memoList();
+      msg=mm.length?'"메모 ○○○"라고 말하면 추가됩니다.':'메모가 없습니다. 음성으로 "메모 우유 사기"처럼 말해 보세요.';
+      mm.forEach(function(x){
+        h+='<div class="ap-row'+(x.done?' dn':'')+'" data-id="'+esc(x.id)+'"><button type="button" class="mini" data-act="del">삭제</button><button type="button" class="mini" data-act="done">'+(x.done?'되돌리기':'완료')+'</button><b>'+esc(x.text)+'</b><small>'+esc(mdOf(x.ts||x.u||0)+' '+hmOf(x.ts||x.u||0)+(x.place?' · '+x.place:''))+'</small></div>';
+      });
+    }else{
+      msg=ghTok()?('연결됨 · 저장소 '+ghRepo()+' · 토큰 끝 '+ghTok().slice(-4)+(syncAt?' · 마지막 동기화 '+mdOf(syncAt)+' '+hmOf(syncAt):'')+(syncMsg?' · '+syncMsg:'')):'아직 연결되지 않았습니다. "폰으로 연결"을 누르고 폰 화면의 안내를 따르면 입력 없이 연결됩니다.';
+      if(!$('phRepo').value)$('phRepo').value=ghRepo();
+      $('phOff').hidden=!ghTok();$('phSync').hidden=!ghTok();
+    }
+    if(!isSet&&syncMsg&&ghTok())msg+=' ('+syncMsg+')';
+    $('phMsg').textContent=msg;$('phList').innerHTML=h;
+  }
+  $('phTabs').addEventListener('click',function(ev){var b=ev.target.closest('button');if(b){phTab=b.getAttribute('data-v');phDraw()}});
+  $('phClose').addEventListener('click',function(){$('ph').hidden=true;try{if(A&&A.pairStop)A.pairStop()}catch(e){}$('phPairMsg').textContent=''});
+  [['phRt','rt'],['phMt','mt'],['phMm','mm'],['phSt','st']].forEach(function(p){$(p[0]).addEventListener('click',function(){phOpen(p[1])})});
+  $('phList').addEventListener('click',function(ev){
+    var row=ev.target.closest('.ap-row');if(!row)return;
+    var id=row.getAttribute('data-id'),btn=ev.target.closest('[data-act]'),act=btn&&btn.getAttribute('data-act');
+    if(act==='run'){
+      var r=live(D.routines).filter(function(x){return x.id===id})[0];
+      if(r){$('ph').hidden=true;fromOp=false;retPending=false;runRoutine(r)}
+    }else if(act==='done'||act==='del'){
+      D.memos.forEach(function(x){if(x.id===id){x.u=Math.max(Date.now(),(x.u||0)+1); /* 시계가 어긋나 있어도 나중에 고친 쪽이 이긴다 */if(act==='del')x.del=true;else x.done=!x.done}});
+      dTouch();
+    }
+  });
+  $('phSync').addEventListener('click',function(){sync()});
+  $('phOff').addEventListener('click',function(){
+    store.set('ghTok','');store.set('cadEtag','');syncMsg='';$('phTok').value='';phDraw();
+  });
+  function phConnect(tok,repo){
+    tok=String(tok||'').trim();repo=String(repo||'').trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,'');
+    if(tok.length<20||/\s/.test(tok))return '토큰 형식이 올바르지 않습니다.';
+    if(repo&&!/^[\w.-]+\/[\w.-]+$/.test(repo))return '저장소는 "계정/이름" 형식으로 입력해 주세요.';
+    store.set('ghTok',tok);store.set('ghRepo',repo||DREPO_DEF);store.set('cadEtag','');
+    $('phTok').value='';$('phRepo').value=ghRepo();
+    return '';
+  }
+  $('phSave').addEventListener('click',function(){
+    var er=phConnect($('phTok').value,$('phRepo').value);
+    if(er){$('phPairMsg').textContent=er;return}
+    $('phPairMsg').textContent='저장했습니다. 폰과 맞춥니다.';sync();
+  });
+  $('phPair').addEventListener('click',function(){
+    if(!A||!A.pairStart){$('phPairMsg').textContent='이 기능은 앱을 최신 버전으로 업데이트한 뒤에 쓸 수 있습니다. 그 전에는 아래에 토큰을 직접 입력해 주세요.';return}
+    var code=''+(1000+Math.floor(Math.random()*9000)),ips='';
+    try{ips=A.pairStart(code)}catch(e){}
+    if(!ips){$('phPairMsg').textContent='연결 대기를 시작하지 못했습니다. 와이파이(핫스팟) 연결을 확인해 주세요.';return}
+    $('phPairMsg').innerHTML='① 폰을 차와 <b style="font-size:1em">같은 와이파이(핫스팟)</b>에 연결합니다.\n② 폰에서 '+esc(PHONE_URL)+' 을 열고 "차에 연결"에 아래 주소를 입력합니다. (10분 동안 유효)\n'+
+      ips.split(',').map(function(ip){return '<b>'+esc(ip)+':8765/'+code+'</b>'}).join('  또는  ');
+  });
+  window.onPairToken=function(e){
+    var er=phConnect(e&&e.token,e&&e.repo);
+    if($('ph').hidden)phOpen('st');
+    $('phPairMsg').textContent=er||'폰과 연결했습니다. 내용을 받아 옵니다.';
+    if(!er)sync();
+  };
+  /* 통신이 다시 붙으면: 못 올린 메모가 있거나 시동 때 받기에 실패했을 때만 다시 맞춘다 */
+  var netPrev=window.onNativeNet;
+  window.onNativeNet=function(e){if(netPrev)netPrev(e);if(ghTok()&&(syncFail||store.get('cadDirty')==='1'))sync()};
+  /* 시동: 12초 뒤 한 번 받아 오고, 정비 예정 알림과 '시동 때 자동' 루틴을 처리한다 */
+  setTimeout(function(){
+    function after(){
+      dueCheck();
+      var au=live(D.routines).filter(function(r){return r.auto})[0];
+      if(au&&$('ov').hidden&&!window.uiBusy())setTimeout(function(){if($('ov').hidden&&!window.uiBusy()){retPending=false;runRoutine(au)}},dueShown?4000:500);
+    }
+    if(ghTok())sync(after);else after();
+  },12000);
+
   /* ---------- 테마 · 옵션 ---------- */
   var root=$('root');
-  var THEMES=['a','b','c'];
+  var THEMES=['a','b','c','d'];
   var theme=THEMES.indexOf(store.get('theme'))>=0?store.get('theme'):'b';
   function setTheme(th){theme=th;store.set('theme',th);root.setAttribute('data-theme',th);opDraw();maybeFetch(false)}
   var barOn=store.get('bar')!=='0';
@@ -1087,7 +1468,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   }
   function opPreviews(){
     THEMES.forEach(function(th){
-      var box=$({a:'pvA',b:'pvB',c:'pvC'}[th]);box.innerHTML='';
+      var box=$({a:'pvA',b:'pvB',c:'pvC',d:'pvD'}[th]);box.innerHTML='';
       var c=root.cloneNode(true);
       c.removeAttribute('id');[].forEach.call(c.querySelectorAll('[id]'),function(e){e.removeAttribute('id')});
       c.setAttribute('data-theme',th);c.setAttribute('data-o','l');
@@ -1159,7 +1540,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   });
   /* 옵션에서 연 하위 화면이 모두 닫히면 옵션으로 돌아온다 */
   (function(){
-    var subs=['dg','sd','ak','md','ap','kk'].map($);
+    var subs=['dg','sd','ak','md','ap','kk','ph'].map($);
     function check(){
       if(!fromOp)return;
       for(var i=0;i<subs.length;i++)if(!subs[i].hidden)return;
