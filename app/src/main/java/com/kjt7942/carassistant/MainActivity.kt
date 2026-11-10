@@ -61,6 +61,7 @@ import java.util.zip.GZIPInputStream
 class MainActivity : Activity() {
 
     private lateinit var web: WebView
+    @Volatile private var destroyed = false
     private val main = Handler(Looper.getMainLooper())
     private val ioExec = Executors.newSingleThreadExecutor()
     private val aiExec = Executors.newSingleThreadExecutor()
@@ -109,6 +110,7 @@ class MainActivity : Activity() {
 
     /** 자동 확인: 이번 시동에서 이미 확인했으면 통신하지 않는다. */
     private fun autoCheck() {
+        if (destroyed) return
         schedulerOn = true
         main.removeCallbacks(checkRunnable)
         if (checkedSleep >= 0 && sleepGap() - checkedSleep < 60_000) {
@@ -120,6 +122,7 @@ class MainActivity : Activity() {
 
     private fun afterCheck(ok: Boolean) {
         checking = false
+        if (destroyed) return
         main.removeCallbacks(checkRunnable)
         if (ok) {
             checkFails = 0
@@ -237,7 +240,10 @@ class MainActivity : Activity() {
     private fun pairStart(code: String): String {
         pairStop()
         val ss = try {
-            java.net.ServerSocket(8765)
+            java.net.ServerSocket().apply {
+                reuseAddress = true
+                bind(java.net.InetSocketAddress(8765))
+            }
         } catch (e: Exception) {
             return ""
         }
@@ -449,6 +455,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        destroyed = true
         stopLocation()
         pairStop()
         main.removeCallbacks(checkRunnable)
@@ -462,6 +469,8 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
         }
         netCallback = null
+        ioExec.shutdown()
+        aiExec.shutdown()
         abandonFocus()
         recognizer?.destroy()
         recognizer = null
@@ -500,8 +509,12 @@ class MainActivity : Activity() {
     // ---------- 화면(JS) 호출 ----------
 
     private fun js(fn: String, obj: JSONObject) {
+        if (destroyed) return
         main.post {
-            web.evaluateJavascript("window.$fn && window.$fn(${obj})", null)
+            if (!destroyed) try {
+                web.evaluateJavascript("window.$fn && window.$fn(${obj})", null)
+            } catch (e: Exception) {
+            }
         }
     }
 
@@ -654,6 +667,7 @@ class MainActivity : Activity() {
     }
 
     private fun checkUpdates(manual: Boolean) {
+        if (destroyed) return
         if (checking) {
             if (manual) upd("none", "확인하는 중입니다", 0)
             return
@@ -684,7 +698,10 @@ class MainActivity : Activity() {
                     ) {
                         val f = uiFile()
                         f.parentFile?.mkdirs()
-                        f.writeText(html)
+                        val tmp = File(f.path + ".tmp")
+                        tmp.writeText(html)
+                        if (f.exists()) f.delete()
+                        if (!tmp.renameTo(f)) throw RuntimeException("화면 파일 저장 실패")
                         uiUpdated = true
                     }
                 }
@@ -760,6 +777,7 @@ class MainActivity : Activity() {
      * 비서 화면이 앞에 있고 · 차가 서 있고 · 통화나 음성 명령 중이 아닐 때까지 기다린다.
      */
     private fun tryAutoInstall(v: Int, tries: Int = 0) {
+        if (destroyed) return
         if (autoPromptedVer == v) return
         if (tries == 0) {
             if (installWaitVer == v) return
@@ -854,6 +872,7 @@ class MainActivity : Activity() {
     }
 
     private fun installUpdate(auto: Boolean = false) {
+        if (destroyed) return
         val f = apkFile
         if (f == null || !f.exists()) {
             upd("error", "설치할 파일이 없습니다. 업데이트 확인을 먼저 해 주세요", 0)
@@ -1001,6 +1020,10 @@ class MainActivity : Activity() {
                         override fun onError(utteranceId: String?) {
                             js("onNativeTtsDone", JSONObject().put("id", utteranceId ?: ""))
                         }
+
+                        override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                            js("onNativeTtsDone", JSONObject().put("id", utteranceId ?: "").put("stop", true))
+                        }
                     })
                 }
             }
@@ -1138,6 +1161,7 @@ class MainActivity : Activity() {
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {
+                if (sttCancelled) return
                 js("onNativeSpeech", speechEvent("end", ""))
             }
 
@@ -1348,6 +1372,7 @@ class MainActivity : Activity() {
                     .put("max_tokens", 500)
                     .put("temperature", 0.5)
                 val c = URL("https://openrouter.ai/api/v1/chat/completions").openConnection() as HttpURLConnection
+                try {
                 c.requestMethod = "POST"
                 c.connectTimeout = 15000
                 c.readTimeout = 40000
@@ -1360,7 +1385,6 @@ class MainActivity : Activity() {
                 val code = c.responseCode
                 val stream = if (code in 200..299) c.inputStream else c.errorStream
                 val txt = stream?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
-                c.disconnect()
                 if (code == 401 || code == 403) {
                     aiEmit(false, "", m, "AI 키가 올바르지 않거나 막혔습니다 ($code)")
                     return
@@ -1378,6 +1402,9 @@ class MainActivity : Activity() {
                 }
                 aiEmit(true, clean, m, "")
                 return
+                } finally {
+                    c.disconnect()
+                }
             } catch (e: Exception) {
                 lastErr = "연결 실패: ${e.message}"
             }
@@ -1683,6 +1710,7 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun ask(modelsJson: String, messagesJson: String) {
+            if (destroyed) return
             aiExec.execute {
                 try {
                     askAi(modelsJson, messagesJson)

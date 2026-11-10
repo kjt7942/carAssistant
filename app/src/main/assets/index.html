@@ -657,6 +657,13 @@ html[data-dim="3"] .gd{opacity:.8}
   function pad(n){return n<10?'0'+n:''+n}
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
   function num(v){return typeof v==='number'&&isFinite(v)}
+  /* 통신이 응답 없이 멈추면(터널·음영 지역) 기다리다 다음 시도가 영영 막히지 않도록 제한 시간을 둔다 */
+  function fetchT(url,o,ms){
+    o=o||{};
+    if(typeof AbortController==='undefined')return fetch(url,o);
+    var ac=new AbortController(),tm=setTimeout(function(){ac.abort()},ms||20000);o.signal=ac.signal;
+    return fetch(url,o).then(function(r){clearTimeout(tm);return r},function(e){clearTimeout(tm);throw (e&&e.name==='AbortError')?new Error('응답 시간 초과'):e});
+  }
 
   /* ---------- 시계 (한국 시간 고정) ---------- */
   var fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'});
@@ -749,7 +756,7 @@ html[data-dim="3"] .gd{opacity:.8}
     document.documentElement.style.setProperty('--day',t.wk===6?DAYC.sat:t.wk===0?DAYC.sun:DAYC.wk);
     drawRing(t);drawAna(t);drawD(t,h,ap);
     applyDim(t);drawStatus();
-    if(!$('op').hidden)opPreviews();
+    if(!$('op').hidden&&opTab==='s')opPreviews();
   }
   function tick(){setTimeout(function(){drawClock();tick()},60000-(Date.now()%60000)+50)}
   function setDim(m){dimMode=m;store.set('dim',m);drawClock()}
@@ -820,7 +827,7 @@ html[data-dim="3"] .gd{opacity:.8}
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=Asia%2FSeoul&forecast_days=1&wind_speed_unit=ms';
     var usedDef=!loc;
     function hm(v){var m=/T(\d\d):(\d\d)/.exec(String(v||''));return m?(+m[1])*60+(+m[2]):null}
-    fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
+    fetchT(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
       var cu=j.current,d=j.daily;
       wx={temp:cu.temperature_2m,feels:cu.apparent_temperature,code:cu.weather_code,wind:cu.wind_speed_10m,
         hi:d.temperature_2m_max[0],lo:d.temperature_2m_min[0],pop:d.precipitation_probability_max[0],
@@ -834,8 +841,8 @@ html[data-dim="3"] .gd{opacity:.8}
   }
   function geocode(c){
     if(placeFor&&km(placeFor.lat,placeFor.lon,c.lat,c.lon)<8)return;
-    fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+c.lat.toFixed(4)+'&longitude='+c.lon.toFixed(4)+'&localityLanguage=ko')
-      .then(function(r){return r.json()}).then(function(j){
+    fetchT('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+c.lat.toFixed(4)+'&longitude='+c.lon.toFixed(4)+'&localityLanguage=ko')
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
         var nm=j.city||j.locality||j.principalSubdivision||'';
         if(nm){place=nm;placeFor=c;wxSave();drawWx()}
       }).catch(function(){});
@@ -862,6 +869,7 @@ html[data-dim="3"] .gd{opacity:.8}
   }
   function drawStatus(){
     var fresh=gpsFresh();
+    if(wasFresh===true&&!fresh){wasFresh=false;drawWx()}
     var sp=fresh&&num(loc.speed)&&loc.speed>=1?Math.round(loc.speed*3.6):0;
     $('spv').textContent=fresh?sp:'-';
     $('dSp').textContent=fresh?sp:'--';gdSet('dArcS','dNdS',sp/240);
@@ -871,9 +879,11 @@ html[data-dim="3"] .gd{opacity:.8}
   }
   function seoulNowFrom(ms){var p={};fmt.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return p.hour+':'+p.minute}
 
+  var wasFresh=null;
   window.onNativeLocation=function(o){
     o.recv=Date.now();loc=o;
-    maybeFetch(false);drawStatus();drawWx();
+    maybeFetch(false);drawStatus();
+    if(wasFresh!==true){wasFresh=true;drawWx()} /* GPS가 처음 잡힐 때만 날씨 칸을 다시 그린다 */
   };
   window.onNativePerms=function(){if(A)A.startLocation();drawStatus()};
   /* 화면이 다시 보이면 시계를 바로 맞추고(절전에서 깨어난 직후 등), 날씨가 오래됐으면 그때 받는다 */
@@ -932,8 +942,10 @@ html[data-dim="3"] .gd{opacity:.8}
   function weatherSentence(){
     if(!wx){maybeFetch(true);return '아직 날씨 정보를 받지 못했습니다. 잠시 후 다시 물어봐 주세요.'}
     if(Date.now()-wx.at>WX_AGE)maybeFetch(true); /* 오래된 정보면 다음 질문을 위해 새로 받아 둔다 */
-    var w=wmo(wx.code,night());
-    return '지금 '+placeLabel().replace(' (기본 위치)','')+' 기온은 '+Math.round(wx.temp)+'도, '+w.c+'입니다. 오늘 최고 '+Math.round(wx.hi)+'도, 최저 '+Math.round(wx.lo)+'도, 강수확률은 '+Math.round(wx.pop)+'퍼센트입니다.';
+    var w=wmo(wx.code,night()),r='지금 '+placeLabel().replace(' (기본 위치)','')+' 기온은 '+Math.round(wx.temp)+'도, '+w.c+'입니다.';
+    if(num(wx.hi)&&num(wx.lo))r+=' 오늘 최고 '+Math.round(wx.hi)+'도, 최저 '+Math.round(wx.lo)+'도.';
+    if(num(wx.pop))r+=' 강수확률은 '+Math.round(wx.pop)+'퍼센트입니다.';
+    return r;
   }
   /* 음성으로 열 수 있는 앱: [말 패턴, 패키지, 이름] — 앞에서부터 먼저 맞는 것 */
   var APPS=[
@@ -959,12 +971,12 @@ html[data-dim="3"] .gd{opacity:.8}
     [/카카오|다음지도/,'카카오맵'],[/구글지도/,'지도'],[/파일/,'파일 관리'],[/엠비씨|mbc/i,'mbc mini'],
     [/화면버튼|터치지원/,'터치 지원'],[/지피에스|gps/i,'androits gps test'],[/카링크/,'car link 2.0'],[/계산/,'계산기'],[/설정/,'설정']
   ];
-  var instApps=null;
+  var instApps=null,instAt=0;
   function nm(x){return String(x||'').toLowerCase().replace(/[\s.·_-]+/g,'')}
   function findInstalled(t){
-    if(!instApps){try{instApps=JSON.parse(A&&A.listApps?A.listApps():'[]')}catch(e){instApps=[]}}
+    if(!instApps||Date.now()-instAt>600000){try{instApps=JSON.parse(A&&A.listApps?A.listApps():'[]')}catch(e){instApps=[]}instAt=Date.now()}
     if(!instApps.length)return null;
-    var tl=t.toLowerCase(),hit=null,i;
+    var tl=nm(t),hit=null,i;
     function byLabel(l){var k=nm(l);for(var j=0;j<instApps.length;j++)if(nm(instApps[j].n)===k)return instApps[j];return null}
     for(i=0;i<ALIAS.length;i++){if(ALIAS[i][0].test(tl)){hit=byLabel(ALIAS[i][1]);if(hit)return hit}}
     var best=null,bl=0;
@@ -1113,7 +1125,7 @@ html[data-dim="3"] .gd{opacity:.8}
   };
   $('bVoice').addEventListener('click',function(){
     if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
-    ovClosed=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
+    ovClosed=false;aiPending=0;memoMode=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
   });
   $('ovClose').addEventListener('click',function(){ovClosed=true;memoMode=false;ovHide();if(A)try{A.stopListening()}catch(e){}});
 
@@ -1257,7 +1269,7 @@ html[data-dim="3"] .gd{opacity:.8}
   function mdLoad(force){
     if(mdLoaded&&!force)return Promise.resolve();
     $('mdMsg').textContent='무료 모델 목록을 불러오는 중…';
-    return fetch('https://openrouter.ai/api/v1/models').then(function(r){return r.json()}).then(function(j){
+    return fetchT('https://openrouter.ai/api/v1/models').then(function(r){return r.json()}).then(function(j){
       var arr=(j.data||[]).filter(function(m){
         var o=(m.architecture&&m.architecture.output_modalities)||['text'];
         return /:free$/.test(m.id)&&o.indexOf('text')>=0&&o.length===1;
@@ -1367,14 +1379,15 @@ html[data-dim="3"] .gd{opacity:.8}
   var D=normD(null);
   try{D=normD(JSON.parse(store.get('cad')||'null'))}catch(e){}
   function dSave(){store.set('cad',JSON.stringify(D))}
-  function dTouch(){dSave();store.set('cadDirty','1');phDraw();sync()}
+  var dGen=0;
+  function dTouch(){dGen++;dSave();store.set('cadDirty','1');phDraw();if(!$('op').hidden)fnDraw();sync()}
   var syncAgain=false,syncBusy=false,syncMsg='',syncFail=0,syncAt=+store.get('cadAt')||0;
   function ghReq(method,body,etag){
     var h={Authorization:'Bearer '+ghTok(),Accept:'application/vnd.github+json'};
     if(etag)h['If-None-Match']=etag;
     var o={method:method,headers:h,cache:'no-store'};
     if(body)o.body=JSON.stringify(body);
-    return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/data.json',o);
+    return fetchT('https://api.github.com/repos/'+ghRepo()+'/contents/data.json',o,25000);
   }
   function sync(cb,depth){
     if(!ghTok()){if(cb)cb(false,'연동 설정이 필요합니다');return}
@@ -1385,18 +1398,19 @@ html[data-dim="3"] .gd{opacity:.8}
       syncBusy=false;syncMsg=msg;
       if(ok){syncFail=0;syncAt=Date.now();store.set('cadAt',''+syncAt)}else syncFail++;
       if(again&&(depth||0)<2){sync(cb,(depth||0)+1);return}
-      phDraw();dueCheck();if(cb)cb(ok,msg);
+      phDraw();if(!$('op').hidden)fnDraw();dueCheck();if(cb)cb(ok,msg);
       if(syncAgain){syncAgain=false;if(ok&&store.get('cadDirty')==='1')sync()}
     }
     function put(sha){
-      var body={message:'차량에서 저장',content:b64e(JSON.stringify(D))};
+      var body={message:'차량에서 저장',content:b64e(JSON.stringify(D))},gen=dGen;
       if(sha)body.sha=sha;
       return ghReq('PUT',body).then(function(r){
         if(r.status===409||r.status===422){fin(false,'다른 기기와 겹쳐 다시 맞추는 중…',true);return}
         if(r.status===404)throw new Error('저장소를 찾을 수 없습니다 ('+ghRepo()+')');
         if(!r.ok)throw new Error('저장 실패 (HTTP '+r.status+')');
-        store.set('cadDirty','0');store.set('cadEtag','');
-        fin(true,'동기화했습니다');
+        if(gen===dGen)store.set('cadDirty','0'); /* 올리는 동안 또 바뀌었으면 한 번 더 올린다 */
+        store.set('cadEtag','');
+        fin(true,'동기화했습니다',gen!==dGen);
       });
     }
     ghReq('GET',null,dirty?'':store.get('cadEtag')).then(function(r){
@@ -1496,8 +1510,12 @@ html[data-dim="3"] .gd{opacity:.8}
         var tx;
         if((m=/^(?:말하기|말)\s*[:：]\s*(.+)$/.exec(st)))tx=m[1];
         else{tx=dataCommand(st);if(tx===null)tx=command(st);if(tx===null)tx='"'+st+'" 동작은 알 수 없어 건너뜁니다.'}
-        ovShow('루틴 · '+r.name+' ('+i+'/'+steps.length+')',st,tx);say(tx);
-        wait=Math.max(1800,tx.length*230+900);
+        ovShow('루틴 · '+r.name+' ('+i+'/'+steps.length+')',st,tx);
+        var talk=A&&A.canSpeak&&A.canSpeak();say(tx);
+        if(talk&&A.hasTtsDone&&A.hasTtsDone()){
+          ttsWait=function(){ttsWait=null;clearTimeout(ovTimer);ovTimer=setTimeout(next,700)};
+          wait=tx.length*400+8000; /* 끝 신호가 오지 않을 때의 안전장치 */
+        }else wait=Math.max(1800,tx.length*230+900);
       }
       ovTimer=setTimeout(next,wait);
     }
@@ -1514,12 +1532,12 @@ html[data-dim="3"] .gd{opacity:.8}
       if(!ghTok())return '폰 연동 설정이 아직 안 되어 있습니다. 옵션의 연동 설정에서 연결해 주세요.';
       sync();return '폰과 맞춥니다.';
     }
-    if(/^루틴/.test(t)){phOpen('rt');var n=live(D.routines).length;return n?'루틴이 '+n+'개 있습니다.':'등록된 루틴이 없습니다. 폰에서 등록해 주세요.'}
+    if(/^루틴/.test(t)){phOpen('rt');var n=live(D.routines).length;return n?'루틴이 '+n+'개 있습니다.':'등록된 루틴이 없습니다. 화면 오른쪽 위 루틴 추가로 등록해 주세요.'}
     if(/정비|언제|교환|교체|갈았|바꿨/.test(t)){
       var a=maintAnswer(t);if(a)return a;
       if(/정비/.test(t)){
         phOpen('mt');var l=maintList(),du=maintDue(30);
-        if(!l.length)return '등록된 정비 내역이 없습니다. 폰에서 등록해 주세요.';
+        if(!l.length)return '등록된 정비 내역이 없습니다. 화면 오른쪽 위 정비 기록 추가로 등록해 주세요.';
         return '정비 내역이 '+l.length+'건 있습니다.'+(du.length?' 다가오는 정비는 '+du.slice(0,2).map(dueText).join(', ')+'입니다.':'');
       }
     }
@@ -1698,7 +1716,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var theme=THEMES.indexOf(store.get('theme'))>=0?store.get('theme'):'b';
   function setTheme(th){theme=th;store.set('theme',th);root.setAttribute('data-theme',th);opDraw();maybeFetch(false)}
   var barOn=store.get('bar')!=='0';
-  function setBar(v){barOn=v;store.set('bar',v?'1':'0');root.setAttribute('data-bar',v?'on':'off');opDraw();if(!$('op').hidden)opPreviews()}
+  function setBar(v){barOn=v;store.set('bar',v?'1':'0');root.setAttribute('data-bar',v?'on':'off');opDraw();if(!$('op').hidden&&opTab==='s')opPreviews()}
   root.setAttribute('data-bar',barOn?'on':'off');
   function setO(){root.setAttribute('data-o',window.innerHeight>window.innerWidth?'p':'l')}
   setO();window.addEventListener('resize',function(){setO();if(!$('op').hidden)fitPv()});
@@ -1783,7 +1801,7 @@ html[data-dim="3"] .gd{opacity:.8}
     $('fnMt').innerHTML=(du.length?'<em>'+esc(dueText(du[0]))+'</em><br>':'')+(ml.length?'기록 '+ml.length+'건':'등록된 기록 없음');
     $('fnMm').innerHTML=mm.length?'남은 메모 '+mm.length+'건<br>'+esc(mm[0].text.length>24?mm[0].text.slice(0,24)+'…':mm[0].text):'남은 메모 없음<br>"메모 ○○○"라고 말해 보세요';
     var h='';
-    if(!ghTok())h+='<div><span>폰과 연결되어 있지 않습니다. 연결하면 루틴·정비 내역을 폰에서 등록할 수 있습니다.</span><button type="button" data-go="phSt">폰과 연결하기</button></div>';
+    if(!ghTok())h+='<div><span>폰과 연결되어 있지 않습니다. 연결하면 차와 폰이 루틴·정비·메모를 함께 씁니다.</span><button type="button" data-go="phSt">폰과 연결하기</button></div>';
     else{
       if(syncFail)h+='<div class="bad"><span>폰과 맞추지 못했습니다'+(syncMsg?' — '+esc(syncMsg):'')+'</span><button type="button" data-go="phSt">연동 설정</button></div>';
       else if(store.get('cadDirty')==='1')h+='<div><span>올리지 못한 변경이 있습니다. 통신이 되면 자동으로 올립니다.</span></div>';

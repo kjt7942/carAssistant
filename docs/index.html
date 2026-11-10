@@ -140,13 +140,15 @@ code{background:#111922;border-radius:6px;padding:1px 6px;font-size:14px}
   function live(l){return l.filter(function(x){return !x.del})}
   function b64e(t){return btoa(unescape(encodeURIComponent(t)))}
   function b64d(t){return decodeURIComponent(escape(atob(String(t).replace(/\s/g,''))))}
-  var D=normD(null),sha=null,dirty=store.get('phDirty')==='1',busy=false,again=false;
+  var D=normD(null),sha=null,dirty=store.get('phDirty')==='1',busy=false,again=false,gen=0;
   try{D=normD(JSON.parse(store.get('phData')||'null'))}catch(e){}
   function keep(){store.set('phData',JSON.stringify(D));store.set('phDirty',dirty?'1':'0')}
   function status(t,c){$('st').textContent=t;$('st').className=c||''}
   function api(path,method,body){
     var o={method:method||'GET',headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},cache:'no-store'};
     if(body)o.body=JSON.stringify(body);
+    if(typeof AbortController!=='undefined'){var ac=new AbortController(),tm=setTimeout(function(){ac.abort()},25000);o.signal=ac.signal;
+      return fetch('https://api.github.com'+path,o).then(function(r){clearTimeout(tm);return r},function(e){clearTimeout(tm);throw (e&&e.name==='AbortError')?new Error('응답 시간 초과 — 인터넷 연결을 확인해 주세요'):e})}
     return fetch('https://api.github.com'+path,o);
   }
   function fileApi(method,body){return api('/repos/'+repo+'/contents/data.json',method,body)}
@@ -167,12 +169,12 @@ code{background:#111922;border-radius:6px;padding:1px 6px;font-size:14px}
       keep();draw();
       if(!dirty&&j)return true;
       if(!dirty&&!j)return true;
-      var body={message:'폰에서 저장',content:b64e(JSON.stringify(D,null,1))};if(sha)body.sha=sha;
+      var body={message:'폰에서 저장',content:b64e(JSON.stringify(D,null,1))},g=gen;if(sha)body.sha=sha;
       return fileApi('PUT',body).then(function(r){
         if((r.status===409||r.status===422)&&(tries||0)<3){busy=false;return sync((tries||0)+1)}
         if(r.status===404)throw new Error('저장소를 찾을 수 없습니다 ('+repo+')');
         if(!r.ok)throw new Error('저장 실패 (HTTP '+r.status+')');
-        return r.json().then(function(x){sha=x.content&&x.content.sha||sha;dirty=false;keep();return true});
+        return r.json().then(function(x){sha=x.content&&x.content.sha||sha;if(g===gen)dirty=false;else again=true; /* 올리는 동안 또 바뀌면 한 번 더 */keep();return true});
       });
     }).then(function(ok){
       busy=false;
@@ -182,7 +184,7 @@ code{background:#111922;border-radius:6px;padding:1px 6px;font-size:14px}
     }).catch(function(e){busy=false;again=false;status(errText(e),'err');return false});
   }
   var saveT=null;
-  function changed(){dirty=true;keep();draw();status('저장 중…');clearTimeout(saveT);saveT=setTimeout(function(){sync()},700)}
+  function changed(){gen++;dirty=true;keep();draw();status('저장 중…');clearTimeout(saveT);saveT=setTimeout(function(){sync()},700)}
 
   /* ----- 처음 연결 ----- */
   function showSetup(msg){$('setup').hidden=false;$('app').hidden=true;$('nav').hidden=true;$('form').hidden=true;$('sMsg').textContent=msg||'';status('')}
