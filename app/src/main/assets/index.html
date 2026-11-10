@@ -271,6 +271,8 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 #dg .dg-row{font-size:max(15px,3.7vw)!important}
 #sd .sd-t{font-size:max(19px,4.6vw)}
 #ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose,#pf #pfCancel{min-width:max(96px,22vw)}
+#phTabs{margin-bottom:max(8px,1.2vh)}
+#phTabs button{white-space:nowrap}
 }
 #tv{margin-bottom:max(14px,2.4vh);padding-bottom:max(12px,2vh);border-bottom:1px solid rgba(255,255,255,.08)}
 #tv .btns{justify-content:flex-start;flex-wrap:wrap}
@@ -624,8 +626,8 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="ph" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">폰 연동</div><div class="op-hb"><button id="phAdd" type="button" class="add" hidden>＋ 추가</button><button id="phClose" type="button">‹ 뒤로</button></div></div>
-    <div class="sg" id="phTabs"><button type="button" data-v="rt">루틴</button><button type="button" data-v="mt">정비 내역</button><button type="button" data-v="mm">메모</button><button type="button" data-v="st">연동 설정</button></div>
+    <div class="op-h"><div class="ov-state" id="phTitle">루틴 · 정비 · 메모</div><div class="op-hb"><button id="phAdd" type="button" class="add" hidden>＋ 추가</button><button id="phClose" type="button">‹ 뒤로</button></div></div>
+    <div class="op-tabs" id="phTabs"><button type="button" data-v="rt">루틴</button><button type="button" data-v="mt">정비 내역</button><button type="button" data-v="mm">메모</button><button type="button" data-v="st">연동 설정</button></div>
     <div class="ov-resp" id="phMsg"></div>
     <div class="pl-list" id="phList"></div>
     <div id="phSet" hidden>
@@ -1680,7 +1682,7 @@ html[data-dim="3"] .gd{opacity:.8}
       });
     }else if(phTab==='mm'){
       var mm=memoList();
-      msg=mm.length?'"메모 ○○○"라고 말하면 추가됩니다.':'메모가 없습니다. 음성으로 "메모 우유 사기"처럼 말해 보세요.';
+      msg=mm.length?'"메모 ○○○"라고 말하면 추가됩니다.':'메모가 없습니다. 오른쪽 위 "＋ 추가"를 누르고 말하거나, 음성으로 "메모 우유 사기"처럼 말해 보세요.';
       mm.forEach(function(x){
         h+='<div class="ap-row mm'+(x.done?' dn':'')+(memoOpen[x.id]?' open':'')+'" data-id="'+esc(x.id)+'"><div class="mm-body"><div class="mm-t">'+esc(x.text)+'</div><small>'+esc(mdOf(x.ts||x.u||0)+' '+hmOf(x.ts||x.u||0)+(x.place?' · '+x.place:''))+'<span class="mm-hint">'+(memoOpen[x.id]?'누르면 접기 ▴':'누르면 전체 보기 ▾')+'</span></small></div><div class="mm-bt"><button type="button" class="mini" data-act="done">'+(x.done?'되돌리기':'완료')+'</button><button type="button" class="mini" data-act="del">삭제</button></div></div>';
       });
@@ -1689,7 +1691,7 @@ html[data-dim="3"] .gd{opacity:.8}
       if(!$('phRepo').value)$('phRepo').value=ghRepo();
       $('phOff').hidden=!ghTok();$('phSync').hidden=!ghTok();
     }
-    if(!isSet&&syncMsg&&ghTok())msg+=' ('+syncMsg+')';
+    if(!isSet&&syncFail&&syncMsg&&ghTok())msg+=' (폰과 맞추지 못함: '+syncMsg+')';
     $('phMsg').textContent=msg;$('phList').innerHTML=h;
     $('phAdd').hidden=phTab==='st';$('phAdd').textContent=phTab==='rt'?'＋ 루틴':phTab==='mt'?'＋ 정비 기록':'＋ 추가';
     [].forEach.call($('phList').querySelectorAll('.ap-row.mm'),function(r){
