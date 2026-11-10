@@ -827,6 +827,8 @@ html[data-dim="3"] .gd{opacity:.8}
   }
   /* 음성으로 열 수 있는 앱: [말 패턴, 패키지, 이름] — 앞에서부터 먼저 맞는 것 */
   var APPS=[
+    [/구글지도/,'com.google.android.apps.maps','구글 지도'],
+    [/플레이스토어/,'com.android.vending','플레이 스토어'],
     [/라디오/,'com.syu.radio','라디오'],
     [/음악|뮤직|노래/,'com.syu.music','뮤직 플레이어'],
     [/블루투스/,'com.syu.bt','블루투스'],
@@ -837,12 +839,39 @@ html[data-dim="3"] .gd{opacity:.8}
     [/카비트|이지커넥|안드로이드오토/,'net.easyconn','CarbitLink'],
     [/브레이브|브라우저|인터넷|웹/,'com.brave.browser','Brave']
   ];
+  /* 설치된 앱 전체에서 찾기: 위의 고정 목록에 없으면 기기의 설치 목록과 이름을 맞춰 본다.
+     영어 이름으로 등록된 앱은 한글 별칭으로도 찾는다. 앱 목록은 처음 필요할 때 한 번만 읽는다. */
+  var ALIAS=[
+    [/유튜브/,'youtube'],[/크롬/,'chrome'],[/구글앱|구글검색/,'google'],[/클로드/,'claude'],
+    [/에이유엑스|외부입력|aux/i,'aux'],[/앱스토어|앱마켓|스토어/,'app store'],[/플레이스토어/,'play 스토어'],
+    [/녹음/,'사운드 녹음기'],[/사진|갤러리|앨범/,'이미지'],[/이큐|음향|사운드설정/,'이퀄라이저'],
+    [/캔버스|차량정보|차정보/,'차량 정보'],[/리모콘|핸들|스티어링/,'핸들리모콘 학습'],[/설명서|지침서/,'조작 지침서'],
+    [/카카오|다음지도/,'카카오맵'],[/구글지도/,'지도'],[/파일/,'파일 관리'],[/엠비씨|mbc/i,'mbc mini'],
+    [/화면버튼|터치지원/,'터치 지원'],[/지피에스|gps/i,'androits gps test'],[/카링크/,'car link 2.0'],[/계산/,'계산기'],[/설정/,'설정']
+  ];
+  var instApps=null;
+  function nm(x){return String(x||'').toLowerCase().replace(/[\s.·_-]+/g,'')}
+  function findInstalled(t){
+    if(!instApps){try{instApps=JSON.parse(A&&A.listApps?A.listApps():'[]')}catch(e){instApps=[]}}
+    if(!instApps.length)return null;
+    var tl=t.toLowerCase(),hit=null,i;
+    function byLabel(l){var k=nm(l);for(var j=0;j<instApps.length;j++)if(nm(instApps[j].n)===k)return instApps[j];return null}
+    for(i=0;i<ALIAS.length;i++){if(ALIAS[i][0].test(tl)){hit=byLabel(ALIAS[i][1]);if(hit)return hit}}
+    var best=null,bl=0;
+    instApps.forEach(function(a){
+      var k=nm(a.n);if(k.length<2||a.p==='com.kjt7942.carassistant')return;
+      if(tl.indexOf(k)>=0&&k.length>bl){best=a;bl=k.length}
+    });
+    return best;
+  }
   function command(raw){
     var t=raw.replace(/\s+/g,'');
     if(t.length>16)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
     var ap=null;
     for(var i=0;i<APPS.length;i++){if(APPS[i][0].test(t)){ap=[APPS[i][1],APPS[i][2]];break}}
-    if(ap&&/켜|열|틀|실행|보여|들려|들을|듣/.test(t)){
+    var verb=/켜|열|틀|실행|보여|들려|들을|듣|띄워|가자|가줘|시작/.test(t);
+    if(!ap&&verb&&!/메모|루틴|동기화|정비|테마|밝기|업데이트|날씨/.test(t)){var f=findInstalled(t);if(f)ap=[f.p,f.n]}
+    if(ap&&verb){
       var ok=false;try{ok=!!(A&&A.launchApp(ap[0]))}catch(e){}
       if(ok){retSkip=true;return ap[1]+'를 엽니다.'}
       return ap[1]+'를 열지 못했습니다.';
