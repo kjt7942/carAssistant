@@ -514,9 +514,38 @@ html[data-dim="3"] .gd{opacity:.8}
   </div>
 </div>
 
-<div class="ov" id="sd" hidden>
-  <div class="ov-in">
-    <div class="op-h"><div class="ov-state">소리 설정</div><button id="sdClose" type="button">‹ 뒤로</button></div>
+<div class="ov" id="op" hidden>
+  <div class="op-in">
+    <div class="op-top">
+      <div class="op-h"><div class="ov-state">옵션</div><button id="opClose" type="button">닫기</button></div>
+      <div class="op-tabs" id="opTabs"><button type="button" data-t="f">기능</button><button type="button" data-t="s">화면</button><button type="button" data-t="a">소리</button><button type="button" data-t="y">시스템</button></div>
+    </div>
+
+    <div class="op-pane" data-p="f">
+      <div class="fn">
+        <button type="button" data-go="phRt"><b>루틴</b><small id="fnRt"></small></button>
+        <button type="button" data-go="phMt"><b>정비 내역</b><small id="fnMt"></small></button>
+        <button type="button" data-go="phMm"><b>메모</b><small id="fnMm"></small></button>
+      </div>
+      <div class="fn-al" id="fnAl" hidden></div>
+    </div>
+
+    <div class="op-pane" data-p="s" hidden>
+      <div class="op-t"><div class="op-n">테마<small>메인 화면 모양 — 눌러서 바꾸기</small></div>
+        <div class="pvs" id="pvs">
+          <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
+          <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
+          <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
+          <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타 계기판</div></div>
+        </div></div>
+      <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
+      <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
+      <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
+      <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 길게(0.6초) 눌러 옵션을 엽니다</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
+    </div>
+
+    <div class="op-pane" data-p="a" hidden>
+      <div id="sd">
     <div class="ov-resp" id="sdMsg"></div>
     <div class="sd-cols">
       <div class="sd-col">
@@ -549,46 +578,12 @@ html[data-dim="3"] .gd{opacity:.8}
           </div></div>
       </div>
     </div>
-  </div>
-</div>
-
-<div class="ov" id="op" hidden>
-  <div class="op-in">
-    <div class="op-top">
-      <div class="op-h"><div class="ov-state">옵션</div><button id="opClose" type="button">닫기</button></div>
-      <div class="op-tabs" id="opTabs"><button type="button" data-t="f">기능</button><button type="button" data-t="s">화면</button><button type="button" data-t="a">소리·AI</button><button type="button" data-t="y">시스템</button></div>
-    </div>
-
-    <div class="op-pane" data-p="f">
-      <div class="fn">
-        <button type="button" data-go="phRt"><b>루틴</b><small id="fnRt"></small></button>
-        <button type="button" data-go="phMt"><b>정비 내역</b><small id="fnMt"></small></button>
-        <button type="button" data-go="phMm"><b>메모</b><small id="fnMm"></small></button>
       </div>
-      <div class="fn-al" id="fnAl" hidden></div>
-    </div>
-
-    <div class="op-pane" data-p="s" hidden>
-      <div class="op-t"><div class="op-n">테마<small>메인 화면 모양 — 눌러서 바꾸기</small></div>
-        <div class="pvs" id="pvs">
-          <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
-          <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
-          <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
-          <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타 계기판</div></div>
-        </div></div>
-      <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
-      <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
-      <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
-      <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 길게(0.6초) 눌러 옵션을 엽니다</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
-    </div>
-
-    <div class="op-pane" data-p="a" hidden>
-      <div class="op-r"><div class="op-n">소리<small>음성 명령 중·후 라디오/음악 처리</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정 ›</button></div></div>
-      <div class="op-r"><div class="op-n">AI<small>오픈라우터 API키, 모델 연결</small></div><div class="sg"><button type="button" class="go" data-go="dgAi">AI 키 ›</button><button type="button" class="go" data-go="dgModels">AI 모델 ›</button></div></div>
     </div>
 
     <div class="op-pane" data-p="y" hidden>
       <div class="op-r"><div class="op-n">업데이트<small id="opVer">현재 버전 확인 중…</small></div><div class="sg"><button type="button" id="opOvl" hidden>자동 재실행 허용</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
+      <div class="op-r"><div class="op-n">AI<small>오픈라우터 API키, 모델 연결</small></div><div class="sg"><button type="button" class="go" data-go="dgAi">AI 키 ›</button><button type="button" class="go" data-go="dgModels">AI 모델 ›</button></div></div>
       <div class="op-r"><div class="op-n">폰 연동 설정<small id="opPh">토큰 · 폰으로 연결 · 동기화</small></div><div class="sg"><button type="button" class="go" data-go="phSt">연동 설정 ›</button></div></div>
       <div class="op-r"><div class="op-n">진단<small>GPS·마이크 점검 · 앱 목록 · 핸들 버튼 점검</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단 열기 ›</button></div></div>
     </div>
@@ -596,7 +591,7 @@ html[data-dim="3"] .gd{opacity:.8}
 </div>
 
 <div hidden aria-hidden="true">
-  <button id="dgAi" type="button"></button><button id="dgSound" type="button"></button><button id="dgFull" type="button"></button><button id="dgModels" type="button"></button><button id="dgUpd" type="button"></button><button id="phRt" type="button"></button><button id="phMt" type="button"></button><button id="phMm" type="button"></button><button id="phSt" type="button"></button>
+  <button id="dgAi" type="button"></button><button id="dgFull" type="button"></button><button id="dgModels" type="button"></button><button id="dgUpd" type="button"></button><button id="phRt" type="button"></button><button id="phMt" type="button"></button><button id="phMm" type="button"></button><button id="phSt" type="button"></button>
 </div>
 
 <div class="ov" id="ph" hidden>
@@ -866,7 +861,7 @@ html[data-dim="3"] .gd{opacity:.8}
   window.onNativeNet=function(){if(wxFail){wxNext=0;maybeFetch(false)}};
   /* 새 화면 적용·설치 창 띄우기를 미뤄야 하는 상태인지(음성 명령 중이거나 설정 화면을 보는 중) */
   window.uiBusy=function(){
-    var ids=['ov','op','dg','kk','md','ak','ap','sd','ph'];
+    var ids=['ov','op','dg','kk','md','ak','ap','ph'];
     for(var i=0;i<ids.length;i++){var el=$(ids[i]);if(el&&!el.hidden)return true}
     return false;
   };
@@ -1188,7 +1183,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var voiceT=0;
   /* 전화 종료 버튼 = 뒤로 가기. 열린 화면을 하나 닫고, 아무것도 없으면 비서 앱을 닫아 이전 앱으로 돌아간다 */
   window.onEndKey=function(){
-    var ids=['ov','dg','kk','md','ak','ap','sd','ph','op'];
+    var ids=['ov','dg','kk','md','ak','ap','ph','op'];
     for(var i=0;i<ids.length;i++){
       var el=$(ids[i]);
       if(el&&!el.hidden){var b=$(ids[i]+'Close');if(b){b.click();return}el.hidden=true;return}
@@ -1283,6 +1278,7 @@ html[data-dim="3"] .gd{opacity:.8}
   });
   /* ---------- 소리 설정 ---------- */
   function sdDraw(msg){
+    if(!A||!A.getAudio)msg='이 설정은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.';
     var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
     [].forEach.call($('sdDuck').children,function(b){b.classList.toggle('on',+b.getAttribute('data-d')===a.duck)});
     [].forEach.call($('sdRes').children,function(b){b.classList.toggle('on',(+b.getAttribute('data-r')===1)===!!a.resume)});
@@ -1290,12 +1286,8 @@ html[data-dim="3"] .gd{opacity:.8}
     [].forEach.call($('sdRet').children,function(b){b.classList.toggle('on',b.getAttribute('data-a')===retApp())});
     $('sdMsg').textContent=msg||('현재 미디어 볼륨 '+(a.vol!=null?a.vol+'/'+a.max:'-')+' · 소리 재생 감지: '+(a.active?'예':'아니오')+'. 라디오 소리가 돌아오는 조합을 찾아 보세요.');
   }
-  $('dgSound').addEventListener('click',function(){
-    if(!A||!A.getAudio){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 설정은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}
-    $('dg').hidden=true;sdDraw();$('sd').hidden=false;
-  });
   $('sd').addEventListener('click',function(ev){
-    var b=ev.target.closest('button');if(!b||b.id==='sdClose')return;
+    var b=ev.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-f')){store.set('retFront',b.getAttribute('data-f'));sdDraw('저장했습니다.');return}
     if(b.hasAttribute('data-a')){store.set('retApp',b.getAttribute('data-a'));sdDraw('저장했습니다. 음성 명령이 끝나면 선택한 앱을 다시 엽니다.');return}
     var a={};try{a=JSON.parse(A.getAudio())}catch(e){}
@@ -1305,7 +1297,6 @@ html[data-dim="3"] .gd{opacity:.8}
     try{A.setAudio(d,r)}catch(e){}
     sdDraw('저장했습니다. 음성 명령으로 라디오가 돌아오는지 확인해 보세요.');
   });
-  $('sdClose').addEventListener('click',function(){$('sd').hidden=true});
   function fullLabel(){var on=true;try{on=A.getFullscreen()}catch(e){}$('dgFull').textContent='전체화면: '+(on?'켜짐':'꺼짐');return on}
   $('dgFull').addEventListener('click',function(){
     if(!A||!A.setFullscreen){ovShow('앱을 업데이트해 주세요','','이 설정은 최신 앱에서 가능합니다.');return}
@@ -1705,6 +1696,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var opTab='f';
   function tabShow(){
     [].forEach.call($('opTabs').children,function(b){b.classList.toggle('on',b.getAttribute('data-t')===opTab)});
+    if(opTab==='a')sdDraw();
     [].forEach.call(document.querySelectorAll('.op-pane'),function(p){p.hidden=p.getAttribute('data-p')!==opTab});
   }
   /* 기능 탭 카드와 알림: 평소에는 알림이 없고, 연결 문제나 정비 예정이 있을 때만 나타난다 */
@@ -1750,7 +1742,7 @@ html[data-dim="3"] .gd{opacity:.8}
   });
   /* 옵션에서 연 하위 화면이 모두 닫히면 옵션으로 돌아온다 */
   (function(){
-    var subs=['dg','sd','ak','md','ap','kk','ph'].map($);
+    var subs=['dg','ak','md','ap','kk','ph'].map($);
     function check(){
       if(!fromOp)return;
       for(var i=0;i<subs.length;i++)if(!subs[i].hidden)return;
