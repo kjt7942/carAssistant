@@ -991,6 +991,17 @@ class MainActivity : Activity() {
                 ttsReady = status == TextToSpeech.SUCCESS
                 if (ttsReady) {
                     ttsKo = tts?.setLanguage(Locale.KOREAN) ?: -99
+                    tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {}
+                        override fun onDone(utteranceId: String?) {
+                            js("onNativeTtsDone", JSONObject().put("id", utteranceId ?: ""))
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) {
+                            js("onNativeTtsDone", JSONObject().put("id", utteranceId ?: ""))
+                        }
+                    })
                 }
             }
         } catch (e: Exception) {
@@ -1425,6 +1436,9 @@ class MainActivity : Activity() {
         fun speak(text: String) {
             main.post { this@MainActivity.speak(text) }
         }
+
+        @JavascriptInterface
+        fun hasTtsDone(): Boolean = true
 
         @JavascriptInterface
         fun canSpeak(): Boolean = ttsReady && ttsKo >= 0
