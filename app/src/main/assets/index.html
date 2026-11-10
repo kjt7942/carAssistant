@@ -905,7 +905,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var retPending=false,retSkip=false;
   function retApp(){var v=store.get('retApp');return v===null?'prev':v}
   function ovHide(){
-    $('ov').hidden=true;clearTimeout(ovTimer);ttsWait=null;
+    $('ov').hidden=true;clearTimeout(ovTimer);ttsWait=null;convo=false;
     if(retPending){
       retPending=false;
       var pk=retApp();
@@ -938,6 +938,24 @@ html[data-dim="3"] .gd{opacity:.8}
     }else ovTimer=setTimeout(ovHide,HOLD+Math.min(6000,clean.length*60));
   }
   window.onNativeTtsDone=function(){if(ttsWait)ttsWait()};
+  /* 대화 모드: AI가 대답을 마치면 버튼을 누르지 않아도 "삑" 뒤에 다시 듣는다.
+     말이 없거나 "그만·됐어·고마워"라고 하면 끝난다. 정해진 명령(라디오 켜 등)을 실행하면 대화도 끝난다. */
+  var convo=false;
+  function listenAgain(){
+    if(ovClosed||!A)return;
+    convo=true;ovShow('대화 중 · 말씀하세요','','끝내려면 "그만"이라고 말하거나 닫기를 누르세요');
+    try{A.listen()}catch(e){ovHide()}
+  }
+  function sayThenListen(text){
+    clearTimeout(ovTimer);ttsWait=null;
+    var clean=String(text||'').replace(/[*#`_>~-]/g,' ');
+    if(!(A&&A.canSpeak&&A.canSpeak())){sayThenHide(text);return}
+    say(clean);
+    if(A.hasTtsDone&&A.hasTtsDone()){
+      ttsWait=function(){ttsWait=null;clearTimeout(ovTimer);ovTimer=setTimeout(listenAgain,400)};
+      ovTimer=setTimeout(listenAgain,clean.length*400+10000);
+    }else ovTimer=setTimeout(listenAgain,clean.length*230+800);
+  }
   function koTime(){var t=seoulNow(),h=t.h,ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12;return ap+' '+h+'시 '+(t.mi?t.mi+'분':'정각')}
   function weatherSentence(){
     if(!wx){maybeFetch(true);return '아직 날씨 정보를 받지 못했습니다. 잠시 후 다시 물어봐 주세요.'}
@@ -1024,10 +1042,10 @@ html[data-dim="3"] .gd{opacity:.8}
     if(ok){retSkip=true;return msg}
     return '브라우저를 열지 못했습니다.';
   }
-  function command(raw){
+  function command(raw,fromAi){
     var bc=browserCmd(raw);if(bc!==null)return bc;
     var t=raw.replace(/\s+/g,'');
-    if(t.length>16)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
+    if(t.length>16&&!fromAi)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
     var ap=null;
     for(var i=0;i<APPS.length;i++){if(APPS[i][0].test(t)){ap=[APPS[i][1],APPS[i][2]];break}}
     var verb=/켜|열|틀|실행|보여|들려|들을|듣|띄워|가자|가줘|시작/.test(t);
@@ -1067,7 +1085,7 @@ html[data-dim="3"] .gd{opacity:.8}
     if(out.indexOf('openrouter/free')<0)out.push('openrouter/free');
     return out;
   }
-  var aiHist=[],aiPending=0;
+  var aiHist=[],aiPending=0,aiHistAt=0;
   function aiContext(){
     var n=seoulNow(),c='현재 시각 '+koTime()+', 오늘 '+n.mo+'월 '+n.d+'일 '+DOW[n.wk]+'.';
     c+=' 위치: '+placeLabel().replace(' (기본 위치)','')+'.';
@@ -1075,11 +1093,45 @@ html[data-dim="3"] .gd{opacity:.8}
     if(wx)c+=' '+weatherSentence();
     return c;
   }
+  /* AI가 고를 수 있는 명령: 모두 이 앱의 정해진 명령 처리기가 그대로 알아듣는 말이다 */
+  var AI_CMDS=['라디오 켜','음악 틀어','네비 켜','블루투스 열어','비디오 열어','카링크 켜','<앱 이름> 열어',
+    '브레이브로 <사이트 이름> 열어줘','브레이브로 <검색어> 검색해줘','크롬으로 <검색어> 검색해줘',
+    '날씨','몇시','날짜','밝게','어둡게','밝기 보통','밝기 자동','테마','24시간','12시간',
+    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침'];
+  function aiLists(){
+    var o='',ap=[];
+    try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
+    (instApps||[]).forEach(function(a){if(a.p!=='com.kjt7942.carassistant'&&ap.length<70)ap.push(a.n)});
+    if(ap.length)o+='\n설치된 앱: '+ap.join(', ');
+    var rn=live(D.routines).map(function(r){return r.name});if(rn.length)o+='\n루틴: '+rn.join(', ');
+    var it={};maintList().forEach(function(x){if(x.item)it[x.item]=1});var ik=Object.keys(it);if(ik.length)o+='\n정비 항목: '+ik.join(', ');
+    return o;
+  }
+  /* AI 답에서 {"cmd","say"}를 꺼낸다. 형식이 틀리면 글 전체를 대답으로 본다 */
+  function aiParse(t){
+    var m=/\{[\s\S]*\}/.exec(String(t||''));
+    if(m){try{var j=JSON.parse(m[0]);return {cmd:String(j.cmd||'').trim(),say:String(j.say||'').trim()}}catch(e){}}
+    return {cmd:'',say:String(t||'').replace(/```[a-z]*|```/g,'').trim()};
+  }
+  /* AI가 고른 명령을 실제로 실행한다. 목록 밖의 말이면 실행하지 않는다 */
+  function aiRun(cmd){
+    if(!cmd||/^말하기|기다리기/.test(cmd))return null;
+    var rt=findRoutine(cmd);if(rt)return {routine:rt};
+    var r=dataCommand(cmd);if(r===null)r=command(cmd,true);
+    return r===null?null:{text:r};
+  }
   function aiAsk(text){
     if(!A||typeof A.ask!=='function'||!A.hasApiKey){return '이 기능은 앱을 최신 버전으로 업데이트한 뒤에 쓸 수 있습니다.'}
     if(!A.hasApiKey())return 'AI 키가 없습니다. 진단 화면의 AI 키 설정에서 키를 입력해 주세요.';
-    var sys='너는 승용차 안에서 운전자와 음성으로 대화하는 한국어 비서다. 운전 중이므로 답은 한두 문장, 길어도 세 문장으로 짧게 한다. 마크다운, 목록, 이모지, 특수기호는 쓰지 않는다. 모르는 것은 모른다고 말하고 지어내지 않는다. 길 안내, 전화, 음악 재생 같은 기기 조작은 아직 할 수 없다고 솔직히 말한다. 참고 정보: '+aiContext();
-    var msgs=[{role:'system',content:sys}].concat(aiHist.slice(-6),[{role:'user',content:text}]);
+    var sys='너는 승용차 안에서 운전자와 음성으로 대화하는 한국어 비서다. 운전자의 말을 듣고, 차 안의 앱이 할 수 있는 동작이면 그 동작으로 바꾸고, 아니면 짧게 대답한다.\n'+
+      '반드시 JSON 한 줄로만 답한다: {"cmd":"명령","say":"운전자에게 할 말"}\n'+
+      '- cmd는 아래 명령 중 하나를 그대로(꺾쇠 부분만 채워서) 쓴다. 해당하는 동작이 없으면 cmd는 빈 문자열.\n'+
+      '- say는 한두 문장. 마크다운·이모지·특수기호 금지. cmd가 있으면 say는 비워도 된다. 모르는 것은 지어내지 않는다.\n'+
+      '- 운전자가 대화를 원하면 친구처럼 자연스럽게 이어서 대답하고, 앞서 나눈 말을 기억한다.\n'+
+      '- 에어컨·창문·시트·전화 걸기처럼 아래 목록에 없는 기기 조작은 cmd를 비우고 아직 할 수 없다고 말한다.\n'+
+      '명령 목록:\n'+AI_CMDS.join('\n')+aiLists()+'\n참고 정보: '+aiContext();
+    if(Date.now()-aiHistAt>600000)aiHist=[];aiHistAt=Date.now();
+    var msgs=[{role:'system',content:sys}].concat(aiHist.slice(-10),[{role:'user',content:text}]);
     aiPending=Date.now();var my=aiPending;
     aiLast=text;
     try{A.ask(JSON.stringify(aiModels()),JSON.stringify(msgs))}catch(e){return 'AI 호출에 실패했습니다.'}
@@ -1096,9 +1148,14 @@ html[data-dim="3"] .gd{opacity:.8}
     if(ovClosed||!aiPending)return;
     aiPending=0;clearTimeout(ovTimer);
     if(e.ok){
-      aiHist.push({role:'user',content:aiLast},{role:'assistant',content:e.text});
-      if(aiHist.length>12)aiHist=aiHist.slice(-12);
-      ovShow('답변',aiLast,e.text);sayThenHide(e.text);
+      var pr=aiParse(e.text),run=pr.cmd?aiRun(pr.cmd):null,reply;
+      if(run&&run.routine){aiHist.push({role:'user',content:aiLast},{role:'assistant',content:JSON.stringify({cmd:pr.cmd,say:''})});runRoutine(run.routine);return}
+      if(run){reply=run.text;if(pr.say&&pr.say.length<60&&reply.length<60&&reply.indexOf(pr.say)<0)reply=pr.say+' '+reply}
+      else reply=pr.say||(pr.cmd?'그 동작은 아직 할 수 없습니다.':'잘 모르겠습니다. 다시 말씀해 주세요.');
+      aiHist.push({role:'user',content:aiLast},{role:'assistant',content:JSON.stringify({cmd:run?pr.cmd:'',say:reply})});
+      if(aiHist.length>16)aiHist=aiHist.slice(-16);
+      ovShow(run?'알아들었습니다 · '+pr.cmd:'답변',aiLast,reply);
+      if(run)sayThenHide(reply);else sayThenListen(reply);
     }else{ovShow('AI 연결 실패',aiLast,e.err||'알 수 없는 오류');ovTimer=setTimeout(ovHide,9000)}
   };
   var ovClosed=false;
@@ -1114,14 +1171,19 @@ html[data-dim="3"] .gd{opacity:.8}
     if(e.type==='ready'){ovShow('듣는 중… 말씀해 주세요','','')}
     else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
     else if(e.type==='result'){
+      if(convo&&!e.text){ovShow('대화를 마칩니다','','');ovTimer=setTimeout(ovHide,1200);return}
       if(!e.text){ovShow('알아듣지 못했습니다','','다시 눌러서 말씀해 주세요.');ovTimer=setTimeout(ovHide,3000);return}
+      if(convo&&/^(그만|됐어|됐다|끝|고마워|고맙|수고|대화\s*끝|종료|이제\s*됐)/.test(e.text.trim())){convo=false;ovShow('대화 종료',e.text,'네, 대화를 마칠게요.');sayThenHide('네, 대화를 마칠게요.');return}
       var rt=findRoutine(e.text);if(rt){runRoutine(rt);return}
       var r=dataCommand(e.text);if(r===null)r=command(e.text);
       if(r===null)r=aiAsk(e.text);
       if(r==='\u0000AI'){ovShow('생각하는 중…',e.text,'');ovTimer=setTimeout(function(){if(aiPending){aiPending=0;ovShow('AI 응답 지연',e.text,'응답이 오지 않았습니다. 다시 말씀해 주세요.');ovTimer=setTimeout(ovHide,6000)}},60000);return}
       ovShow('인식 완료',e.text,r);sayThenHide(r);
     }
-    else if(e.type==='error'){ovShow('음성 인식 실패','',e.text);ovTimer=setTimeout(ovHide,5000)}
+    else if(e.type==='error'){
+      if(convo){ovShow('대화를 마칩니다','','');ovTimer=setTimeout(ovHide,1200);return} /* 대화 중 말이 없으면 조용히 끝낸다 */
+      ovShow('음성 인식 실패','',e.text);ovTimer=setTimeout(ovHide,5000)
+    }
   };
   $('bVoice').addEventListener('click',function(){
     if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
