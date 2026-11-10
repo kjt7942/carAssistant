@@ -337,6 +337,64 @@ html[data-dim="3"] .gd{opacity:.8}
 #phSet{display:flex;flex-direction:column;gap:max(8px,1.4vh)}
 #phPairMsg{white-space:pre-line}
 #phPairMsg b{color:var(--accent);font-size:1.25em}
+
+/* ===== 옵션 개편: 탭 · 고정 머리글 · 같은 크기 버튼 ===== */
+.ov:not(#ov){padding-top:0}
+#op .op-in,#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in,#ph .ov-in{margin:0 auto!important}
+.op-top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;gap:max(8px,1.2vh);padding-bottom:max(8px,1.2vh)}
+#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h,#ph .op-h{position:sticky;top:0;z-index:20;background:var(--bg);padding-bottom:max(8px,1.2vh)}
+.op-h{padding-top:max(14px,2.4vh);min-height:max(54px,7.4vh);box-sizing:content-box}
+.op-top .op-h{padding-bottom:0}
+.op-hb{display:flex;gap:12px;flex:none}
+#op .op-h button,#ak .op-h button,#ap .op-h button,#kk .op-h button,#md .op-h button,#sd .op-h button,#dg .op-h button,#ph .op-h button{
+  height:max(54px,7.4vh);min-height:0;min-width:max(120px,11vw);padding:0 22px;font-size:max(20px,min(3.6vh,2.4vw));font-weight:600;color:var(--fg);border-color:var(--fg-dim);flex:none}
+#ph .op-h button.add{background:var(--accent);color:#031318;border-color:var(--accent);font-weight:700}
+.op-tabs{display:flex;gap:10px}
+.op-tabs button{flex:1 1 0;min-width:0;height:max(54px,7.4vh);min-height:0;padding:0 8px;font-size:max(20px,min(3.8vh,2.6vw))}
+.op-tabs button.on{background:var(--accent);color:#031318;border-color:var(--accent);font-weight:700}
+.op-pane{display:flex;flex-direction:column;gap:max(8px,1.4vh)}
+.op-pane[hidden]{display:none}
+.op-r{min-height:max(64px,9vh)}
+.sg button{flex:0 0 auto;width:max(120px,11vw);min-width:0;height:max(52px,7vh);min-height:0;padding:0 6px;display:flex;align-items:center;justify-content:center;text-align:center}
+.pvs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.pvcard{max-width:none;flex:none}
+.fn{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.fn button{display:block;height:auto;min-height:max(140px,24vh);text-align:left;padding:18px 22px;border-left:4px solid var(--accent);border-radius:16px;background:linear-gradient(90deg,rgba(116,182,198,.12),transparent);color:var(--fg);white-space:normal}
+.fn button b{display:block;font-size:max(26px,min(5.4vh,3.6vw));font-weight:700}
+.fn button small{display:block;margin-top:10px;font-size:max(17px,min(3.4vh,2.2vw));color:var(--fg-dim);line-height:1.4;font-weight:400}
+.fn button small em{font-style:normal;color:var(--warn)}
+.fn-al{display:flex;flex-direction:column;gap:10px}
+.fn-al>div{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:12px;padding:12px 18px;font-size:max(17px,min(3.4vh,2.3vw));color:var(--fg)}
+.fn-al>div.bad{border-left-color:var(--bad)}
+.fn-al button{width:auto;min-width:max(150px,14vw);height:max(46px,6vh);padding:0 16px;font-size:max(17px,min(3.2vh,2.2vw));color:var(--accent);border-color:rgba(116,182,198,.45)}
+/* 글이 긴 버튼(…›, 업데이트 확인)은 같은 높이에 글 길이만큼 넓게 */
+.sg button.go,.sg #opOvl{width:auto;min-width:max(150px,13vw);padding:0 20px;white-space:nowrap}
+/* 화면 탭이 스크롤 없이 한 화면에 들어가도록 간격 정리 */
+.op-pane[data-p=s]{gap:max(6px,1vh)}
+.op-pane[data-p=s] .op-r{min-height:0;padding-top:max(3px,.5vh);padding-bottom:max(3px,.5vh)}
+.op-pane[data-p=s] .op-n{font-size:max(19px,min(3.8vh,2.5vw))}
+.op-pane[data-p=s] .op-n small{font-size:.58em;margin-top:0}
+.op-pane[data-p=s] .sg button{height:max(46px,6.2vh)}
+.op-pane[data-p=s] .op-t{padding-top:max(3px,.5vh);padding-bottom:max(3px,.5vh);gap:6px}
+.op-pane[data-p=s] .pvcard{padding:6px}
+.op-pane[data-p=s] .pvs{grid-template-columns:repeat(4,minmax(0,max(150px,15vw)));gap:12px}
+.op-pane[data-p=s]{gap:max(4px,.7vh)}
+.op-pane[data-p=s] .pvc{margin-top:4px;font-size:max(15px,min(3vh,2vw))}
+/* 메모 줄: 긴 글은 2줄까지, 누르면 펼침 */
+#ph .ap-row.mm{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}
+#ph .mm-body{flex:1;min-width:0}
+#ph .mm-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;font-weight:500;line-height:1.35}
+#ph .mm.open .mm-t{display:block;overflow:visible}
+#ph .mm-hint{display:none;color:var(--accent);margin-left:.6em}
+#ph .mm.long .mm-hint,#ph .mm.open .mm-hint{display:inline}
+#ph .mm-bt{display:flex;gap:8px;flex:none}
+#ph .mm-bt .mini{float:none;margin:0;font-size:max(16px,min(3vh,2vw));min-height:max(44px,6vh);min-width:max(76px,7vw);padding:0 12px}
+#ph .ap-row.mm.dn .mm-t{text-decoration:line-through;color:var(--fg-dim)}
+@media (orientation:portrait){
+  .op-tabs button{font-size:max(16px,4vw)}.fn{grid-template-columns:1fr}.fn button{min-height:0}.pvs{grid-template-columns:repeat(2,1fr)}
+  .sg button{flex:1 1 22%;width:auto}
+  #op .op-h button,#ak .op-h button,#ap .op-h button,#kk .op-h button,#md .op-h button,#sd .op-h button,#dg .op-h button,#ph .op-h button{min-width:max(96px,20vw);font-size:max(16px,4vw)}
+}
 </style>
 </head>
 <body>
@@ -411,7 +469,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="ak" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">AI 연결 — 오픈라우터 키</div><button id="akClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state">AI 연결 — 오픈라우터 키</div><button id="akClose" type="button">‹ 뒤로</button></div>
     <div class="ov-resp" id="akMsg"></div>
     <input class="ak-in" id="akIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="sk-or-v1-…">
     <div class="btns" style="justify-content:flex-start">
@@ -423,7 +481,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="ap" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state" id="apTitle">설치된 앱 — 누르면 실행</div><button id="apClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state" id="apTitle">설치된 앱 — 누르면 실행</div><button id="apClose" type="button">‹ 뒤로</button></div>
     <div class="pl-list" id="apList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="apFilter" type="button">차량 관련만</button>
@@ -435,7 +493,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="kk" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">버튼 점검 — 핸들 리모컨이나 차량 버튼을 눌러 보세요</div><button id="kkClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state">버튼 점검 — 핸들 리모컨이나 차량 버튼을 눌러 보세요</div><button id="kkClose" type="button">‹ 뒤로</button></div>
     <div class="ov-resp" id="kkDev"></div>
     <div class="pl-list" id="kkList"><div class="ov-resp">아직 입력이 없습니다.</div></div>
     <div class="btns" style="justify-content:flex-start">
@@ -446,7 +504,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="md" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state" id="mdTitle">AI 모델 선택 — 무료 모델</div><button id="mdClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state" id="mdTitle">AI 모델 선택 — 무료 모델</div><button id="mdClose" type="button">‹ 뒤로</button></div>
     <div class="ov-resp" id="mdMsg"></div>
     <div class="pl-list" id="mdList"></div>
     <div class="btns" style="justify-content:flex-start">
@@ -458,7 +516,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="sd" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">소리 설정</div><button id="sdClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state">소리 설정</div><button id="sdClose" type="button">‹ 뒤로</button></div>
     <div class="ov-resp" id="sdMsg"></div>
     <div class="sd-cols">
       <div class="sd-col">
@@ -496,23 +554,44 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="op" hidden>
   <div class="op-in">
-    <div class="op-h"><div class="ov-state">옵션</div><button id="opClose" type="button">닫기</button></div>
-    <div class="op-t"><div class="op-n">테마<small>메인 화면 모양 — 눌러서 바꾸기</small></div>
-      <div class="pvs" id="pvs">
-        <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
-        <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
-        <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
-        <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타 계기판</div></div>
-      </div></div>
-    <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
-    <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
-    <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
-    <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 길게(0.6초) 눌러 옵션을 엽니다 · 핸들 음성 버튼은 그대로 사용</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
-    <div class="op-r"><div class="op-n">소리<small>음성 명령 중·후 라디오/음악 처리</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정 ›</button></div></div>
-    <div class="op-r"><div class="op-n">AI<small>오픈라우터 API키, 모델 연결</small></div><div class="sg"><button type="button" class="go" data-go="dgAi">AI 키 ›</button><button type="button" class="go" data-go="dgModels">AI 모델 ›</button></div></div>
-    <div class="op-r"><div class="op-n">폰 연동<small id="opPh">루틴 · 정비 내역 · 메모 — 폰에서 등록하면 차에 나타납니다</small></div><div class="sg"><button type="button" class="go" data-go="phRt">루틴 ›</button><button type="button" class="go" data-go="phMt">정비 ›</button><button type="button" class="go" data-go="phMm">메모 ›</button><button type="button" class="go" data-go="phSt">연동 설정 ›</button></div></div>
-    <div class="op-r"><div class="op-n">진단<small>GPS·마이크 점검 · 앱 목록 · 핸들 버튼 점검</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단 열기 ›</button></div></div>
-    <div class="op-r"><div class="op-n">업데이트<small id="opVer">현재 버전 확인 중…</small></div><div class="sg"><button type="button" id="opOvl" hidden>자동 재실행 허용</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
+    <div class="op-top">
+      <div class="op-h"><div class="ov-state">옵션</div><button id="opClose" type="button">닫기</button></div>
+      <div class="op-tabs" id="opTabs"><button type="button" data-t="f">기능</button><button type="button" data-t="s">화면</button><button type="button" data-t="a">소리·AI</button><button type="button" data-t="y">시스템</button></div>
+    </div>
+
+    <div class="op-pane" data-p="f">
+      <div class="fn">
+        <button type="button" data-go="phRt"><b>루틴</b><small id="fnRt"></small></button>
+        <button type="button" data-go="phMt"><b>정비 내역</b><small id="fnMt"></small></button>
+        <button type="button" data-go="phMm"><b>메모</b><small id="fnMm"></small></button>
+      </div>
+      <div class="fn-al" id="fnAl" hidden></div>
+    </div>
+
+    <div class="op-pane" data-p="s" hidden>
+      <div class="op-t"><div class="op-n">테마<small>메인 화면 모양 — 눌러서 바꾸기</small></div>
+        <div class="pvs" id="pvs">
+          <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
+          <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
+          <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
+          <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타 계기판</div></div>
+        </div></div>
+      <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
+      <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>
+      <div class="op-r" id="opFullRow"><div class="op-n">전체화면<small>상단 막대 숨기기</small></div><div class="sg" id="opFull"><button type="button" data-v="1">켜짐</button><button type="button" data-v="0">꺼짐</button></div></div>
+      <div class="op-r"><div class="op-n">하단 버튼<small>끄면 화면을 길게(0.6초) 눌러 옵션을 엽니다</small></div><div class="sg" id="opBar"><button type="button" data-v="1">보이기</button><button type="button" data-v="0">숨기기</button></div></div>
+    </div>
+
+    <div class="op-pane" data-p="a" hidden>
+      <div class="op-r"><div class="op-n">소리<small>음성 명령 중·후 라디오/음악 처리</small></div><div class="sg"><button type="button" class="go" data-go="dgSound">소리 설정 ›</button></div></div>
+      <div class="op-r"><div class="op-n">AI<small>오픈라우터 API키, 모델 연결</small></div><div class="sg"><button type="button" class="go" data-go="dgAi">AI 키 ›</button><button type="button" class="go" data-go="dgModels">AI 모델 ›</button></div></div>
+    </div>
+
+    <div class="op-pane" data-p="y" hidden>
+      <div class="op-r"><div class="op-n">업데이트<small id="opVer">현재 버전 확인 중…</small></div><div class="sg"><button type="button" id="opOvl" hidden>자동 재실행 허용</button><button type="button" class="go" data-go="dgUpd">업데이트 확인</button></div></div>
+      <div class="op-r"><div class="op-n">폰 연동 설정<small id="opPh">토큰 · 폰으로 연결 · 동기화</small></div><div class="sg"><button type="button" class="go" data-go="phSt">연동 설정 ›</button></div></div>
+      <div class="op-r"><div class="op-n">진단<small>GPS·마이크 점검 · 앱 목록 · 핸들 버튼 점검</small></div><div class="sg"><button type="button" class="go" data-go="diag">진단 열기 ›</button></div></div>
+    </div>
   </div>
 </div>
 
@@ -522,7 +601,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="ph" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">폰 연동</div><button id="phClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state">폰 연동</div><div class="op-hb"><button id="phAdd" type="button" class="add" hidden>＋ 추가</button><button id="phClose" type="button">‹ 뒤로</button></div></div>
     <div class="sg" id="phTabs"><button type="button" data-v="rt">루틴</button><button type="button" data-v="mt">정비 내역</button><button type="button" data-v="mm">메모</button><button type="button" data-v="st">연동 설정</button></div>
     <div class="ov-resp" id="phMsg"></div>
     <div class="pl-list" id="phList"></div>
@@ -542,7 +621,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="dg" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div><button id="dgClose" type="button">닫기</button></div>
+    <div class="op-h"><div class="ov-state">진단 — 이 기기에서 쓸 수 있는 기능</div><button id="dgClose" type="button">‹ 뒤로</button></div>
     <div class="dg-list" id="dgList"></div>
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
@@ -998,6 +1077,12 @@ html[data-dim="3"] .gd{opacity:.8}
   window.onNativeSpeech=function(e){
     if(ovClosed)return;
     clearTimeout(ovTimer);ttsWait=null;
+    if(memoMode){
+      if(e.type==='ready'||e.type==='partial'){ovShow('메모할 내용을 말씀하세요',e.text||'','말을 마치면 자동으로 저장됩니다');return}
+      memoMode=false;
+      if(e.type==='result'&&e.text){addMemo(e.text);ovShow('메모 저장',e.text,'저장했습니다');ovTimer=setTimeout(ovHide,1200);return}
+      ovShow(e.type==='error'?'음성 인식 실패':'알아듣지 못했습니다','',e.type==='error'?e.text:'다시 ＋ 추가를 눌러 말씀해 주세요.');ovTimer=setTimeout(ovHide,3000);return;
+    }
     if(e.type==='ready'){ovShow('듣는 중… 말씀해 주세요','','')}
     else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
     else if(e.type==='result'){
@@ -1014,7 +1099,7 @@ html[data-dim="3"] .gd{opacity:.8}
     if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
     ovClosed=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
   });
-  $('ovClose').addEventListener('click',function(){ovClosed=true;ovHide();if(A)try{A.stopListening()}catch(e){}});
+  $('ovClose').addEventListener('click',function(){ovClosed=true;memoMode=false;ovHide();if(A)try{A.stopListening()}catch(e){}});
 
   /* ---------- 진단 ---------- */
   function showDiag(){
@@ -1429,7 +1514,7 @@ html[data-dim="3"] .gd{opacity:.8}
     return null;
   }
   /* 화면 */
-  var phTab='rt';
+  var phTab='rt',memoOpen={},memoMode=false;
   function phOpen(tab){phTab=tab||phTab;$('ph').hidden=false;phDraw()}
   function phDraw(){
     if($('ph').hidden)return;
@@ -1456,7 +1541,7 @@ html[data-dim="3"] .gd{opacity:.8}
       var mm=memoList();
       msg=mm.length?'"메모 ○○○"라고 말하면 추가됩니다.':'메모가 없습니다. 음성으로 "메모 우유 사기"처럼 말해 보세요.';
       mm.forEach(function(x){
-        h+='<div class="ap-row'+(x.done?' dn':'')+'" data-id="'+esc(x.id)+'"><button type="button" class="mini" data-act="del">삭제</button><button type="button" class="mini" data-act="done">'+(x.done?'되돌리기':'완료')+'</button><b>'+esc(x.text)+'</b><small>'+esc(mdOf(x.ts||x.u||0)+' '+hmOf(x.ts||x.u||0)+(x.place?' · '+x.place:''))+'</small></div>';
+        h+='<div class="ap-row mm'+(x.done?' dn':'')+(memoOpen[x.id]?' open':'')+'" data-id="'+esc(x.id)+'"><div class="mm-body"><div class="mm-t">'+esc(x.text)+'</div><small>'+esc(mdOf(x.ts||x.u||0)+' '+hmOf(x.ts||x.u||0)+(x.place?' · '+x.place:''))+'<span class="mm-hint">'+(memoOpen[x.id]?'누르면 접기 ▴':'누르면 전체 보기 ▾')+'</span></small></div><div class="mm-bt"><button type="button" class="mini" data-act="done">'+(x.done?'되돌리기':'완료')+'</button><button type="button" class="mini" data-act="del">삭제</button></div></div>';
       });
     }else{
       msg=ghTok()?('연결됨 · 저장소 '+ghRepo()+' · 토큰 끝 '+ghTok().slice(-4)+(syncAt?' · 마지막 동기화 '+mdOf(syncAt)+' '+hmOf(syncAt):'')+(syncMsg?' · '+syncMsg:'')):'아직 연결되지 않았습니다. "폰으로 연결"을 누르고 폰 화면의 안내를 따르면 입력 없이 연결됩니다.';
@@ -1465,6 +1550,10 @@ html[data-dim="3"] .gd{opacity:.8}
     }
     if(!isSet&&syncMsg&&ghTok())msg+=' ('+syncMsg+')';
     $('phMsg').textContent=msg;$('phList').innerHTML=h;
+    $('phAdd').hidden=phTab!=='mm';
+    [].forEach.call($('phList').querySelectorAll('.ap-row.mm'),function(r){
+      var t=r.querySelector('.mm-t');if(!memoOpen[r.getAttribute('data-id')]&&t.scrollHeight>t.clientHeight+1)r.classList.add('long');
+    });
   }
   $('phTabs').addEventListener('click',function(ev){var b=ev.target.closest('button');if(b){phTab=b.getAttribute('data-v');phDraw()}});
   $('phClose').addEventListener('click',function(){$('ph').hidden=true;try{if(A&&A.pairStop)A.pairStop()}catch(e){}$('phPairMsg').textContent=''});
@@ -1472,6 +1561,10 @@ html[data-dim="3"] .gd{opacity:.8}
   $('phList').addEventListener('click',function(ev){
     var row=ev.target.closest('.ap-row');if(!row)return;
     var id=row.getAttribute('data-id'),btn=ev.target.closest('[data-act]'),act=btn&&btn.getAttribute('data-act');
+    if(!act&&row.classList.contains('mm')){
+      if(memoOpen[id])delete memoOpen[id];else if(row.classList.contains('long'))memoOpen[id]=1;
+      phDraw();return;
+    }
     if(act==='run'){
       var r=live(D.routines).filter(function(x){return x.id===id})[0];
       if(r){$('ph').hidden=true;fromOp=false;retPending=false;runRoutine(r)}
@@ -1481,6 +1574,13 @@ html[data-dim="3"] .gd{opacity:.8}
     }
   });
   $('phSync').addEventListener('click',function(){sync()});
+  /* ＋ 추가: 듣는 화면을 열고, 말을 마치면 그대로 메모로 저장한다 */
+  $('phAdd').addEventListener('click',function(){
+    if(!A){return}
+    memoMode=true;ovClosed=false;retPending=false;retSkip=false;
+    ovShow('메모할 내용을 말씀하세요','','');
+    try{A.listen()}catch(e){memoMode=false;ovHide()}
+  });
   $('phOff').addEventListener('click',function(){
     store.set('ghTok','');store.set('cadEtag','');syncMsg='';$('phTok').value='';phDraw();
   });
@@ -1602,8 +1702,36 @@ html[data-dim="3"] .gd{opacity:.8}
     var need=false;try{need=!!(A.canOverlay&&!A.canOverlay())}catch(e){}
     $('opOvl').hidden=!need;
   }
-  function openOp(){fromOp=false;opDraw();verDraw();$('op').hidden=false;opPreviews()}
-  $('bOpt').addEventListener('click',openOp);
+  var opTab='f';
+  function tabShow(){
+    [].forEach.call($('opTabs').children,function(b){b.classList.toggle('on',b.getAttribute('data-t')===opTab)});
+    [].forEach.call(document.querySelectorAll('.op-pane'),function(p){p.hidden=p.getAttribute('data-p')!==opTab});
+  }
+  /* 기능 탭 카드와 알림: 평소에는 알림이 없고, 연결 문제나 정비 예정이 있을 때만 나타난다 */
+  function fnDraw(){
+    var rl=live(D.routines).map(function(r){return r.name}),ml=maintList(),mm=memoList().filter(function(x){return !x.done}),du=maintDue(14);
+    $('fnRt').textContent=rl.length?rl.slice(0,3).join(' · ')+(rl.length>3?' 외 '+(rl.length-3):'')+' · '+rl.length+'개':'등록된 루틴 없음';
+    $('fnMt').innerHTML=(du.length?'<em>'+esc(dueText(du[0]))+'</em><br>':'')+(ml.length?'기록 '+ml.length+'건':'등록된 기록 없음');
+    $('fnMm').innerHTML=mm.length?'남은 메모 '+mm.length+'건<br>'+esc(mm[0].text.length>24?mm[0].text.slice(0,24)+'…':mm[0].text):'남은 메모 없음<br>"메모 ○○○"라고 말해 보세요';
+    var h='';
+    if(!ghTok())h+='<div><span>폰과 연결되어 있지 않습니다. 연결하면 루틴·정비 내역을 폰에서 등록할 수 있습니다.</span><button type="button" data-go="phSt">폰과 연결하기</button></div>';
+    else{
+      if(syncFail)h+='<div class="bad"><span>폰과 맞추지 못했습니다'+(syncMsg?' — '+esc(syncMsg):'')+'</span><button type="button" data-go="phSt">연동 설정</button></div>';
+      else if(store.get('cadDirty')==='1')h+='<div><span>올리지 못한 변경이 있습니다. 통신이 되면 자동으로 올립니다.</span></div>';
+    }
+    if(du.length)h+='<div><span>정비 예정 — '+esc(du.slice(0,3).map(dueText).join(' · '))+'</span></div>';
+    $('fnAl').innerHTML=h;$('fnAl').hidden=!h;
+  }
+  function openOp(keep){
+    if(keep!==true)opTab='f';
+    fromOp=false;opDraw();verDraw();fnDraw();tabShow();$('op').hidden=false;
+    if(opTab==='s')opPreviews();
+  }
+  $('opTabs').addEventListener('click',function(ev){
+    var b=ev.target.closest('button');if(!b)return;
+    opTab=b.getAttribute('data-t');tabShow();if(opTab==='s')opPreviews();if(opTab==='f')fnDraw();
+  });
+  $('bOpt').addEventListener('click',function(){openOp()});
   $('opClose').addEventListener('click',function(){$('op').hidden=true;fromOp=false});
   $('pvs').addEventListener('click',function(ev){var c=ev.target.closest('.pvcard');if(c)setTheme(c.getAttribute('data-th'))});
   function sgClick(id,fn){$(id).addEventListener('click',function(ev){var b=ev.target.closest('button');if(b)fn(b.getAttribute('data-v'))})}
@@ -1627,7 +1755,7 @@ html[data-dim="3"] .gd{opacity:.8}
       if(!fromOp)return;
       for(var i=0;i<subs.length;i++)if(!subs[i].hidden)return;
       if(!$('ov').hidden)return;
-      openOp();
+      openOp(true);
     }
     if(window.MutationObserver){
       var mo=new MutationObserver(function(){setTimeout(check,0)});
