@@ -398,6 +398,8 @@ html[data-dim="3"] .gd{opacity:.8}
 .op-pane[data-p=s] .op-t{padding-top:max(3px,.5vh);padding-bottom:max(3px,.5vh);gap:6px}
 .op-pane[data-p=s] .pvcard{padding:6px}
 .op-pane[data-p=s] .pvs{grid-template-columns:repeat(4,minmax(0,max(150px,15vw)));gap:12px}
+/* 가로 화면: 테마 미리보기를 제목 오른쪽에 작게 놓아 화면 탭이 한 화면에 들어오게 */
+@media (orientation:landscape){.op-pane[data-p=s] .op-t{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:20px}.op-pane[data-p=s] .op-t .op-n{flex:0 1 auto;min-width:0}.op-pane[data-p=s] .pvs{width:auto;flex:none;grid-template-columns:repeat(4,minmax(0,max(128px,12.6vw)));gap:10px}.op-pane[data-p=s] .pvcard{padding:5px;border-radius:12px}.op-pane[data-p=s] .pvc{margin-top:4px;font-size:max(14px,min(2.8vh,1.8vw));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .op-pane[data-p=s]{gap:max(4px,.7vh)}
 .op-pane[data-p=s] .pvc{margin-top:4px;font-size:max(15px,min(3vh,2vw))}
 /* 메모 줄: 긴 글은 2줄까지, 누르면 펼침 */
@@ -556,7 +558,7 @@ html[data-dim="3"] .gd{opacity:.8}
           <div class="pvcard" data-th="a" role="button"><div class="pvbox" id="pvA"></div><div class="pvc">A · 큰 시계</div></div>
           <div class="pvcard" data-th="b" role="button"><div class="pvbox" id="pvB"></div><div class="pvc">B · 링 대시보드</div></div>
           <div class="pvcard" data-th="c" role="button"><div class="pvbox" id="pvC"></div><div class="pvc">C · 아날로그</div></div>
-          <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타 계기판</div></div>
+          <div class="pvcard" data-th="d" role="button"><div class="pvbox" id="pvD"></div><div class="pvc">D · 쏘나타</div></div>
         </div></div>
       <div class="op-r"><div class="op-n">밝기<small>화면 밝기 · 주야간</small></div><div class="sg" id="opDim"><button type="button" data-v="auto">자동</button><button type="button" data-v="1">밝게</button><button type="button" data-v="2">보통</button><button type="button" data-v="3">어둡게</button></div></div>
       <div class="op-r"><div class="op-n">시간 표시<small>시계 표시 방식</small></div><div class="sg" id="opFmt"><button type="button" data-v="1">24시간</button><button type="button" data-v="0">12시간</button></div></div>

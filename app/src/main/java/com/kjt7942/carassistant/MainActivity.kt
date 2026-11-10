@@ -345,6 +345,8 @@ class MainActivity : Activity() {
         web.setBackgroundColor(0xFF05070A.toInt())
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
+        // 기기의 '글자 크기' 설정이 화면에 덧붙지 않게 (차 기기는 글자 크기가 크게 설정되어 있어 글자가 줄바뀜되었다)
+        web.settings.textZoom = 100
         web.settings.mediaPlaybackRequiresUserGesture = false
         web.webViewClient = object : WebViewClient() {
             // 화면 엔진이 죽으면(메모리 부족 등) 앱이 같이 죽지 않도록 화면을 새로 만든다.
