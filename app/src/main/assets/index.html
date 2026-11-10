@@ -1150,7 +1150,11 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
   sgClick('opFull',function(v){try{A.setFullscreen(v==='1')}catch(e){}setTimeout(opDraw,50)});
   $('op').addEventListener('click',function(ev){
     var b=ev.target.closest('[data-go]');if(!b)return;
-    var g=b.getAttribute('data-go');fromOp=true;$('op').hidden=true;
+    var g=b.getAttribute('data-go');
+    if(g==='dgUpd'){ /* 옵션 화면을 닫지 않고 그 자리에서 확인 (화면 깜빡임 방지) */
+      if(A){$('opVer').textContent='새 버전을 확인하는 중…';A.checkUpdate()}return;
+    }
+    fromOp=true;$('op').hidden=true;
     if(g==='diag')showDiag();else $(g).click();
   });
   /* 옵션에서 연 하위 화면이 모두 닫히면 옵션으로 돌아온다 */
