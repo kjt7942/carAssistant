@@ -255,22 +255,22 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 .op-t{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 22px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
 @media (orientation:portrait){.op-n{font-size:max(19px,4.6vw)}.sg button{flex:1 1 22%;min-width:0;padding:0 8px;font-size:max(16px,3.8vw)}#opClose{flex:none;min-width:max(96px,22vw)}.op-r .sg{width:100%}.pvc{font-size:max(16px,3.8vw)}}
 /* 하위 화면 — 옵션 화면과 같은 틀 */
-#ak,#ap,#kk,#md,#sd,#dg,#ph{align-items:flex-start;padding:max(14px,2.4vh) 22px}
-#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in,#ph .ov-in{width:100%;max-width:1180px;margin:auto;gap:max(8px,1.4vh)}
-#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h,#ph .op-h{gap:16px}
-#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state,#ph .op-h .ov-state{font-size:max(22px,min(4.6vh,3vw))!important;letter-spacing:0;min-width:0;line-height:1.25}
+#ak,#ap,#kk,#md,#sd,#dg,#ph,#pf{align-items:flex-start;padding:max(14px,2.4vh) 22px}
+#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in,#ph .ov-in,#pf .ov-in{width:100%;max-width:1180px;margin:auto;gap:max(8px,1.4vh)}
+#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h,#ph .op-h,#pf .op-h{gap:16px}
+#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state,#ph .op-h .ov-state,#pf .op-h .ov-state{font-size:max(22px,min(4.6vh,3vw))!important;letter-spacing:0;min-width:0;line-height:1.25}
 .op-h button{flex:none}
 #ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp,#ph .ov-resp{font-size:max(16px,min(3.4vh,2.3vw))!important}
 #ap .ap-row,#kk .ap-row,#md .ap-row,#ph .ap-row,#kk .kk-row{font-size:max(17px,min(3.6vh,2.4vw))}
 #dg .dg-row{font-size:max(16px,min(3.4vh,2.3vw))!important}
 #sd .sd-t{font-size:max(19px,min(4.2vh,2.7vw))}
 @media (orientation:portrait){
-#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state,#ph .op-h .ov-state{font-size:max(19px,4.8vw)!important}
+#ak .op-h .ov-state,#ap .op-h .ov-state,#kk .op-h .ov-state,#md .op-h .ov-state,#sd .op-h .ov-state,#dg .op-h .ov-state,#ph .op-h .ov-state,#pf .op-h .ov-state{font-size:max(19px,4.8vw)!important}
 #ak .ov-resp,#kk .ov-resp,#md .ov-resp,#sd .ov-resp,#ph .ov-resp{font-size:max(16px,3.8vw)!important}
 #ap .ap-row,#kk .ap-row,#md .ap-row,#ph .ap-row,#kk .kk-row{font-size:max(17px,4.2vw)}
 #dg .dg-row{font-size:max(15px,3.7vw)!important}
 #sd .sd-t{font-size:max(19px,4.6vw)}
-#ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose{min-width:max(96px,22vw)}
+#ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose,#pf #pfCancel{min-width:max(96px,22vw)}
 }
 #sd .sd-cols{display:grid;grid-template-columns:1fr 1fr;gap:max(14px,2.4vw)}
 #sd .sd-col{display:flex;flex-direction:column;gap:max(12px,2vh);border-left:2px solid var(--accent);padding:max(6px,1vh) 0 max(6px,1vh) 18px;background:linear-gradient(90deg,rgba(116,182,198,.1),transparent)}
@@ -340,15 +340,15 @@ html[data-dim="3"] .gd{opacity:.8}
 
 /* ===== 옵션 개편: 탭 · 고정 머리글 · 같은 크기 버튼 ===== */
 .ov:not(#ov){padding-top:0}
-#op .op-in,#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in,#ph .ov-in{margin:0 auto!important}
+#op .op-in,#ak .ov-in,#ap .ov-in,#kk .ov-in,#md .ov-in,#sd .ov-in,#dg .ov-in,#ph .ov-in,#pf .ov-in{margin:0 auto!important}
 .op-top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;gap:max(8px,1.2vh);padding-bottom:max(8px,1.2vh)}
-#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h,#ph .op-h{position:sticky;top:0;z-index:20;background:var(--bg);padding-bottom:max(8px,1.2vh)}
+#ak .op-h,#ap .op-h,#kk .op-h,#md .op-h,#sd .op-h,#dg .op-h,#ph .op-h,#pf .op-h{position:sticky;top:0;z-index:20;background:var(--bg);padding-bottom:max(8px,1.2vh)}
 .op-h{padding-top:max(14px,2.4vh);min-height:max(54px,7.4vh);box-sizing:content-box}
 .op-top .op-h{padding-bottom:0}
 .op-hb{display:flex;gap:12px;flex:none}
-#op .op-h button,#ak .op-h button,#ap .op-h button,#kk .op-h button,#md .op-h button,#sd .op-h button,#dg .op-h button,#ph .op-h button{
+#op .op-h button,#ak .op-h button,#ap .op-h button,#kk .op-h button,#md .op-h button,#sd .op-h button,#dg .op-h button,#ph .op-h button,#pf .op-h button{
   height:max(54px,7.4vh);min-height:0;min-width:max(120px,11vw);padding:0 22px;font-size:max(20px,min(3.6vh,2.4vw));font-weight:600;color:var(--fg);border-color:var(--fg-dim);flex:none}
-#ph .op-h button.add{background:var(--accent);color:#031318;border-color:var(--accent);font-weight:700}
+#ph .op-h button.add,#pf .op-h button.add{background:var(--accent);color:#031318;border-color:var(--accent);font-weight:700}
 .op-tabs{display:flex;gap:10px}
 .op-tabs button{flex:1 1 0;min-width:0;height:max(54px,7.4vh);min-height:0;padding:0 8px;font-size:max(20px,min(3.8vh,2.6vw))}
 .op-tabs button.on{background:var(--accent);color:#031318;border-color:var(--accent);font-weight:700}
@@ -367,6 +367,19 @@ html[data-dim="3"] .gd{opacity:.8}
 .fn-al>div{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:12px;padding:12px 18px;font-size:max(17px,min(3.4vh,2.3vw));color:var(--fg)}
 .fn-al>div.bad{border-left-color:var(--bad)}
 .fn-al button{width:auto;min-width:max(150px,14vw);height:max(46px,6vh);padding:0 16px;font-size:max(17px,min(3.2vh,2.2vw));color:var(--accent);border-color:rgba(116,182,198,.45)}
+/* 입력 화면 */
+#pf label{display:block;color:var(--fg-dim);font-size:max(15px,min(3vh,2vw));margin:max(8px,1.4vh) 0 4px}
+#pf textarea.ak-in{min-height:max(130px,22vh);resize:vertical;line-height:1.5;font-family:inherit}
+#pf .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#pf .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#pf .chips button{min-height:0;height:max(38px,5vh);padding:0 14px;font-size:max(15px,min(2.8vh,1.9vw));border-radius:999px;color:var(--accent);border-color:rgba(116,182,198,.4)}
+#pf .chk{display:flex;gap:12px;align-items:center;margin-top:max(10px,1.6vh);color:var(--fg);font-size:max(17px,min(3.4vh,2.3vw))}
+#pf .chk input{width:26px;height:26px;flex:none}
+#pf .hint{color:var(--fg-dim);font-size:max(14px,min(2.8vh,1.9vw));margin-top:6px;line-height:1.4}
+#pf button.bad{color:var(--bad);border-color:rgba(217,119,108,.5)}
+#ph .ap-row.fl{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}
+#ph .ap-row.fl .mm-t{display:block;overflow:visible}
+@media (orientation:portrait){#pf .two{grid-template-columns:1fr}}
 /* 글이 긴 버튼(…›, 업데이트 확인)은 같은 높이에 글 길이만큼 넓게 */
 .sg button.go,.sg #opOvl{width:auto;min-width:max(150px,13vw);padding:0 20px;white-space:nowrap}
 /* 화면 탭이 스크롤 없이 한 화면에 들어가도록 간격 정리 */
@@ -393,7 +406,7 @@ html[data-dim="3"] .gd{opacity:.8}
 @media (orientation:portrait){
   .op-tabs button{font-size:max(16px,4vw)}.fn{grid-template-columns:1fr}.fn button{min-height:0}.pvs{grid-template-columns:repeat(2,1fr)}
   .sg button{flex:1 1 22%;width:auto}
-  #op .op-h button,#ak .op-h button,#ap .op-h button,#kk .op-h button,#md .op-h button,#sd .op-h button,#dg .op-h button,#ph .op-h button{min-width:max(96px,20vw);font-size:max(16px,4vw)}
+  #op .op-h button,#ak .op-h button,#ap .op-h button,#kk .op-h button,#md .op-h button,#sd .op-h button,#dg .op-h button,#ph .op-h button,#pf .op-h button{min-width:max(96px,20vw);font-size:max(16px,4vw)}
 }
 </style>
 </head>
@@ -611,6 +624,14 @@ html[data-dim="3"] .gd{opacity:.8}
       <input class="ak-in" id="phTok" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="토큰 직접 입력 (github_pat_… 또는 ghp_…)">
       <div class="btns" style="justify-content:flex-start"><button id="phSave" type="button">직접 입력한 내용 저장</button></div>
     </div>
+  </div>
+</div>
+
+<div class="ov" id="pf" hidden>
+  <div class="ov-in">
+    <div class="op-h"><div class="ov-state" id="pfTitle"></div><div class="op-hb"><button id="pfCancel" type="button">취소</button><button id="pfSave" type="button" class="add">저장</button></div></div>
+    <div id="pfBody"></div>
+    <div class="btns" style="justify-content:flex-start"><button id="pfDel" type="button" class="bad">이 항목 삭제</button></div>
   </div>
 </div>
 
@@ -861,7 +882,7 @@ html[data-dim="3"] .gd{opacity:.8}
   window.onNativeNet=function(){if(wxFail){wxNext=0;maybeFetch(false)}};
   /* 새 화면 적용·설치 창 띄우기를 미뤄야 하는 상태인지(음성 명령 중이거나 설정 화면을 보는 중) */
   window.uiBusy=function(){
-    var ids=['ov','op','dg','kk','md','ak','ap','ph'];
+    var ids=['ov','op','dg','kk','md','ak','ap','ph','pf'];
     for(var i=0;i<ids.length;i++){var el=$(ids[i]);if(el&&!el.hidden)return true}
     return false;
   };
@@ -1183,7 +1204,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var voiceT=0;
   /* 전화 종료 버튼 = 뒤로 가기. 열린 화면을 하나 닫고, 아무것도 없으면 비서 앱을 닫아 이전 앱으로 돌아간다 */
   window.onEndKey=function(){
-    var ids=['ov','dg','kk','md','ak','ap','ph','op'];
+    var ids=['ov','pf','dg','kk','md','ak','ap','ph','op'];
     for(var i=0;i<ids.length;i++){
       var el=$(ids[i]);
       if(el&&!el.hidden){var b=$(ids[i]+'Close');if(b){b.click();return}el.hidden=true;return}
@@ -1515,18 +1536,18 @@ html[data-dim="3"] .gd{opacity:.8}
     var hint=ghTok()?'':' 먼저 "연동 설정"에서 폰과 연결해 주세요.';
     if(phTab==='rt'){
       var rl=live(D.routines).sort(function(a,b){return String(a.name).localeCompare(String(b.name))});
-      msg=rl.length?'누르면 바로 실행합니다. 음성으로는 호출말을 말하면 됩니다.':'등록된 루틴이 없습니다. 폰('+PHONE_URL+')에서 등록하면 여기에 나타납니다.'+hint;
+      msg=rl.length?'"실행"을 누르면 바로 실행합니다. 음성으로는 호출말을 말하면 됩니다.':'등록된 루틴이 없습니다. 오른쪽 위 "＋ 루틴"으로 등록해 보세요.';
       rl.forEach(function(r){
-        h+='<div class="ap-row" data-id="'+esc(r.id)+'" data-act="run"><b>'+esc(r.name)+'</b>'+(r.auto?' <span class="rk">시동 때 자동</span>':'')+'<small>호출말: '+esc((r.say||[]).join(', ')||r.name)+' · 동작 '+(r.steps||[]).length+'개</small></div>';
+        h+='<div class="ap-row fl" data-id="'+esc(r.id)+'"><div class="mm-body"><div class="mm-t"><b>'+esc(r.name)+'</b>'+(r.auto?' <span class="rk">시동 때 자동</span>':'')+'</div><small>호출말: '+esc((r.say||[]).join(', ')||r.name)+' · 동작 '+(r.steps||[]).length+'개</small></div><div class="mm-bt"><button type="button" class="mini" data-act="run">실행</button><button type="button" class="mini" data-act="edit">수정</button></div></div>';
       });
     }else if(phTab==='mt'){
       var ml=maintList(),du={};maintDue(30).forEach(function(o){du[o.x.id]=o});
-      msg=ml.length?'최근 순서입니다. 등록·수정은 폰에서 합니다.':'등록된 정비 내역이 없습니다. 폰('+PHONE_URL+')에서 등록하면 여기에 나타납니다.'+hint;
+      msg=ml.length?'최근 순서입니다. "수정"으로 고치거나 지울 수 있습니다.':'등록된 정비 내역이 없습니다. 오른쪽 위 "＋ 정비 기록"으로 등록해 보세요.';
       ml.forEach(function(x){
         var sub=[];if(x.km)sub.push(Number(x.km).toLocaleString('ko-KR')+'km');if(x.cost)sub.push(Number(x.cost).toLocaleString('ko-KR')+'원');
         if(x.shop)sub.push(x.shop);if(x.memo)sub.push(x.memo);
         var d=du[x.id];if(x.next)sub.push('다음 '+x.next+(d?' ('+dueText(d).replace(x.item+' ','')+')':''));
-        h+='<div class="ap-row'+(d?' due':'')+'"><span class="rk">'+esc(x.date||'')+'</span><b>'+esc(x.item||'')+'</b><small>'+esc(sub.join(' · '))+'</small></div>';
+        h+='<div class="ap-row fl'+(d?' due':'')+'" data-id="'+esc(x.id)+'"><div class="mm-body"><div class="mm-t"><span class="rk">'+esc(x.date||'')+'</span><b>'+esc(x.item||'')+'</b></div><small>'+esc(sub.join(' · '))+'</small></div><div class="mm-bt"><button type="button" class="mini" data-act="edit">수정</button></div></div>';
       });
     }else if(phTab==='mm'){
       var mm=memoList();
@@ -1541,7 +1562,7 @@ html[data-dim="3"] .gd{opacity:.8}
     }
     if(!isSet&&syncMsg&&ghTok())msg+=' ('+syncMsg+')';
     $('phMsg').textContent=msg;$('phList').innerHTML=h;
-    $('phAdd').hidden=phTab!=='mm';
+    $('phAdd').hidden=phTab==='st';$('phAdd').textContent=phTab==='rt'?'＋ 루틴':phTab==='mt'?'＋ 정비 기록':'＋ 추가';
     [].forEach.call($('phList').querySelectorAll('.ap-row.mm'),function(r){
       var t=r.querySelector('.mm-t');if(!memoOpen[r.getAttribute('data-id')]&&t.scrollHeight>t.clientHeight+1)r.classList.add('long');
     });
@@ -1556,6 +1577,7 @@ html[data-dim="3"] .gd{opacity:.8}
       if(memoOpen[id])delete memoOpen[id];else if(row.classList.contains('long'))memoOpen[id]=1;
       phDraw();return;
     }
+    if(act==='edit'){pfOpen(phTab,id);return}
     if(act==='run'){
       var r=live(D.routines).filter(function(x){return x.id===id})[0];
       if(r){$('ph').hidden=true;fromOp=false;retPending=false;runRoutine(r)}
@@ -1564,9 +1586,64 @@ html[data-dim="3"] .gd{opacity:.8}
       dTouch();
     }
   });
+  /* ---------- 루틴·정비 내역 입력 화면 ---------- */
+  var pfKind='',pfId='';
+  function pfField(id,label,val,attr){return '<label for="'+id+'">'+label+'</label><input class="ak-in" id="'+id+'" value="'+esc(val==null?'':val)+'" autocomplete="off" '+(attr||'type="text"')+'>'}
+  function pfOpen(kind,id){
+    pfKind=kind;pfId=id||'';var h='';
+    function by(l){return l.filter(function(x){return x.id===id})[0]}
+    if(kind==='rt'){
+      var r=by(D.routines)||{name:'',say:[],steps:[],auto:false};
+      $('pfTitle').textContent=id?'루틴 수정':'새 루틴';
+      h=pfField('pfName','이름',r.name,'type="text" placeholder="예: 출근"')+
+        pfField('pfSay','호출말 — 이렇게 말하면 실행됩니다 (쉼표로 여러 개)',(r.say||[]).join(', '),'type="text" placeholder="예: 출근, 출근하자"')+
+        '<label for="pfSteps">동작 — 한 줄에 하나씩, 위에서부터 차례로</label><textarea class="ak-in" id="pfSteps" autocomplete="off" placeholder="날씨&#10;말하기: 오늘도 안전 운전하세요&#10;기다리기: 2&#10;라디오 켜">'+esc((r.steps||[]).join('\n'))+'</textarea>'+
+        '<div class="chips" id="pfChips">'+['말하기: ','기다리기: 3','날씨','시간','날짜','메모 읽어줘','라디오 켜','음악 틀어','네비 켜','브레이브로 유튜브 열어줘','밝기 어둡게','밝기 자동'].map(function(c){return '<button type="button">'+esc(c)+'</button>'}).join('')+'</div>'+
+        '<div class="hint">동작에는 차에서 음성으로 쓰는 명령을 그대로 적으면 됩니다. "말하기: 문장"은 그 문장을 읽어 줍니다.</div>'+
+        '<label class="chk"><input id="pfAuto" type="checkbox"'+(r.auto?' checked':'')+'>시동을 걸면 자동으로 실행</label>';
+    }else{
+      var x=by(D.maint)||{date:todayStr(),item:'',km:'',cost:'',shop:'',memo:'',next:''};
+      $('pfTitle').textContent=id?'정비 기록 수정':'새 정비 기록';
+      h='<div class="two"><div>'+pfField('pfDate','날짜',x.date,'type="date"')+'</div><div>'+pfField('pfItem','항목',x.item,'type="text" list="pfItems" placeholder="예: 엔진오일"')+'</div></div>'+
+        '<datalist id="pfItems">'+['엔진오일','타이어','브레이크 패드','배터리','와이퍼','에어컨 필터','미션오일','냉각수','점화플러그','브레이크액','정기검사','자동차 보험','세차'].map(function(i){return '<option value="'+i+'">'}).join('')+'</datalist>'+
+        '<div class="two"><div>'+pfField('pfKm','주행거리 (km)',x.km,'type="text" inputmode="numeric"')+'</div><div>'+pfField('pfCost','비용 (원)',x.cost,'type="text" inputmode="numeric"')+'</div></div>'+
+        pfField('pfShop','정비소',x.shop)+pfField('pfMemo','메모',x.memo)+
+        pfField('pfNext','다음 예정일 (선택) — 2주 전부터 시동 때 알려 줍니다',x.next,'type="date"');
+    }
+    $('pfBody').innerHTML=h;$('pfDel').hidden=!id;$('pf').hidden=false;$('pf').scrollTop=0;
+  }
+  function pfClose(){$('pf').hidden=true}
+  $('pfCancel').addEventListener('click',pfClose);
+  $('pfBody').addEventListener('click',function(ev){
+    var b=ev.target.closest('#pfChips button');if(!b)return;
+    var ta=$('pfSteps'),v=ta.value.replace(/\s+$/,'');ta.value=(v?v+'\n':'')+b.textContent;ta.focus();
+  });
+  function numOf(v){var n=String(v||'').replace(/[^\d]/g,'');return n?Number(n):''}
+  $('pfSave').addEventListener('click',function(){
+    var list=pfKind==='rt'?D.routines:D.maint,old=list.filter(function(x){return x.id===pfId})[0],now=Date.now(),o;
+    if(old)now=Math.max(now,(old.u||0)+1);
+    if(pfKind==='rt'){
+      var name=$('pfName').value.trim();if(!name){$('pfName').focus();return}
+      o={id:pfId||uid(),u:now,name:name,
+        say:$('pfSay').value.split(/[,，\n]/).map(function(t){return t.trim()}).filter(Boolean),
+        steps:$('pfSteps').value.split('\n').map(function(t){return t.trim()}).filter(Boolean),auto:$('pfAuto').checked};
+    }else{
+      var item=$('pfItem').value.trim();if(!item){$('pfItem').focus();return}
+      o={id:pfId||uid(),u:now,date:$('pfDate').value||todayStr(),item:item,km:numOf($('pfKm').value),cost:numOf($('pfCost').value),shop:$('pfShop').value.trim(),memo:$('pfMemo').value.trim(),next:$('pfNext').value||''};
+    }
+    var i=list.findIndex(function(x){return x.id===o.id});if(i>=0)list[i]=o;else list.push(o);
+    pfClose();dTouch();
+  });
+  $('pfDel').addEventListener('click',function(){
+    var list=pfKind==='rt'?D.routines:D.maint,x=list.filter(function(y){return y.id===pfId})[0];
+    if(x){x.del=true;x.u=Math.max(Date.now(),(x.u||0)+1)}
+    pfClose();dTouch();
+  });
   $('phSync').addEventListener('click',function(){sync()});
   /* ＋ 추가: 듣는 화면을 열고, 말을 마치면 그대로 메모로 저장한다 */
   $('phAdd').addEventListener('click',function(){
+    if(phTab==='rt'){pfOpen('rt');return}
+    if(phTab==='mt'){pfOpen('mt');return}
     if(!A){return}
     memoMode=true;ovClosed=false;retPending=false;retSkip=false;
     ovShow('메모할 내용을 말씀하세요','','');
@@ -1742,7 +1819,7 @@ html[data-dim="3"] .gd{opacity:.8}
   });
   /* 옵션에서 연 하위 화면이 모두 닫히면 옵션으로 돌아온다 */
   (function(){
-    var subs=['dg','ak','md','ap','kk','ph'].map($);
+    var subs=['dg','ak','md','ap','kk','ph','pf'].map($);
     function check(){
       if(!fromOp)return;
       for(var i=0;i<subs.length;i++)if(!subs[i].hidden)return;
