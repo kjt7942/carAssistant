@@ -864,7 +864,46 @@ html[data-dim="3"] .gd{opacity:.8}
     });
     return best;
   }
+  /* 브라우저로 사이트 열기·검색: "브레이브로 유튜브 열어줘", "유튜브 접속해줘", "브레이브로 ○○ 검색해줘" */
+  var SITES=[
+    [/유튜브|youtube/i,'https://m.youtube.com/','유튜브'],
+    [/네이버/,'https://m.naver.com/','네이버'],
+    [/다음/,'https://m.daum.net/','다음'],
+    [/구글|google/i,'https://www.google.com/','구글'],
+    [/넷플릭스/,'https://www.netflix.com/','넷플릭스'],
+    [/티빙/,'https://www.tving.com/','티빙'],
+    [/웨이브/,'https://www.wavve.com/','웨이브'],
+    [/쿠팡플레이/,'https://www.coupangplay.com/','쿠팡플레이'],
+    [/지니/,'https://www.genie.co.kr/','지니'],
+    [/멜론/,'https://www.melon.com/','멜론']
+  ];
+  function browserCmd(raw){
+    var t=raw.replace(/\s+/g,''),tl=t.toLowerCase();
+    var brave=/브레이브|brave/.test(tl),chrome=/크롬|chrome/.test(tl),any=brave||chrome||/브라우저|인터넷/.test(tl);
+    var pkg=chrome?'com.android.chrome':'com.brave.browser',nmB=chrome?'크롬':'브레이브';
+    var m=/(.+?)(?:을|를|좀)?(?:검색|찾아)/.exec(raw.replace(/브레이브|brave|크롬|chrome|브라우저|인터넷|으로|로|에서/gi,' ').trim());
+    if(/검색/.test(t)&&m&&m[1].trim().length>=1&&any){
+      var q=m[1].trim().replace(/\s+/g,' ');
+      return openIn(pkg,'https://www.google.com/search?q='+encodeURIComponent(q),nmB+'로 "'+q+'"을(를) 검색합니다.');
+    }
+    if(!/켜|열|접속|가자|가줘|보여|틀|들려|띄워|이동|실행/.test(t))return null;
+    for(var i=0;i<SITES.length;i++){
+      if(SITES[i][0].test(tl)){
+        /* 브라우저를 말했거나 '접속'이라고 했을 때만. '유튜브 열어줘'는 설치된 앱이 있으면 앱으로 */
+        if(any||/접속|이동/.test(t))return openIn(pkg,SITES[i][1],nmB+'로 '+SITES[i][2]+'에 접속합니다.');
+        return null;
+      }
+    }
+    return null;
+  }
+  function openIn(pkg,url,msg){
+    if(!A||!A.openUrl)return '이 기능은 앱을 최신 버전으로 업데이트한 뒤에 쓸 수 있습니다.';
+    var ok=false;try{ok=!!A.openUrl(pkg,url)}catch(e){}
+    if(ok){retSkip=true;return msg}
+    return '브라우저를 열지 못했습니다.';
+  }
   function command(raw){
+    var bc=browserCmd(raw);if(bc!==null)return bc;
     var t=raw.replace(/\s+/g,'');
     if(t.length>16)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
     var ap=null;

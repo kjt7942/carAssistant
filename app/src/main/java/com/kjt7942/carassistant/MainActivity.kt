@@ -1569,6 +1569,20 @@ class MainActivity : Activity() {
             }
         }
 
+        /** 브라우저로 주소를 연다. 보안을 위해 https 주소만 허용한다. */
+        @JavascriptInterface
+        fun openUrl(pkg: String, url: String): Boolean {
+            if (!url.startsWith("https://") || url.length > 600) return false
+            return try {
+                val i = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (pkg.isNotEmpty() && packageManager.getLaunchIntentForPackage(pkg) != null) i.setPackage(pkg)
+                startActivity(i)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
         @JavascriptInterface
         fun launchApp(pkg: String): Boolean {
             return try {
