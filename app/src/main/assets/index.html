@@ -1467,15 +1467,20 @@ html[data-dim="3"] .gd{opacity:.8}
     var vh='<button type="button" data-voice="" class="'+(!t.voice||!(t.voices||[]).some(function(v){return v.name===t.voice})?'on':'')+'">기본</button>',n=0;
     (t.voices||[]).forEach(function(v){
       n++;var tag=v.net?' · 온라인':'';if(!v.inst)tag+=' · 받기 필요';
-      vh+='<button type="button" data-voice="'+esc(v.name)+'" class="'+(v.name===t.voice?'on':'')+'" title="'+esc(v.name)+'">목소리 '+n+tag+'</button>';
+      var sn=v.name.replace(/^ko-?kr-?x-?/i,'').replace(/-(local|network)$/,'');vh+='<button type="button" data-voice="'+esc(v.name)+'" class="'+(v.name===t.voice?'on':'')+'" title="'+esc(v.name)+'">'+esc(sn)+tag+'</button>';
     });
     $('tvVoice').innerHTML=vh;
     function mark(id,val){[].forEach.call($(id).children,function(b){b.classList.toggle('on',Math.abs(+b.getAttribute('data-v')-val)<0.01)})}
     mark('tvRate',t.rate||1);mark('tvPitch',t.pitch||1);
     $('tvStore').hidden=!!t.googleTts;
-    $('tvMsg').textContent=msg||(t.ko<0?'지금 음성 엔진에 한국어가 없습니다. 아래 "Google 음성 서비스 설치"를 눌러 주세요.':
+    $('tvMsg').textContent=msg||tvLast||(t.ko<0?'지금 음성 엔진에 한국어가 없습니다. 아래 "Google 음성 서비스 설치"를 눌러 주세요.':
       (n?'한국어 목소리 '+n+'개. 누르면 바로 들려 드립니다. "온라인"은 인터넷이 될 때 더 자연스럽습니다.':'고를 수 있는 한국어 목소리가 없습니다.'+(t.googleTts?' "기기 음성 설정 열기"에서 Google 엔진을 고르고 한국어 음성을 받아 주세요.':' "Google 음성 서비스 설치"를 눌러 주세요.')));
   }
+  var tvLast='';
+  window.onNativeTtsVoice=function(e){
+    tvLast=e.res===0?('적용됨: '+e.now):('적용 실패(코드 '+e.res+'): '+e.want+' → 지금 '+e.now);
+    if(!$('op').hidden)$('tvMsg').textContent=tvLast;
+  };
   window.onNativeTtsReady=function(){if(!$('op').hidden&&opTab==='a')tvDraw()};
   $('tv').addEventListener('click',function(ev){
     var b=ev.target.closest('button');if(!b||!A)return;

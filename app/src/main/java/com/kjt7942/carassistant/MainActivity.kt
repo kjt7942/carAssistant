@@ -1015,7 +1015,10 @@ class MainActivity : Activity() {
         val p = ttsPrefs()
         val vn = p.getString("voice", "") ?: ""
         if (vn.isNotEmpty()) try {
-            t.voices?.firstOrNull { it.name == vn }?.let { t.voice = it }
+            t.voices?.firstOrNull { it.name == vn }?.let {
+                val r = t.setVoice(it)
+                js("onNativeTtsVoice", JSONObject().put("want", vn).put("res", r).put("now", try { t.voice?.name ?: "" } catch (e: Exception) { "" }))
+            }
         } catch (e: Exception) {
         }
         t.setSpeechRate(p.getFloat("rate", 1.0f))
