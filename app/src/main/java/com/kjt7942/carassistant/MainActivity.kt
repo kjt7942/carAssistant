@@ -1410,11 +1410,112 @@ class MainActivity : Activity() {
 
     private fun aiKey(): String = getSharedPreferences("ai", MODE_PRIVATE).getString("key", "") ?: ""
 
+    // ---------- 헤르메스 에이전트 (사용자 서버, Tailscale 안쪽) ----------
+    private fun aiPrefs() = getSharedPreferences("ai", MODE_PRIVATE)
+    private fun aiProv(): String = aiPrefs().getString("prov", "or") ?: "or"
+    private fun hUrl(): String = aiPrefs().getString("hurl", "") ?: ""
+    private fun hKey(): String = aiPrefs().getString("hkey", "") ?: ""
+    private fun useHermes() = aiProv() == "hermes" && hUrl().isNotEmpty() && hKey().isNotEmpty()
+    private var hSid = ""
+    private var hSidAt = 0L
+
+    // 암호화되지 않은 http 주소는 Tailscale(100.64.0.0/10)·집/사무실 내부망·*.ts.net에만 허용한다
+    private fun hermesUrlError(u: String): String {
+        val uri = try { Uri.parse(u) } catch (e: Exception) { null } ?: return "주소 형식이 올바르지 않습니다"
+        val sc = uri.scheme ?: ""
+        val host = uri.host ?: return "주소 형식이 올바르지 않습니다"
+        if (sc == "https") return ""
+        if (sc != "http") return "http:// 또는 https:// 로 시작해야 합니다"
+        if (host.endsWith(".ts.net")) return ""
+        val p = host.split(".").mapNotNull { it.toIntOrNull() }
+        if (p.size == 4) {
+            if (p[0] == 100 && p[1] in 64..127) return ""
+            if (p[0] == 10 || (p[0] == 192 && p[1] == 168) || (p[0] == 172 && p[1] in 16..31)) return ""
+        }
+        return "암호화되지 않은 http 주소는 Tailscale(100.x.x.x)이나 내부망 주소만 쓸 수 있습니다"
+    }
+
+    private fun hermesPost(msgs: JSONArray, timeoutMs: Int): Pair<Int, String> {
+        val now = System.currentTimeMillis()
+        if (hSid.isEmpty() || now - hSidAt > 15 * 60 * 1000) hSid = "car-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(java.util.Date(now))
+        hSidAt = now
+        val body = JSONObject().put("model", "hermes-agent").put("messages", msgs)
+        val c = URL(hUrl().trimEnd('/') + "/chat/completions").openConnection() as HttpURLConnection
+        try {
+            c.requestMethod = "POST"
+            c.connectTimeout = 10000
+            c.readTimeout = timeoutMs
+            c.doOutput = true
+            c.setRequestProperty("Content-Type", "application/json")
+            c.setRequestProperty("Authorization", "Bearer " + hKey())
+            c.setRequestProperty("X-Hermes-Session-Id", hSid)
+            c.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val code = c.responseCode
+            val stream = if (code in 200..299) c.inputStream else c.errorStream
+            return Pair(code, stream?.use { String(it.readBytes(), Charsets.UTF_8) } ?: "")
+        } finally {
+            c.disconnect()
+        }
+    }
+
+    private fun hermesErr(e: Exception): String = when (e) {
+        is java.net.SocketTimeoutException -> "헤르메스 응답 시간 초과 — 작업이 길거나 서버가 바쁩니다"
+        is java.net.ConnectException, is java.net.NoRouteToHostException, is java.net.UnknownHostException ->
+            "헤르메스 서버에 연결하지 못했습니다 — 차의 Tailscale이 켜져 있는지 확인해 주세요"
+        else -> "헤르메스 연결 실패: ${e.message}"
+    }
+
+    private fun askHermes(msgs: JSONArray) {
+        try {
+            val (code, txt) = hermesPost(msgs, 120000)
+            if (code == 401 || code == 403) { aiEmit(false, "", "hermes-agent", "헤르메스 키가 맞지 않습니다 ($code)"); return }
+            if (code !in 200..299) { aiEmit(false, "", "hermes-agent", "헤르메스 서버 오류 ($code)"); return }
+            val content = JSONObject(txt).optJSONArray("choices")
+                ?.optJSONObject(0)?.optJSONObject("message")?.optString("content", "") ?: ""
+            val clean = content.replace(Regex("(?s)<think>.*?</think>"), "").trim()
+            if (clean.isEmpty()) aiEmit(false, "", "hermes-agent", "헤르메스가 빈 응답을 보냈습니다")
+            else aiEmit(true, clean, "hermes-agent", "")
+        } catch (e: Exception) {
+            aiEmit(false, "", "hermes-agent", hermesErr(e))
+        }
+    }
+
+    private fun hermesTest() {
+        val o = JSONObject()
+        val t0 = System.currentTimeMillis()
+        try {
+            val base = hUrl().trimEnd('/').removeSuffix("/v1")
+            val c = URL("$base/health").openConnection() as HttpURLConnection
+            c.connectTimeout = 8000; c.readTimeout = 8000
+            val hc = try { c.responseCode } finally { c.disconnect() }
+            o.put("health", hc)
+            if (hc !in 200..299) {
+                o.put("ok", false).put("err", "서버 상태 확인 실패 ($hc)")
+            } else {
+                val msgs = JSONArray().put(JSONObject().put("role", "user").put("content", "연결 확인입니다. '연결됨'이라고만 짧게 답해 주세요."))
+                val (code, txt) = hermesPost(msgs, 90000)
+                if (code in 200..299) {
+                    val content = JSONObject(txt).optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content", "") ?: ""
+                    o.put("ok", true).put("text", content.replace(Regex("(?s)<think>.*?</think>"), "").trim().take(120))
+                } else o.put("ok", false).put("err", if (code == 401 || code == 403) "키가 맞지 않습니다 ($code)" else "서버 오류 ($code)")
+            }
+        } catch (e: Exception) {
+            o.put("ok", false).put("err", hermesErr(e))
+        }
+        o.put("sec", (System.currentTimeMillis() - t0) / 1000.0)
+        js("onNativeHermesTest", o)
+    }
+
     private fun aiEmit(ok: Boolean, text: String, model: String, err: String) {
         js("onNativeAi", JSONObject().put("ok", ok).put("text", text).put("model", model).put("err", err))
     }
 
     private fun askAi(modelsJson: String, messagesJson: String) {
+        if (aiProv() == "hermes") {
+            if (!useHermes()) { aiEmit(false, "", "", "헤르메스 주소나 키가 없습니다"); return }
+            askHermes(JSONArray(messagesJson))
+            return
+        }
         val key = aiKey()
         if (key.isEmpty()) {
             aiEmit(false, "", "", "AI 키가 없습니다")
@@ -1818,10 +1919,47 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun hasApiKey(): Boolean = aiKey().isNotEmpty()
+        fun hasApiKey(): Boolean = if (aiProv() == "hermes") useHermes() else aiKey().isNotEmpty()
 
         @JavascriptInterface
-        fun keyTail(): String = aiKey().takeLast(4)
+        fun keyTail(): String = (if (aiProv() == "hermes") hKey() else aiKey()).takeLast(4)
+
+        @JavascriptInterface
+        fun aiInfo(): String = JSONObject().put("prov", aiProv())
+            .put("orKey", aiKey().isNotEmpty()).put("orTail", aiKey().takeLast(4))
+            .put("hUrl", hUrl()).put("hKey", hKey().isNotEmpty()).put("hTail", hKey().takeLast(4)).toString()
+
+        @JavascriptInterface
+        fun setAiProv(p: String) {
+            aiPrefs().edit().putString("prov", if (p == "hermes") "hermes" else "or").apply()
+        }
+
+        // 주소와 키 저장. 키가 비어 있으면 기존 키를 유지한다. 성공하면 빈 문자열, 실패하면 이유를 돌려준다
+        @JavascriptInterface
+        fun setHermes(url: String, key: String): String {
+            val u = url.trim()
+            val err = hermesUrlError(u)
+            if (err.isNotEmpty()) return err
+            val k = key.trim()
+            if (k.isEmpty() && hKey().isEmpty()) return "API 키를 입력해 주세요"
+            if (k.isNotEmpty() && (k.length < 16 || k.contains(" "))) return "키 형식이 올바르지 않습니다"
+            val e = aiPrefs().edit().putString("hurl", u).putString("prov", "hermes")
+            if (k.isNotEmpty()) e.putString("hkey", k)
+            e.apply()
+            hSid = ""
+            return ""
+        }
+
+        @JavascriptInterface
+        fun clearHermes() {
+            aiPrefs().edit().remove("hkey").putString("prov", "or").apply()
+        }
+
+        @JavascriptInterface
+        fun testHermes() {
+            if (destroyed) return
+            aiExec.execute { hermesTest() }
+        }
 
         @JavascriptInterface
         fun ask(modelsJson: String, messagesJson: String) {
@@ -1850,6 +1988,7 @@ class MainActivity : Activity() {
             o.put("root", suPath() != null)
             o.put("updLastOk", updPrefs().getLong("lastOkAt", 0L))
             o.put("aiKey", aiKey().isNotEmpty())
+            o.put("aiProv", aiProv()).put("hermes", useHermes())
             try {
                 val ba = BluetoothAdapter.getDefaultAdapter()
                 o.put("btHas", ba != null)

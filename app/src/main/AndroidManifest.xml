@@ -33,7 +33,7 @@
         android:hardwareAccelerated="true"
         android:label="차량 비서"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
