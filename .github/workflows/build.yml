@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths-ignore: ["tts-test/**", ".github/workflows/tts-test.yml"]
   workflow_dispatch:
 
 permissions:

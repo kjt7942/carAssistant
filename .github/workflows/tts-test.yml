@@ -1,0 +1,40 @@
+name: Build TTS test APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ["tts-test/**", ".github/workflows/tts-test.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Download sherpa-onnx native libs (v2.0.1, arm64)
+        run: |
+          curl -fsSL -o sherpa.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-onnx-v2.0.1-android.tar.bz2
+          mkdir x && tar xjf sherpa.tar.bz2 -C x
+          mkdir -p tts-test/app/src/main/jniLibs/arm64-v8a
+          cp x/jniLibs/arm64-v8a/libonnxruntime.so x/jniLibs/arm64-v8a/libsherpa-onnx-jni.so tts-test/app/src/main/jniLibs/arm64-v8a/
+          ls -l tts-test/app/src/main/jniLibs/arm64-v8a
+      - name: Build
+        working-directory: tts-test
+        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp tts-test/app/build/outputs/apk/debug/app-debug.apk ttsTest.apk
+          ls -l ttsTest.apk
+          gh release delete tts-test --cleanup-tag -y || true
+          gh release create tts-test ttsTest.apk --prerelease --target "${GITHUB_SHA}" --title "음성 시험 앱" --notes "Supertonic 3 한국어 음성 시험용(폰 전용, 차에는 설치하지 않음)"
