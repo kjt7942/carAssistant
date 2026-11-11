@@ -589,6 +589,7 @@ html[data-dim="3"] .gd{opacity:.8}
       <div class="sd-t">목소리<small id="tvMsg">안내 음성의 목소리·빠르기·높이. 누르면 바로 들려 드립니다.</small></div>
       <div class="btns" id="tvEng"></div>
       <div class="btns" id="tvVoice"></div>
+      <div class="hint" id="tvHid"></div>
       <div class="tv-row"><span class="tv-l">빠르기</span><div class="btns" id="tvRate">
         <button type="button" data-v="0.85">느리게</button><button type="button" data-v="1">보통</button><button type="button" data-v="1.15">조금 빠르게</button><button type="button" data-v="1.3">빠르게</button></div></div>
       <div class="tv-row"><span class="tv-l">높이</span><div class="btns" id="tvPitch">
@@ -1465,11 +1466,14 @@ html[data-dim="3"] .gd{opacity:.8}
     var eh='';(t.engines||[]).forEach(function(e){eh+='<button type="button" data-eng="'+esc(e.p)+'" class="'+(e.p===t.engine?'on':'')+'">'+esc(e.n)+'</button>'});
     $('tvEng').innerHTML=(t.engines||[]).length>1?eh:'';
     var vh='<button type="button" data-voice="" class="'+(!t.voice||!(t.voices||[]).some(function(v){return v.name===t.voice})?'on':'')+'">기본</button>',n=0;
+    var hid=0;
     (t.voices||[]).forEach(function(v){
+      if(!v.inst){hid++;return} /* 받지 않은 목소리는 눌러도 기본 목소리로 나오므로 숨긴다 */
       n++;var tag=v.net?' · 온라인':'';if(!v.inst)tag+=' · 받기 필요';
       var sn=v.name.replace(/^ko-?kr-?x-?/i,'').replace(/-(local|network)$/,'');vh+='<button type="button" data-voice="'+esc(v.name)+'" class="'+(v.name===t.voice?'on':'')+'" title="'+esc(v.name)+'">'+esc(sn)+tag+'</button>';
     });
     $('tvVoice').innerHTML=vh;
+    $('tvHid').textContent=hid?('받지 않은 목소리 '+hid+'개는 숨겼습니다. 쓰려면 "기기 음성 설정 열기"에서 음성 데이터를 받으세요.'):'';
     function mark(id,val){[].forEach.call($(id).children,function(b){b.classList.toggle('on',Math.abs(+b.getAttribute('data-v')-val)<0.01)})}
     mark('tvRate',t.rate||1);mark('tvPitch',t.pitch||1);
     $('tvStore').hidden=!!t.googleTts;
