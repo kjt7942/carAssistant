@@ -1933,6 +1933,17 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun tsIntent(action: String): String {
+            return try {
+                val i = Intent(action).setClassName("com.tailscale.ipn", "com.tailscale.ipn.IPNReceiver")
+                sendBroadcast(i)
+                "방송 보냄: " + action.substringAfterLast('.')
+            } catch (e: Exception) {
+                "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
+            }
+        }
+
+        @JavascriptInterface
         fun pairStart(code: String): String =
             if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
 

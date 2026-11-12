@@ -1338,13 +1338,14 @@ html[data-dim="3"] .gd{opacity:.8}
   });
   var SVC_TESTS=[['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
     ['음악 재생/일시정지','com.syu.music','com.syu.music.playpause'],['음악 다음 곡','com.syu.music','com.syu.music.next'],['음악 이전 곡','com.syu.music','com.syu.music.prev'],['음악 정지','com.syu.music','com.syu.music.stop'],
+    ['Tailscale 연결','ts','com.tailscale.ipn.CONNECT_VPN'],['Tailscale 끊기','ts','com.tailscale.ipn.DISCONNECT_VPN'],
     ['키: 다음 곡/방송','key',87],['키: 이전 곡/방송','key',88],['키: 채널 올림','key',166],['키: 채널 내림','key',167],['키: 재생/일시정지','key',85],['키: 정지','key',86]];
   $('dgSvc').addEventListener('click',function(){
     if(!A||!A.svcTest){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다.');return}
     $('dg').hidden=true;
     var h='';SVC_TESTS.forEach(function(t,i){h+='<div class="ap-row" data-i="'+i+'">'+esc(t[0])+'<small>'+esc(t[2])+'</small></div>'});
     $('apList').innerHTML=h;$('apTitle').textContent='누르면 명령을 보냅니다 — 라디오·음악 앱을 먼저 켜 두세요';$('apFilter').hidden=true;$('ap').hidden=false;
-    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
+    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
   });
   $('dgSys').addEventListener('click',function(){
     if(!A||!A.sysReport){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다.');return}
