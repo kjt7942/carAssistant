@@ -425,6 +425,7 @@ class MainActivity : Activity() {
     }
 
     override fun onResume() {
+        Thread { ensureVpn(0) }.start()
         super.onResume()
         inFront = true
         applyFullscreen()
@@ -1438,7 +1439,30 @@ class MainActivity : Activity() {
         return "암호화되지 않은 http 주소는 Tailscale(100.x.x.x)이나 내부망 주소만 쓸 수 있습니다"
     }
 
+    // Tailscale VPN이 꺼져 있으면 연결 신호를 보내고 잠시 기다린다 (헤드유닛이 시동 때마다 VPN 앱을 끄는 문제 대응)
+    private var tsAt = 0L
+    private fun vpnUp(): Boolean = try {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        cm.allNetworks.any { cm.getNetworkCapabilities(it)?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) == true }
+    } catch (e: Exception) { false }
+
+    private fun ensureVpn(waitMs: Int) {
+        try {
+            if (!useHermes() || vpnUp()) return
+            val now = System.currentTimeMillis()
+            if (now - tsAt > 20000) {
+                tsAt = now
+                sendBroadcast(Intent("com.tailscale.ipn.CONNECT_VPN").setClassName("com.tailscale.ipn", "com.tailscale.ipn.IPNReceiver"))
+            }
+            var w = 0
+            while (w < waitMs && !vpnUp()) { Thread.sleep(500); w += 500 }
+            if (waitMs > 0) Thread.sleep(800)
+        } catch (e: Exception) {
+        }
+    }
+
     private fun hermesPost(msgs: JSONArray, timeoutMs: Int): Pair<Int, String> {
+        ensureVpn(8000)
         val now = System.currentTimeMillis()
         if (hSid.isEmpty() || now - hSidAt > 15 * 60 * 1000) hSid = "car-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(java.util.Date(now))
         hSidAt = now
