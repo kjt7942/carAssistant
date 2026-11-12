@@ -683,6 +683,7 @@ html[data-dim="3"] .gd{opacity:.8}
       <button id="dgSvc" type="button">라디오·음악 명령 시험</button>
       <button id="dgSys" type="button">시스템 연동 분석</button>
       <button id="dgSys2" type="button">시스템 연동 분석 2</button>
+      <button id="dgApk" type="button">라디오 APK 올리기</button>
       <button id="dgKeys" type="button">버튼 점검</button>
       <button id="dgRefresh" type="button">새로 확인</button>
     </div>
@@ -1368,6 +1369,17 @@ html[data-dim="3"] .gd{opacity:.8}
       ovShow('시스템 연동 분석 2',ok?'보내기 화면이나 클립보드로 내용을 내보냈습니다.':'내보내지 못했습니다.',t.slice(0,600));
     },200);
   });
+  $('dgApk').addEventListener('click',function(){
+    if(!A||!A.apkUpload){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 기능은 최신 앱에서 가능합니다.');return}
+    if(!ghTok()){$('dg').hidden=true;ovShow('동기화 설정이 필요합니다','','동기화(저장소 토큰)가 설정된 기기에서만 올릴 수 있습니다.');return}
+    $('dg').hidden=true;ovShow('APK 올리는 중…','','용량이 커서 1~3분 걸릴 수 있습니다. 화면을 그대로 두세요.');
+    var ok=false;try{ok=A.apkUpload('com.syu.radio,com.syu.carradio,com.syu.ms',ghTok(),ghRepo())}catch(e){}
+    if(!ok)ovShow('올리기를 시작하지 못했습니다','','저장소 정보를 확인해 주세요.');
+  });
+  window.onNativeApkUp=function(o){
+    var t=(o.list||[]).map(function(x){return x.pkg+': '+(x.r||[]).join(' / ')}).join('\n');
+    ovShow('APK 올리기 결과','',t);
+  };
   $('apFilter').addEventListener('click',function(){apOnlyCar=!apOnlyCar;apDraw()});
   function apRep(){try{return A.appsReport()}catch(e){return ''}}
   $('apCopy').addEventListener('click',function(){

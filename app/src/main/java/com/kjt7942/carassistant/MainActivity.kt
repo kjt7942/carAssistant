@@ -2041,6 +2041,59 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun apkUpload(pkgs: String, token: String, repo: String): Boolean {
+            if (token.isEmpty() || repo.isEmpty()) return false
+            Thread {
+                val res = JSONArray()
+                for (pkg in pkgs.split(",").map { it.trim() }.filter { it.isNotEmpty() }) {
+                    val r = JSONObject().put("pkg", pkg)
+                    try {
+                        val ai = packageManager.getApplicationInfo(pkg, 0)
+                        val files = ArrayList<String>()
+                        files.add(ai.sourceDir)
+                        ai.splitSourceDirs?.let { files.addAll(it) }
+                        val out = JSONArray()
+                        for ((idx, path) in files.withIndex()) {
+                            val f = File(path)
+                            val size = f.length()
+                            if (size > 45L * 1024 * 1024) { out.put(f.name + " 너무 큼 " + size / 1048576 + "MB"); continue }
+                            val b64 = android.util.Base64.encodeToString(f.readBytes(), android.util.Base64.NO_WRAP)
+                            val name = if (idx == 0) "$pkg.apk" else "$pkg.split$idx.apk"
+                            val url = "https://api.github.com/repos/$repo/contents/apks/$name"
+                            var sha: String? = null
+                            try {
+                                val g = URL(url).openConnection() as HttpURLConnection
+                                g.setRequestProperty("Authorization", "Bearer $token")
+                                g.setRequestProperty("Accept", "application/vnd.github+json")
+                                if (g.responseCode == 200) sha = JSONObject(String(g.inputStream.readBytes())).optString("sha")
+                                g.disconnect()
+                            } catch (e: Exception) {}
+                            val body = JSONObject().put("message", "apk $name").put("content", b64)
+                            if (!sha.isNullOrEmpty()) body.put("sha", sha)
+                            val c = URL(url).openConnection() as HttpURLConnection
+                            c.requestMethod = "PUT"
+                            c.connectTimeout = 15000; c.readTimeout = 180000
+                            c.doOutput = true
+                            c.setFixedLengthStreamingMode(body.toString().toByteArray(Charsets.UTF_8).size)
+                            c.setRequestProperty("Authorization", "Bearer $token")
+                            c.setRequestProperty("Accept", "application/vnd.github+json")
+                            c.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                            val code = c.responseCode
+                            c.disconnect()
+                            out.put(name + " " + (size / 1024) + "KB → " + (if (code in 200..299) "올림" else "실패 $code"))
+                        }
+                        r.put("r", out)
+                    } catch (e: Exception) {
+                        r.put("r", JSONArray().put("실패: " + e.javaClass.simpleName + " " + (e.message ?: "")))
+                    }
+                    res.put(r)
+                }
+                js("onNativeApkUp", JSONObject().put("list", res))
+            }.start()
+            return true
+        }
+
+        @JavascriptInterface
         fun pairStart(code: String): String =
             if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
 
