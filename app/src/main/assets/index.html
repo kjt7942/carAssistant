@@ -679,6 +679,7 @@ html[data-dim="3"] .gd{opacity:.8}
     <div class="btns" style="justify-content:flex-start">
       <button id="dgPerm" type="button">권한 다시 요청</button>
       <button id="dgApps" type="button">앱 목록</button>
+      <button id="dgRadio" type="button">라디오 앱 분석</button>
       <button id="dgKeys" type="button">버튼 점검</button>
       <button id="dgRefresh" type="button">새로 확인</button>
     </div>
@@ -1323,6 +1324,15 @@ html[data-dim="3"] .gd{opacity:.8}
     if(!A||!A.listApps){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}
     try{apps=JSON.parse(A.listApps())}catch(e){apps=[]}
     apOnlyCar=true;$('dg').hidden=true;apDraw();$('ap').hidden=false;
+  });
+  $('dgRadio').addEventListener('click',function(){
+    if(!A||!A.radioReport){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return}
+    var t='';try{t=A.radioReport()}catch(e){t='분석 실패: '+e}
+    try{A.saveText('radio.txt',t)}catch(e){}
+    var ok=false;try{ok=A.shareText(t)}catch(e){}
+    if(!ok){try{ok=A.copyText(t)}catch(e){}}
+    $('dg').hidden=true;
+    ovShow('라디오 앱 분석',ok?'보내기 화면이나 클립보드로 내용을 내보냈습니다.':'내보내지 못했습니다.',t.slice(0,600));
   });
   $('apFilter').addEventListener('click',function(){apOnlyCar=!apOnlyCar;apDraw()});
   function apRep(){try{return A.appsReport()}catch(e){return ''}}

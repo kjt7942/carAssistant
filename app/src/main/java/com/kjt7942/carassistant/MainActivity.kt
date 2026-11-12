@@ -1785,6 +1785,77 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun radioReport(): String {
+            val sb = StringBuilder()
+            try {
+                val pm = packageManager
+                val all = pm.getInstalledPackages(0).map { it.packageName }.sorted()
+                val targets = all.filter { n ->
+                    val l = n.lowercase()
+                    l == "com.syu.radio" || l.contains("radio") || l.startsWith("com.syu.ms") || l == "com.syu.music" || l.contains("tuner")
+                }
+                sb.append("# 라디오 앱 분석 (외부에서 받는 명령 위주)\n대상: ").append(targets.joinToString(", ")).append("\n")
+                for (pkg in targets.take(4)) {
+                    sb.append("\n## ").append(pkg).append("\n")
+                    try {
+                        val pi = pm.getPackageInfo(pkg, 0)
+                        sb.append("버전 ").append(pi.versionName).append(" / ").append(pi.versionCode).append("\n")
+                        sb.append(manifestSummary(pkg))
+                    } catch (e: Exception) {
+                        sb.append("읽기 실패: ").append(e.message).append("\n")
+                    }
+                }
+                sb.append("\n# 기기: ").append(android.os.Build.MODEL).append(" / Android ").append(android.os.Build.VERSION.RELEASE).append("\n")
+            } catch (e: Exception) {
+                sb.append("분석 실패: ").append(e.message)
+            }
+            return sb.toString()
+        }
+
+        private fun manifestSummary(pkg: String): String {
+            val out = StringBuilder()
+            val ctx = createPackageContext(pkg, 0)
+            val xp = ctx.assets.openXmlResourceParser("AndroidManifest.xml")
+            val ns = "http://schemas.android.com/apk/res/android"
+            var comp = ""
+            var depth = 0
+            var ev = xp.eventType
+            val perms = ArrayList<String>()
+            while (ev != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
+                if (ev == org.xmlpull.v1.XmlPullParser.START_TAG) {
+                    val t = xp.name
+                    val name = xp.getAttributeValue(ns, "name") ?: ""
+                    when (t) {
+                        "uses-permission" -> perms.add(name.removePrefix("android.permission."))
+                        "permission" -> out.append("권한 정의: ").append(name).append("\n")
+                        "activity", "activity-alias", "service", "receiver", "provider" -> {
+                            val ex = xp.getAttributeValue(ns, "exported") ?: "-"
+                            val pm2 = xp.getAttributeValue(ns, "permission")
+                            comp = t
+                            out.append("[").append(t).append("] ").append(name).append(" exported=").append(ex)
+                            if (pm2 != null) out.append(" permission=").append(pm2)
+                            out.append("\n")
+                        }
+                        "action" -> if (comp.isNotEmpty()) out.append("    action: ").append(name).append("\n")
+                        "category" -> {}
+                        "data" -> if (comp.isNotEmpty()) out.append("    data: ")
+                            .append(xp.getAttributeValue(ns, "scheme") ?: "").append(" ")
+                            .append(xp.getAttributeValue(ns, "host") ?: "").append("\n")
+                    }
+                    depth++
+                } else if (ev == org.xmlpull.v1.XmlPullParser.END_TAG) {
+                    if (xp.name in listOf("activity", "activity-alias", "service", "receiver", "provider")) comp = ""
+                    depth--
+                }
+                ev = xp.next()
+            }
+            xp.close()
+            val r = out.toString()
+            val head = "권한: " + perms.joinToString(", ") + "\n"
+            return (head + r).take(12000)
+        }
+
+        @JavascriptInterface
         fun pairStart(code: String): String =
             if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
 
