@@ -1856,6 +1856,21 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun svcTest(pkg: String, action: String): String {
+            return try {
+                val i = Intent(action).setPackage(pkg)
+                val ri = packageManager.queryIntentServices(i, 0)
+                if (ri.isEmpty()) return "받는 서비스를 찾지 못함"
+                val si = ri[0].serviceInfo
+                i.setClassName(si.packageName, si.name)
+                val cn = startService(i)
+                if (cn != null) "보냄 → " + cn.shortClassName else "서비스가 시작되지 않음"
+            } catch (e: Exception) {
+                "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
+            }
+        }
+
+        @JavascriptInterface
         fun pairStart(code: String): String =
             if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
 
