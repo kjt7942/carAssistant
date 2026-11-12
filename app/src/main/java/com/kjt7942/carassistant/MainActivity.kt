@@ -1925,15 +1925,21 @@ class MainActivity : Activity() {
                     sb.append("클래스 목록 실패: ").append(e.message).append("\n")
                 }
                 sb.append("전체 클래스 ").append(names.size).append("개\n")
-                val re = Regex("(?i)irem|toolkit|modulecode|finalradio|radio|binder|callback|module")
-                val hit = names.filter { re.containsMatchIn(it) }.sorted()
+                val skip = Regex("^(android|java|javax|dalvik|libcore|com\\.android|com\\.google|org\\.|kotlin|androidx|sun\\.|junit|com\\.sun|com\\.huawei|com\\.qualcomm)")
+                val mine = names.filter { !skip.containsMatchIn(it) }.sorted()
+                sb.append("앱 자체 클래스 ").append(mine.size).append("개\n")
+                val re = Regex("(?i)irem|toolkit|modulecode|finalradio|radio|binder|module|\\.final|ipc|remote")
+                val hit = mine.filter { re.containsMatchIn(it) }
                 sb.append("관련 클래스 ").append(hit.size).append("개\n\n")
-                for (n in hit.take(70)) {
+                sb.append("# 앱 클래스 이름 (앞 400개)\n")
+                for (n in mine.take(400)) sb.append(n).append("\n")
+                sb.append("\n# 관련 클래스 상세\n")
+                for (n in hit.take(60)) {
                     sb.append("## ").append(n).append("\n")
                     try {
                         val c = Class.forName(n, false, cl)
                         if (c.isInterface) sb.append("(interface)\n")
-                        for (m in c.declaredMethods.sortedBy { it.name }.take(40)) {
+                        for (m in c.declaredMethods.sortedBy { it.name }.take(30)) {
                             sb.append("  ").append(m.returnType.simpleName).append(" ").append(m.name).append("(")
                                 .append(m.parameterTypes.joinToString(",") { it.simpleName }).append(")\n")
                         }
