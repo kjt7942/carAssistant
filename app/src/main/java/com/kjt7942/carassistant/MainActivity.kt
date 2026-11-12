@@ -1974,6 +1974,73 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun sysReport2(): String {
+            val sb = StringBuilder()
+            try {
+                val pkg = "com.syu.ms"
+                val ai = packageManager.getApplicationInfo(pkg, 0)
+                val ctx = createPackageContext(pkg, Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY)
+                val cl = ctx.classLoader
+                val names = ArrayList<String>()
+                @Suppress("DEPRECATION")
+                val df = dalvik.system.DexFile(ai.sourceDir)
+                val en = df.entries()
+                while (en.hasMoreElements()) names.add(en.nextElement())
+                val mods = names.filter { it.startsWith("module.") }
+                sb.append("# module.* 패키지: ").append(mods.map { it.split(".").getOrElse(1) { "" } }.distinct().sorted().joinToString(", ")).append("\n")
+                fun dump(n: String, withConst: Boolean) {
+                    sb.append("## ").append(n).append("\n")
+                    try {
+                        val c = Class.forName(n, false, cl)
+                        if (c.superclass != null) sb.append("  extends ").append(c.superclass.name).append("\n")
+                        for (m in c.declaredMethods.sortedBy { it.name }.take(30)) {
+                            sb.append("  ").append(m.returnType.simpleName).append(" ").append(m.name).append("(")
+                                .append(m.parameterTypes.joinToString(",") { it.simpleName }).append(")\n")
+                        }
+                        if (withConst) for (f in c.declaredFields.take(200)) {
+                            if (java.lang.reflect.Modifier.isStatic(f.modifiers) && f.type == Int::class.javaPrimitiveType) {
+                                f.isAccessible = true
+                                sb.append("  ").append(f.name).append("=").append(f.getInt(null)).append("\n")
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        sb.append("  (읽기 실패 ").append(e.javaClass.simpleName).append(")\n")
+                    }
+                }
+                val radio = names.filter { Regex("(?i)radio|tuner|fm").containsMatchIn(it) && !it.startsWith("android.") && !it.startsWith("com.android.") }.sorted()
+                sb.append("\n# 라디오 관련 클래스 ").append(radio.size).append("개\n")
+                radio.take(40).forEach { dump(it, true) }
+                val fin = names.filter { Regex("(?i)(^|\\.)(final[a-z]*|modulecode)(\\$.*)?$").containsMatchIn(it) }.sorted()
+                sb.append("\n# Final/ModuleCode 클래스 ").append(fin.size).append("개: ").append(fin.take(60).joinToString(", ")).append("\n")
+                fin.filter { Regex("(?i)radio|modulecode|final$").containsMatchIn(it) }.take(25).forEach { dump(it, true) }
+                // 바인더 연결 시험
+                sb.append("\n# 서비스 연결 시험\n")
+                for (act in listOf("com.syu.ms.toolkit", "com.syu.ms.main", "com.syu.ms.radio")) {
+                    val latch = java.util.concurrent.CountDownLatch(1)
+                    var info = "연결 안 됨(시간 초과)"
+                    val conn = object : android.content.ServiceConnection {
+                        override fun onServiceConnected(n: android.content.ComponentName?, b: android.os.IBinder?) {
+                            info = try {
+                                val d = b?.interfaceDescriptor
+                                "연결됨 descriptor=" + d + " class=" + b?.javaClass?.name
+                            } catch (e: Throwable) { "연결됨(정보 실패 " + e.message + ")" }
+                            latch.countDown()
+                        }
+                        override fun onServiceDisconnected(n: android.content.ComponentName?) {}
+                    }
+                    val i = Intent(act).setPackage(pkg)
+                    val ok = try { bindService(i, conn, Context.BIND_AUTO_CREATE) } catch (e: Throwable) { info = "bind 실패 " + e.javaClass.simpleName + " " + e.message; false }
+                    if (ok) latch.await(4, java.util.concurrent.TimeUnit.SECONDS) else if (info.startsWith("연결 안 됨")) info = "bindService false (거부됨)"
+                    sb.append(act).append(" → ").append(info).append("\n")
+                    try { unbindService(conn) } catch (e: Throwable) {}
+                }
+            } catch (e: Throwable) {
+                sb.append("분석 실패: ").append(e.javaClass.simpleName).append(" ").append(e.message)
+            }
+            return sb.toString().take(60000)
+        }
+
+        @JavascriptInterface
         fun pairStart(code: String): String =
             if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
 
