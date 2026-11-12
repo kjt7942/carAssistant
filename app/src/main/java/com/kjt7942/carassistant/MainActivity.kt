@@ -1871,6 +1871,68 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun mediaKey(code: Int): String {
+            return try {
+                val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                am.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, code))
+                am.dispatchMediaKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, code))
+                "키 " + code + " 보냄"
+            } catch (e: Exception) {
+                "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
+            }
+        }
+
+        @JavascriptInterface
+        fun sysReport(): String {
+            val sb = StringBuilder()
+            try {
+                val pkg = "com.syu.ms"
+                val ai = packageManager.getApplicationInfo(pkg, 0)
+                sb.append("# 시스템 연동 분석 ").append(pkg).append("\n").append(ai.sourceDir).append("\n")
+                val ctx = createPackageContext(pkg, Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY)
+                val cl = ctx.classLoader
+                val names = ArrayList<String>()
+                try {
+                    @Suppress("DEPRECATION")
+                    val df = dalvik.system.DexFile(ai.sourceDir)
+                    val en = df.entries()
+                    while (en.hasMoreElements()) names.add(en.nextElement())
+                } catch (e: Throwable) {
+                    sb.append("클래스 목록 실패: ").append(e.message).append("\n")
+                }
+                sb.append("전체 클래스 ").append(names.size).append("개\n")
+                val re = Regex("(?i)irem|toolkit|modulecode|finalradio|radio|binder|callback|module")
+                val hit = names.filter { re.containsMatchIn(it) }.sorted()
+                sb.append("관련 클래스 ").append(hit.size).append("개\n\n")
+                for (n in hit.take(70)) {
+                    sb.append("## ").append(n).append("\n")
+                    try {
+                        val c = Class.forName(n, false, cl)
+                        if (c.isInterface) sb.append("(interface)\n")
+                        for (m in c.declaredMethods.sortedBy { it.name }.take(40)) {
+                            sb.append("  ").append(m.returnType.simpleName).append(" ").append(m.name).append("(")
+                                .append(m.parameterTypes.joinToString(",") { it.simpleName }).append(")\n")
+                        }
+                        val low = n.lowercase()
+                        if (low.contains("modulecode") || low.contains("finalradio") || low.contains("final")) {
+                            for (f in c.declaredFields.take(120)) {
+                                if (java.lang.reflect.Modifier.isStatic(f.modifiers) && f.type == Int::class.javaPrimitiveType) {
+                                    f.isAccessible = true
+                                    sb.append("  ").append(f.name).append("=").append(f.getInt(null)).append("\n")
+                                }
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        sb.append("  (읽기 실패 ").append(e.javaClass.simpleName).append(")\n")
+                    }
+                }
+            } catch (e: Throwable) {
+                sb.append("분석 실패: ").append(e.javaClass.simpleName).append(" ").append(e.message)
+            }
+            return sb.toString().take(60000)
+        }
+
+        @JavascriptInterface
         fun pairStart(code: String): String =
             if (Regex("\\d{4,8}").matches(code)) this@MainActivity.pairStart(code) else ""
 

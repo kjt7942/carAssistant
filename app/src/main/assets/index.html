@@ -681,6 +681,7 @@ html[data-dim="3"] .gd{opacity:.8}
       <button id="dgApps" type="button">앱 목록</button>
       <button id="dgRadio" type="button">라디오 앱 분석</button>
       <button id="dgSvc" type="button">라디오·음악 명령 시험</button>
+      <button id="dgSys" type="button">시스템 연동 분석</button>
       <button id="dgKeys" type="button">버튼 점검</button>
       <button id="dgRefresh" type="button">새로 확인</button>
     </div>
@@ -1336,13 +1337,23 @@ html[data-dim="3"] .gd{opacity:.8}
     ovShow('라디오 앱 분석',ok?'보내기 화면이나 클립보드로 내용을 내보냈습니다.':'내보내지 못했습니다.',t.slice(0,600));
   });
   var SVC_TESTS=[['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
-    ['음악 재생/일시정지','com.syu.music','com.syu.music.playpause'],['음악 다음 곡','com.syu.music','com.syu.music.next'],['음악 이전 곡','com.syu.music','com.syu.music.prev'],['음악 정지','com.syu.music','com.syu.music.stop']];
+    ['음악 재생/일시정지','com.syu.music','com.syu.music.playpause'],['음악 다음 곡','com.syu.music','com.syu.music.next'],['음악 이전 곡','com.syu.music','com.syu.music.prev'],['음악 정지','com.syu.music','com.syu.music.stop'],
+    ['키: 다음 곡/방송','key',87],['키: 이전 곡/방송','key',88],['키: 채널 올림','key',166],['키: 채널 내림','key',167],['키: 재생/일시정지','key',85],['키: 정지','key',86]];
   $('dgSvc').addEventListener('click',function(){
     if(!A||!A.svcTest){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다.');return}
     $('dg').hidden=true;
     var h='';SVC_TESTS.forEach(function(t,i){h+='<div class="ap-row" data-i="'+i+'">'+esc(t[0])+'<small>'+esc(t[2])+'</small></div>'});
     $('apList').innerHTML=h;$('apTitle').textContent='누르면 명령을 보냅니다 — 라디오·음악 앱을 먼저 켜 두세요';$('apFilter').hidden=true;$('ap').hidden=false;
-    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
+    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
+  });
+  $('dgSys').addEventListener('click',function(){
+    if(!A||!A.sysReport){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다.');return}
+    var t='';try{t=A.sysReport()}catch(e){t='분석 실패: '+e}
+    try{A.saveText('sys.txt',t)}catch(e){}
+    var ok=false;try{ok=A.shareText(t)}catch(e){}
+    if(!ok){try{ok=A.copyText(t)}catch(e){}}
+    $('dg').hidden=true;
+    ovShow('시스템 연동 분석',ok?'보내기 화면이나 클립보드로 내용을 내보냈습니다.':'내보내지 못했습니다.',t.slice(0,600));
   });
   $('apFilter').addEventListener('click',function(){apOnlyCar=!apOnlyCar;apDraw()});
   function apRep(){try{return A.appsReport()}catch(e){return ''}}
