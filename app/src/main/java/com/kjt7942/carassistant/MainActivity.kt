@@ -1507,6 +1507,51 @@ class MainActivity : Activity() {
         }
     }
 
+    // GitHub Contents API로 파일 올리기 (스트리밍 base64라 큰 APK도 메모리를 적게 쓴다)
+    private fun ghPutFile(repo: String, token: String, path: String, msg: String, file: File): String {
+        return try {
+            val url = "https://api.github.com/repos/$repo/contents/$path"
+            var sha: String? = null
+            try {
+                val g = URL(url).openConnection() as HttpURLConnection
+                g.setRequestProperty("Authorization", "Bearer $token")
+                g.setRequestProperty("Accept", "application/vnd.github+json")
+                if (g.responseCode == 200) sha = JSONObject(String(g.inputStream.readBytes())).optString("sha")
+                g.disconnect()
+            } catch (e: Exception) {}
+            val head = ("{\"message\":" + JSONObject.quote(msg) + (if (!sha.isNullOrEmpty()) ",\"sha\":\"$sha\"" else "") + ",\"content\":\"").toByteArray(Charsets.UTF_8)
+            val tail = "\"}".toByteArray(Charsets.UTF_8)
+            val n = file.length()
+            val b64len = 4L * ((n + 2) / 3)
+            val c = URL(url).openConnection() as HttpURLConnection
+            c.requestMethod = "PUT"
+            c.connectTimeout = 15000; c.readTimeout = 240000
+            c.doOutput = true
+            c.setFixedLengthStreamingMode(head.size + b64len + tail.size)
+            c.setRequestProperty("Authorization", "Bearer $token")
+            c.setRequestProperty("Accept", "application/vnd.github+json")
+            c.outputStream.use { o ->
+                o.write(head)
+                file.inputStream().buffered().use { ins ->
+                    val buf = ByteArray(3 * 16384)
+                    while (true) {
+                        var got = 0
+                        while (got < buf.size) { val r = ins.read(buf, got, buf.size - got); if (r < 0) break; got += r }
+                        if (got <= 0) break
+                        o.write(android.util.Base64.encode(buf, 0, got, android.util.Base64.NO_WRAP))
+                        if (got < buf.size) break
+                    }
+                }
+                o.write(tail)
+            }
+            val code = c.responseCode
+            c.disconnect()
+            if (code in 200..299) "올림" else "실패 $code"
+        } catch (e: Throwable) {
+            "실패 " + e.javaClass.simpleName + " " + (e.message ?: "")
+        }
+    }
+
     // Tailscale VPN이 꺼져 있으면 연결 신호를 보내고 잠시 기다린다 (헤드유닛이 시동 때마다 VPN 앱을 끄는 문제 대응)
     private var tsAt = 0L
     private fun vpnUp(): Boolean = try {
@@ -1876,34 +1921,6 @@ class MainActivity : Activity() {
             return sb.toString()
         }
 
-        @JavascriptInterface
-        fun radioReport(): String {
-            val sb = StringBuilder()
-            try {
-                val pm = packageManager
-                val all = pm.getInstalledPackages(0).map { it.packageName }.sorted()
-                val targets = all.filter { n ->
-                    val l = n.lowercase()
-                    l == "com.syu.radio" || l.contains("radio") || l.startsWith("com.syu.ms") || l == "com.syu.music" || l.contains("tuner")
-                }
-                sb.append("# 라디오 앱 분석 (외부에서 받는 명령 위주)\n대상: ").append(targets.joinToString(", ")).append("\n")
-                for (pkg in targets.take(4)) {
-                    sb.append("\n## ").append(pkg).append("\n")
-                    try {
-                        val pi = pm.getPackageInfo(pkg, 0)
-                        sb.append("버전 ").append(pi.versionName).append(" / ").append(pi.versionCode).append("\n")
-                        sb.append(manifestSummary(pkg))
-                    } catch (e: Exception) {
-                        sb.append("읽기 실패: ").append(e.message).append("\n")
-                    }
-                }
-                sb.append("\n# 기기: ").append(android.os.Build.MODEL).append(" / Android ").append(android.os.Build.VERSION.RELEASE).append("\n")
-            } catch (e: Exception) {
-                sb.append("분석 실패: ").append(e.message)
-            }
-            return sb.toString()
-        }
-
         private fun manifestSummary(pkg: String): String {
             val out = StringBuilder()
             val ctx = createPackageContext(pkg, 0)
@@ -1975,62 +1992,6 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun sysReport(): String {
-            val sb = StringBuilder()
-            try {
-                val pkg = "com.syu.ms"
-                val ai = packageManager.getApplicationInfo(pkg, 0)
-                sb.append("# 시스템 연동 분석 ").append(pkg).append("\n").append(ai.sourceDir).append("\n")
-                val ctx = createPackageContext(pkg, Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY)
-                val cl = ctx.classLoader
-                val names = ArrayList<String>()
-                try {
-                    @Suppress("DEPRECATION")
-                    val df = dalvik.system.DexFile(ai.sourceDir)
-                    val en = df.entries()
-                    while (en.hasMoreElements()) names.add(en.nextElement())
-                } catch (e: Throwable) {
-                    sb.append("클래스 목록 실패: ").append(e.message).append("\n")
-                }
-                sb.append("전체 클래스 ").append(names.size).append("개\n")
-                val skip = Regex("^(android|java|javax|dalvik|libcore|com\\.android|com\\.google|org\\.|kotlin|androidx|sun\\.|junit|com\\.sun|com\\.huawei|com\\.qualcomm)")
-                val mine = names.filter { !skip.containsMatchIn(it) }.sorted()
-                sb.append("앱 자체 클래스 ").append(mine.size).append("개\n")
-                val re = Regex("(?i)irem|toolkit|modulecode|finalradio|radio|binder|module|\\.final|ipc|remote")
-                val hit = mine.filter { re.containsMatchIn(it) }
-                sb.append("관련 클래스 ").append(hit.size).append("개\n\n")
-                sb.append("# 앱 클래스 이름 (앞 400개)\n")
-                for (n in mine.take(400)) sb.append(n).append("\n")
-                sb.append("\n# 관련 클래스 상세\n")
-                for (n in hit.take(60)) {
-                    sb.append("## ").append(n).append("\n")
-                    try {
-                        val c = Class.forName(n, false, cl)
-                        if (c.isInterface) sb.append("(interface)\n")
-                        for (m in c.declaredMethods.sortedBy { it.name }.take(30)) {
-                            sb.append("  ").append(m.returnType.simpleName).append(" ").append(m.name).append("(")
-                                .append(m.parameterTypes.joinToString(",") { it.simpleName }).append(")\n")
-                        }
-                        val low = n.lowercase()
-                        if (low.contains("modulecode") || low.contains("finalradio") || low.contains("final")) {
-                            for (f in c.declaredFields.take(120)) {
-                                if (java.lang.reflect.Modifier.isStatic(f.modifiers) && f.type == Int::class.javaPrimitiveType) {
-                                    f.isAccessible = true
-                                    sb.append("  ").append(f.name).append("=").append(f.getInt(null)).append("\n")
-                                }
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        sb.append("  (읽기 실패 ").append(e.javaClass.simpleName).append(")\n")
-                    }
-                }
-            } catch (e: Throwable) {
-                sb.append("분석 실패: ").append(e.javaClass.simpleName).append(" ").append(e.message)
-            }
-            return sb.toString().take(60000)
-        }
-
-        @JavascriptInterface
         fun tsIntent(action: String): String {
             return try {
                 val i = Intent(action).setClassName("com.tailscale.ipn", "com.tailscale.ipn.IPNReceiver")
@@ -2039,126 +2000,6 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
             }
-        }
-
-        @JavascriptInterface
-        fun sysReport2(): String {
-            val sb = StringBuilder()
-            try {
-                val pkg = "com.syu.ms"
-                val ai = packageManager.getApplicationInfo(pkg, 0)
-                val ctx = createPackageContext(pkg, Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY)
-                val cl = ctx.classLoader
-                val names = ArrayList<String>()
-                @Suppress("DEPRECATION")
-                val df = dalvik.system.DexFile(ai.sourceDir)
-                val en = df.entries()
-                while (en.hasMoreElements()) names.add(en.nextElement())
-                val mods = names.filter { it.startsWith("module.") }
-                sb.append("# module.* 패키지: ").append(mods.map { it.split(".").getOrElse(1) { "" } }.distinct().sorted().joinToString(", ")).append("\n")
-                fun dump(n: String, withConst: Boolean) {
-                    sb.append("## ").append(n).append("\n")
-                    try {
-                        val c = Class.forName(n, false, cl)
-                        if (c.superclass != null) sb.append("  extends ").append(c.superclass.name).append("\n")
-                        for (m in c.declaredMethods.sortedBy { it.name }.take(30)) {
-                            sb.append("  ").append(m.returnType.simpleName).append(" ").append(m.name).append("(")
-                                .append(m.parameterTypes.joinToString(",") { it.simpleName }).append(")\n")
-                        }
-                        if (withConst) for (f in c.declaredFields.take(200)) {
-                            if (java.lang.reflect.Modifier.isStatic(f.modifiers) && f.type == Int::class.javaPrimitiveType) {
-                                f.isAccessible = true
-                                sb.append("  ").append(f.name).append("=").append(f.getInt(null)).append("\n")
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        sb.append("  (읽기 실패 ").append(e.javaClass.simpleName).append(")\n")
-                    }
-                }
-                val radio = names.filter { Regex("(?i)radio|tuner|fm").containsMatchIn(it) && !it.startsWith("android.") && !it.startsWith("com.android.") }.sorted()
-                sb.append("\n# 라디오 관련 클래스 ").append(radio.size).append("개\n")
-                radio.take(40).forEach { dump(it, true) }
-                val fin = names.filter { Regex("(?i)(^|\\.)(final[a-z]*|modulecode)(\\$.*)?$").containsMatchIn(it) }.sorted()
-                sb.append("\n# Final/ModuleCode 클래스 ").append(fin.size).append("개: ").append(fin.take(60).joinToString(", ")).append("\n")
-                fin.filter { Regex("(?i)radio|modulecode|final$").containsMatchIn(it) }.take(25).forEach { dump(it, true) }
-                // 바인더 연결 시험
-                sb.append("\n# 서비스 연결 시험\n")
-                for (act in listOf("com.syu.ms.toolkit", "com.syu.ms.main", "com.syu.ms.radio")) {
-                    val latch = java.util.concurrent.CountDownLatch(1)
-                    var info = "연결 안 됨(시간 초과)"
-                    val conn = object : android.content.ServiceConnection {
-                        override fun onServiceConnected(n: android.content.ComponentName?, b: android.os.IBinder?) {
-                            info = try {
-                                val d = b?.interfaceDescriptor
-                                "연결됨 descriptor=" + d + " class=" + b?.javaClass?.name
-                            } catch (e: Throwable) { "연결됨(정보 실패 " + e.message + ")" }
-                            latch.countDown()
-                        }
-                        override fun onServiceDisconnected(n: android.content.ComponentName?) {}
-                    }
-                    val i = Intent(act).setPackage(pkg)
-                    val ok = try { bindService(i, conn, Context.BIND_AUTO_CREATE) } catch (e: Throwable) { info = "bind 실패 " + e.javaClass.simpleName + " " + e.message; false }
-                    if (ok) latch.await(4, java.util.concurrent.TimeUnit.SECONDS) else if (info.startsWith("연결 안 됨")) info = "bindService false (거부됨)"
-                    sb.append(act).append(" → ").append(info).append("\n")
-                    try { unbindService(conn) } catch (e: Throwable) {}
-                }
-            } catch (e: Throwable) {
-                sb.append("분석 실패: ").append(e.javaClass.simpleName).append(" ").append(e.message)
-            }
-            return sb.toString().take(60000)
-        }
-
-        @JavascriptInterface
-        fun apkUpload(pkgs: String, token: String, repo: String): Boolean {
-            if (token.isEmpty() || repo.isEmpty()) return false
-            Thread {
-                val res = JSONArray()
-                for (pkg in pkgs.split(",").map { it.trim() }.filter { it.isNotEmpty() }) {
-                    val r = JSONObject().put("pkg", pkg)
-                    try {
-                        val ai = packageManager.getApplicationInfo(pkg, 0)
-                        val files = ArrayList<String>()
-                        files.add(ai.sourceDir)
-                        ai.splitSourceDirs?.let { files.addAll(it) }
-                        val out = JSONArray()
-                        for ((idx, path) in files.withIndex()) {
-                            val f = File(path)
-                            val size = f.length()
-                            if (size > 45L * 1024 * 1024) { out.put(f.name + " 너무 큼 " + size / 1048576 + "MB"); continue }
-                            val b64 = android.util.Base64.encodeToString(f.readBytes(), android.util.Base64.NO_WRAP)
-                            val name = if (idx == 0) "$pkg.apk" else "$pkg.split$idx.apk"
-                            val url = "https://api.github.com/repos/$repo/contents/apks/$name"
-                            var sha: String? = null
-                            try {
-                                val g = URL(url).openConnection() as HttpURLConnection
-                                g.setRequestProperty("Authorization", "Bearer $token")
-                                g.setRequestProperty("Accept", "application/vnd.github+json")
-                                if (g.responseCode == 200) sha = JSONObject(String(g.inputStream.readBytes())).optString("sha")
-                                g.disconnect()
-                            } catch (e: Exception) {}
-                            val body = JSONObject().put("message", "apk $name").put("content", b64)
-                            if (!sha.isNullOrEmpty()) body.put("sha", sha)
-                            val c = URL(url).openConnection() as HttpURLConnection
-                            c.requestMethod = "PUT"
-                            c.connectTimeout = 15000; c.readTimeout = 180000
-                            c.doOutput = true
-                            c.setFixedLengthStreamingMode(body.toString().toByteArray(Charsets.UTF_8).size)
-                            c.setRequestProperty("Authorization", "Bearer $token")
-                            c.setRequestProperty("Accept", "application/vnd.github+json")
-                            c.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-                            val code = c.responseCode
-                            c.disconnect()
-                            out.put(name + " " + (size / 1024) + "KB → " + (if (code in 200..299) "올림" else "실패 $code"))
-                        }
-                        r.put("r", out)
-                    } catch (e: Exception) {
-                        r.put("r", JSONArray().put("실패: " + e.javaClass.simpleName + " " + (e.message ?: "")))
-                    }
-                    res.put(r)
-                }
-                js("onNativeApkUp", JSONObject().put("list", res))
-            }.start()
-            return true
         }
 
         @JavascriptInterface
@@ -2173,6 +2014,103 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
             }
+        }
+
+        @JavascriptInterface
+        fun apkUpload(pkgs: String, token: String, repo: String): Boolean {
+            if (token.isEmpty() || repo.isEmpty()) return false
+            Thread {
+                val list = if (pkgs == "@syu") {
+                    packageManager.getInstalledPackages(0).map { it.packageName }
+                        .filter { it.startsWith("com.syu.") || it.startsWith("com.fyt.") || it == "net.easyconn" }.sorted()
+                } else pkgs.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                val res = JSONArray()
+                for ((n, pkg) in list.withIndex()) {
+                    val r = JSONObject().put("pkg", pkg)
+                    try {
+                        js("onNativeApkProg", JSONObject().put("i", n + 1).put("n", list.size).put("pkg", pkg).put("msg", "올리는 중"))
+                        val ai = packageManager.getApplicationInfo(pkg, 0)
+                        val files = ArrayList<String>()
+                        files.add(ai.sourceDir)
+                        ai.splitSourceDirs?.let { files.addAll(it) }
+                        val out = JSONArray()
+                        for ((idx, path) in files.withIndex()) {
+                            val f = File(path)
+                            val name = if (idx == 0) "$pkg.apk" else "$pkg.split$idx.apk"
+                            if (f.length() > 70L * 1024 * 1024) { out.put(name + " 너무 큼 " + f.length() / 1048576 + "MB"); continue }
+                            out.put(name + " " + (f.length() / 1024) + "KB " + ghPutFile(repo, token, "apks/$name", "apk $name", f))
+                        }
+                        r.put("r", out)
+                    } catch (e: Throwable) {
+                        r.put("r", JSONArray().put("실패: " + e.javaClass.simpleName + " " + (e.message ?: "")))
+                    }
+                    res.put(r)
+                }
+                js("onNativeApkUp", JSONObject().put("list", res))
+            }.start()
+            return true
+        }
+
+        @JavascriptInterface
+        fun featureCheck(token: String, repo: String): Boolean {
+            if (token.isEmpty() || repo.isEmpty()) return false
+            Thread {
+                val sb = StringBuilder()
+                try {
+                    sb.append("# 올인원 기능 점검\n")
+                    sb.append("기기: ").append(android.os.Build.MODEL).append(" / Android ").append(android.os.Build.VERSION.RELEASE)
+                        .append(" / ").append(android.os.Build.DISPLAY).append("\nABI: ").append(android.os.Build.SUPPORTED_ABIS.joinToString(",")).append("\n")
+                    sb.append("앱 버전: ").append(try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }).append("\n\n")
+                    val pm = packageManager
+                    val syu = pm.getInstalledPackages(0).filter { it.packageName.startsWith("com.syu.") || it.packageName.startsWith("com.fyt.") }.sortedBy { it.packageName }
+                    sb.append("## 시스템 앱 (").append(syu.size).append("개)\n")
+                    for (pi in syu) {
+                        val dir = pi.applicationInfo?.sourceDir ?: ""
+                        sb.append(pi.packageName).append(" v").append(pi.versionName).append(" ").append(File(dir).length() / 1024).append("KB ").append(dir).append("\n")
+                    }
+                    sb.append("\n## 시스템 서비스(com.syu.ms) 모듈 연결 (0~30번)\n")
+                    for (code in 0..30) {
+                        val b = radioModule(code)
+                        val d = try { b?.interfaceDescriptor } catch (e: Throwable) { "?" }
+                        sb.append(code).append(": ").append(if (b == null) "없음" else "있음 " + d).append("\n")
+                    }
+                    sb.append("\n## ModuleService 액션별 연결\n")
+                    for (act in listOf("main", "radio", "bt", "dvd", "sound", "ipod", "tv", "canbus", "tpms", "dvr", "steer", "customer", "obd", "amp")) {
+                        val latch = java.util.concurrent.CountDownLatch(1)
+                        var info = "연결 안 됨"
+                        val conn = object : android.content.ServiceConnection {
+                            override fun onServiceConnected(n: android.content.ComponentName?, b: android.os.IBinder?) {
+                                info = try { "연결됨 " + b?.interfaceDescriptor } catch (e: Throwable) { "연결됨" }
+                                latch.countDown()
+                            }
+                            override fun onServiceDisconnected(n: android.content.ComponentName?) {}
+                        }
+                        val ok = try { bindService(Intent("com.syu.ms.$act").setPackage("com.syu.ms"), conn, Context.BIND_AUTO_CREATE) } catch (e: Throwable) { false }
+                        if (ok) latch.await(1500, java.util.concurrent.TimeUnit.MILLISECONDS) else info = "bind 거부"
+                        sb.append(act).append(": ").append(info).append("\n")
+                        try { unbindService(conn) } catch (e: Throwable) {}
+                    }
+                    sb.append("\n## 앱별 외부 명령·서비스(매니페스트)\n")
+                    val keys = listOf("com.syu.bt", "com.syu.canbus", "com.syu.eq", "com.syu.steer", "com.syu.settings", "com.syu.av", "com.syu.tv", "com.syu.carlink",
+                        "com.syu.onekeynavi", "com.syu.video", "com.syu.carui", "com.syu.carmark", "com.syu.doublecamera", "com.syu.frontvideo", "com.syu.fytgesture",
+                        "com.fyt.screenbutton", "com.syu.ps", "com.syu.ss", "com.syu.us", "com.syu.cs", "com.syu.sha", "com.syu.market")
+                    for (pkg in keys) {
+                        try {
+                            pm.getPackageInfo(pkg, 0)
+                            sb.append("\n### ").append(pkg).append("\n").append(manifestSummary(pkg).take(3500)).append("\n")
+                        } catch (e: Exception) {}
+                    }
+                } catch (e: Throwable) {
+                    sb.append("\n점검 중 오류: ").append(e.javaClass.simpleName).append(" ").append(e.message)
+                }
+                val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmm", java.util.Locale.US).format(java.util.Date())
+                val path = "reports/feature-$stamp.txt"
+                val tmp = File(cacheDir, "feature.txt")
+                tmp.writeText(sb.toString())
+                val res = ghPutFile(repo, token, path, "기능 점검 $stamp", tmp)
+                js("onNativeFeature", JSONObject().put("ok", res == "올림").put("msg", path + " (" + tmp.length() / 1024 + "KB) " + res))
+            }.start()
+            return true
         }
 
         @JavascriptInterface
