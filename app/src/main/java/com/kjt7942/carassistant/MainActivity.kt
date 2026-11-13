@@ -1440,44 +1440,57 @@ class MainActivity : Activity() {
     }
 
     // SYU 시스템 서비스(com.syu.ms)의 라디오 모듈(1번)로 명령을 보낸다. 라디오 앱이 쓰는 방식과 같다 (분석한 인터페이스: IRemoteToolkit/IRemoteModule)
-    private var radioMod: android.os.IBinder? = null
+    private val modCache = HashMap<Int, android.os.IBinder>()
+    private var tkBinder: android.os.IBinder? = null
     private var tkConn: android.content.ServiceConnection? = null
 
     @Synchronized
-    private fun radioModule(): android.os.IBinder? {
-        radioMod?.let { if (it.isBinderAlive) return it }
-        try { tkConn?.let { unbindService(it) } } catch (e: Exception) {}
+    private fun radioModule(code: Int = 1): android.os.IBinder? {
+        modCache[code]?.let { if (it.isBinderAlive) return it }
+        if (tkBinder?.isBinderAlive != true) {
+            tkBinder = null
+            try { tkConn?.let { unbindService(it) } } catch (e: Exception) {}
+            modCache.clear()
+            connectToolkit()
+        }
+        val tk = tkBinder ?: return null
+        val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
+        return try {
+            d.writeInterfaceToken("com.syu.ipc.IRemoteToolkit")
+            d.writeInt(code)
+            tk.transact(1, d, r, 0)
+            r.readException()
+            val b = r.readStrongBinder()
+            if (b != null) modCache[code] = b
+            b
+        } catch (e: Throwable) { null } finally { d.recycle(); r.recycle() }
+    }
+
+    private fun connectToolkit() {
         val latch = java.util.concurrent.CountDownLatch(1)
         val conn = object : android.content.ServiceConnection {
             override fun onServiceConnected(n: android.content.ComponentName?, b: android.os.IBinder?) {
-                try {
-                    val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
-                    try {
-                        d.writeInterfaceToken("com.syu.ipc.IRemoteToolkit")
-                        d.writeInt(1)
-                        b!!.transact(1, d, r, 0)
-                        r.readException()
-                        radioMod = r.readStrongBinder()
-                    } finally { d.recycle(); r.recycle() }
-                } catch (e: Throwable) { radioMod = null }
+                tkBinder = b
                 latch.countDown()
             }
-            override fun onServiceDisconnected(n: android.content.ComponentName?) { radioMod = null }
+            override fun onServiceDisconnected(n: android.content.ComponentName?) { tkBinder = null; modCache.clear() }
         }
         tkConn = conn
         val i = Intent("com.syu.ms.toolkit").setClassName("com.syu.ms", "app.ToolkitService")
         val ok = try { bindService(i, conn, Context.BIND_AUTO_CREATE) } catch (e: Throwable) { false }
         if (ok) latch.await(4, java.util.concurrent.TimeUnit.SECONDS)
-        return radioMod
     }
 
     // spec: "코드" 또는 "코드:값,값" (예: "0", "13:3,9310")
     private fun radioCtl(spec: String): String {
         return try {
-            val parts = spec.split(":")
+            var body = spec
+            var modNo = 1
+            if (body.startsWith("@")) { modNo = body.substring(1, body.indexOf('/')).toInt(); body = body.substring(body.indexOf('/') + 1) }
+            val parts = body.split(":")
             val code = parts[0].trim().toInt()
             val ints = if (parts.size > 1) parts[1].split(",").map { it.trim().toInt() }.toIntArray() else null
-            val mod = radioModule() ?: return "시스템 서비스에 연결하지 못했습니다"
+            val mod = radioModule(modNo) ?: return "시스템 서비스에 연결하지 못했습니다"
             val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
             try {
                 d.writeInterfaceToken("com.syu.ipc.IRemoteModule")
@@ -2150,6 +2163,17 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun radioCtl(spec: String): String = this@MainActivity.radioCtl(spec)
+
+        @JavascriptInterface
+        fun radioBg(): String {
+            return try {
+                val i = Intent("com.syu.radio.msgservice").setClassName("com.syu.radio", "com.syu.radio.broadcast.MyService").putExtra("data", "on")
+                val cn = startService(i)
+                if (cn != null) "보냄: 라디오 화면 없이 시작" else "서비스가 시작되지 않음"
+            } catch (e: Exception) {
+                "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
+            }
+        }
 
         @JavascriptInterface
         fun pairStart(code: String): String =
