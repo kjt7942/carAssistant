@@ -1094,6 +1094,34 @@ html[data-dim="3"] .gd{opacity:.8}
       var mr='';try{mr=A.svcTest('com.syu.music','com.syu.music.'+ma)}catch(e){mr='실패'}
       return /^보냄/.test(mr)?(ma==='next'?'다음 곡입니다.':ma==='prev'?'이전 곡입니다.':'재생 상태를 바꿨습니다.'):'음악 앱을 제어하지 못했습니다. '+mr;
     }
+    /* 자주 듣는 라디오 채널 (이름 → 주파수). 기본은 MBC FM4U 91.3, 음성으로 "MBC 라디오 90.5 저장"처럼 바꿀 수 있다 */
+    var RP_DEF=[{n:'MBC FM4U',k:'mbc|엠비씨|fm4u|에프엠포유|문화방송',f:9130}];
+    function rpGet(){var a=null;try{a=JSON.parse(store.get('radioPre')||'null')}catch(e){}return(a&&a.length)?a:RP_DEF.slice()}
+    var rps=t.match(/^(.+?)(\d{2,3})[.점](\d{1,2})(?:메가|mhz|헤르츠)?(?:로|으로)?(?:저장|등록|바꿔|변경)/i);
+    if(rps&&/(라디오|fm|에프엠|mbc|kbs|sbs|cbs|채널)/i.test(rps[1])){
+      var rf=Math.round(parseFloat(rps[2]+'.'+rps[3])*100),rn=rps[1].replace(/(라디오|주파수|채널|를|을|은|는)$/,'').trim()||rps[1];
+      if(rf<6500||rf>10800)return '주파수는 65에서 108 사이로 말씀해 주세요.';
+      var rl=rpGet(),rk=rn.toLowerCase().replace(/[|\\^$.*+?()\[\]{}]/g,''),hit=false;
+      rl.forEach(function(x){if(x.k.split('|').some(function(w){return w&&rk.indexOf(w)>=0||rk&&w.indexOf(rk)>=0})){x.f=rf;hit=true}});
+      if(!hit)rl.push({n:rn,k:rk,f:rf});
+      store.set('radioPre',JSON.stringify(rl));
+      return rn+' 주파수를 '+(rf/100)+' 메가헤르츠로 저장했습니다.';
+    }
+    var rplay=/(틀어|켜|들려|들을|듣|맞춰|가자|줘|채널)/.test(t);
+    if(rplay&&A&&A.radioCtl){
+      var rl2=rpGet(),tl=t.toLowerCase();
+      for(var ri=0;ri<rl2.length;ri++){
+        var kk=rl2[ri].k.split('|');
+        if(kk.some(function(w){return w&&tl.indexOf(w)>=0})){
+          var rfx=rl2[ri].f,rnm=rl2[ri].n;
+          try{A.launchApp('com.syu.radio')}catch(e){}
+          setTimeout(function(){try{A.radioCtl('13:3,'+rfx)}catch(e){}},1800);
+          setTimeout(function(){try{A.radioCtl('13:3,'+rfx)}catch(e){}},3500);
+          retSkip=true;
+          return rnm+' '+(rfx/100)+' 메가헤르츠를 틀겠습니다.';
+        }
+      }
+    }
     /* 라디오 제어 (시스템 서비스 연동) */
     var rdo=(function(){
       var fm=t.match(/(\d{2,3})[.점](\d{1,2})/),ctx=/라디오|fm|에프엠|주파수|맞춰|채널|방송/i.test(t);
@@ -1158,7 +1186,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var AI_CMDS=['라디오 켜','음악 틀어','네비 켜','블루투스 열어','비디오 열어','카링크 켜','<앱 이름> 열어',
     '브레이브로 <사이트 이름> 열어줘','브레이브로 <검색어> 검색해줘','크롬으로 <검색어> 검색해줘',
     '날씨','몇시','날짜','밝게','어둡게','밝기 보통','밝기 자동','테마','24시간','12시간',
-    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지'];
+    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지'];
   function aiLists(){
     var o='',ap=[];
     try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
