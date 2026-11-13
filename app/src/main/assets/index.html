@@ -1099,7 +1099,7 @@ html[data-dim="3"] .gd{opacity:.8}
     function rpGet(){var a=null;try{a=JSON.parse(store.get('radioPre')||'null')}catch(e){}return(a&&a.length)?a:RP_DEF.slice()}
     var rps=t.match(/^(.+?)(\d{2,3})[.점](\d{1,2})(?:메가|mhz|헤르츠)?(?:로|으로)?(?:저장|등록|바꿔|변경)/i);
     if(rps&&/(라디오|fm|에프엠|mbc|kbs|sbs|cbs|채널)/i.test(rps[1])){
-      var rf=Math.round(parseFloat(rps[2]+'.'+rps[3])*100),rn=rps[1].replace(/(라디오|주파수|채널|를|을|은|는)$/,'').trim()||rps[1];
+      var rf=Math.round(parseFloat(rps[2]+'.'+rps[3])*100),rn=rps[1].replace(/(fm|에프엠|라디오|주파수|채널|를|을|은|는)+$/i,'').trim()||rps[1];
       if(rf<6500||rf>10800)return '주파수는 65에서 108 사이로 말씀해 주세요.';
       var rl=rpGet(),rk=rn.toLowerCase().replace(/[|\\^$.*+?()\[\]{}]/g,''),hit=false;
       rl.forEach(function(x){if(x.k.split('|').some(function(w){return w&&rk.indexOf(w)>=0||rk&&w.indexOf(rk)>=0})){x.f=rf;hit=true}});
