@@ -1439,6 +1439,61 @@ class MainActivity : Activity() {
         return "암호화되지 않은 http 주소는 Tailscale(100.x.x.x)이나 내부망 주소만 쓸 수 있습니다"
     }
 
+    // SYU 시스템 서비스(com.syu.ms)의 라디오 모듈(1번)로 명령을 보낸다. 라디오 앱이 쓰는 방식과 같다 (분석한 인터페이스: IRemoteToolkit/IRemoteModule)
+    private var radioMod: android.os.IBinder? = null
+    private var tkConn: android.content.ServiceConnection? = null
+
+    @Synchronized
+    private fun radioModule(): android.os.IBinder? {
+        radioMod?.let { if (it.isBinderAlive) return it }
+        try { tkConn?.let { unbindService(it) } } catch (e: Exception) {}
+        val latch = java.util.concurrent.CountDownLatch(1)
+        val conn = object : android.content.ServiceConnection {
+            override fun onServiceConnected(n: android.content.ComponentName?, b: android.os.IBinder?) {
+                try {
+                    val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
+                    try {
+                        d.writeInterfaceToken("com.syu.ipc.IRemoteToolkit")
+                        d.writeInt(1)
+                        b!!.transact(1, d, r, 0)
+                        r.readException()
+                        radioMod = r.readStrongBinder()
+                    } finally { d.recycle(); r.recycle() }
+                } catch (e: Throwable) { radioMod = null }
+                latch.countDown()
+            }
+            override fun onServiceDisconnected(n: android.content.ComponentName?) { radioMod = null }
+        }
+        tkConn = conn
+        val i = Intent("com.syu.ms.toolkit").setClassName("com.syu.ms", "app.ToolkitService")
+        val ok = try { bindService(i, conn, Context.BIND_AUTO_CREATE) } catch (e: Throwable) { false }
+        if (ok) latch.await(4, java.util.concurrent.TimeUnit.SECONDS)
+        return radioMod
+    }
+
+    // spec: "코드" 또는 "코드:값,값" (예: "0", "13:3,9310")
+    private fun radioCtl(spec: String): String {
+        return try {
+            val parts = spec.split(":")
+            val code = parts[0].trim().toInt()
+            val ints = if (parts.size > 1) parts[1].split(",").map { it.trim().toInt() }.toIntArray() else null
+            val mod = radioModule() ?: return "시스템 서비스에 연결하지 못했습니다"
+            val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
+            try {
+                d.writeInterfaceToken("com.syu.ipc.IRemoteModule")
+                d.writeInt(code)
+                d.writeIntArray(ints)
+                d.writeFloatArray(null)
+                d.writeStringArray(null)
+                mod.transact(1, d, r, 0)
+                r.readException()
+            } finally { d.recycle(); r.recycle() }
+            "보냄: $spec"
+        } catch (e: Throwable) {
+            "실패: " + e.javaClass.simpleName + " " + (e.message ?: "")
+        }
+    }
+
     // Tailscale VPN이 꺼져 있으면 연결 신호를 보내고 잠시 기다린다 (헤드유닛이 시동 때마다 VPN 앱을 끄는 문제 대응)
     private var tsAt = 0L
     private fun vpnUp(): Boolean = try {
@@ -2092,6 +2147,9 @@ class MainActivity : Activity() {
             }.start()
             return true
         }
+
+        @JavascriptInterface
+        fun radioCtl(spec: String): String = this@MainActivity.radioCtl(spec)
 
         @JavascriptInterface
         fun pairStart(code: String): String =

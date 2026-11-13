@@ -1088,6 +1088,25 @@ html[data-dim="3"] .gd{opacity:.8}
     var bc=browserCmd(raw);if(bc!==null)return bc;
     var t=raw.replace(/\s+/g,'');
     if(t.length>16&&!fromAi)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
+    /* 음악 앱 제어 (뮤직 플레이어가 열어 둔 서비스 명령) */
+    if(A&&A.svcTest&&/^(다음곡|이전곡|전곡|음악일시정지|일시정지|음악멈춰|음악재생|재생정지)/.test(t)){
+      var ma=/다음곡/.test(t)?'next':/이전곡|전곡/.test(t)?'prev':'playpause';
+      var mr='';try{mr=A.svcTest('com.syu.music','com.syu.music.'+ma)}catch(e){mr='실패'}
+      return /^보냄/.test(mr)?(ma==='next'?'다음 곡입니다.':ma==='prev'?'이전 곡입니다.':'재생 상태를 바꿨습니다.'):'음악 앱을 제어하지 못했습니다. '+mr;
+    }
+    /* 라디오 제어 (시스템 서비스 연동) */
+    var rdo=(function(){
+      var fm=t.match(/(\d{2,3})[.점](\d{1,2})/),ctx=/라디오|fm|에프엠|주파수|맞춰|채널|방송/i.test(t);
+      function snd(spec,ok){var r='';try{r=A.radioCtl(spec)}catch(e){r='실패'}return /^보냄/.test(r)?ok:'라디오를 제어하지 못했습니다. '+r}
+      if(!A||!A.radioCtl||!ctx)return null;
+      if(fm){var f=Math.round(parseFloat(fm[1]+'.'+fm[2])*100);if(f>=6500&&f<=10800)return snd('13:3,'+f,(f/100)+' 메가헤르츠로 맞춥니다.')}
+      if(/(다음|앞).*(주파수|탐색|검색)|주파수.*(올려|위로)|탐색.*(올|다음)/.test(t))return snd('5','다음 주파수를 찾습니다.');
+      if(/(이전|뒤).*(주파수|탐색|검색)|주파수.*(내려|아래)|탐색.*(내|이전)/.test(t))return snd('6','이전 주파수를 찾습니다.');
+      if(/(다음).*(방송|채널|라디오)/.test(t))return snd('0','다음 방송으로 넘깁니다.');
+      if(/(이전|전).*(방송|채널|라디오)/.test(t))return snd('1','이전 방송으로 돌아갑니다.');
+      return null;
+    })();
+    if(rdo!==null)return rdo;
     var ap=null;
     for(var i=0;i<APPS.length;i++){if(APPS[i][0].test(t)){ap=[APPS[i][1],APPS[i][2]];break}}
     var verb=/켜|열|틀|실행|보여|들려|들을|듣|띄워|가자|가줘|시작/.test(t);
@@ -1139,7 +1158,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var AI_CMDS=['라디오 켜','음악 틀어','네비 켜','블루투스 열어','비디오 열어','카링크 켜','<앱 이름> 열어',
     '브레이브로 <사이트 이름> 열어줘','브레이브로 <검색어> 검색해줘','크롬으로 <검색어> 검색해줘',
     '날씨','몇시','날짜','밝게','어둡게','밝기 보통','밝기 자동','테마','24시간','12시간',
-    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침'];
+    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지'];
   function aiLists(){
     var o='',ap=[];
     try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
@@ -1341,13 +1360,14 @@ html[data-dim="3"] .gd{opacity:.8}
   var SVC_TESTS=[['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
     ['음악 재생/일시정지','com.syu.music','com.syu.music.playpause'],['음악 다음 곡','com.syu.music','com.syu.music.next'],['음악 이전 곡','com.syu.music','com.syu.music.prev'],['음악 정지','com.syu.music','com.syu.music.stop'],
     ['Tailscale 연결','ts','com.tailscale.ipn.CONNECT_VPN'],['Tailscale 끊기','ts','com.tailscale.ipn.DISCONNECT_VPN'],
+    ['★ 라디오 다음 즐겨찾기','rad','0'],['★ 라디오 이전 즐겨찾기','rad','1'],['★ 라디오 탐색 올림','rad','5'],['★ 라디오 탐색 내림','rad','6'],['★ FM 93.1 지정','rad','13:3,9310'],['★ 라디오 FM 밴드 전환','rad','11:-1'],
     ['키: 다음 곡/방송','key',87],['키: 이전 곡/방송','key',88],['키: 채널 올림','key',166],['키: 채널 내림','key',167],['키: 재생/일시정지','key',85],['키: 정지','key',86]];
   $('dgSvc').addEventListener('click',function(){
     if(!A||!A.svcTest){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다.');return}
     $('dg').hidden=true;
     var h='';SVC_TESTS.forEach(function(t,i){h+='<div class="ap-row" data-i="'+i+'">'+esc(t[0])+'<small>'+esc(t[2])+'</small></div>'});
     $('apList').innerHTML=h;$('apTitle').textContent='누르면 명령을 보냅니다 — 라디오·음악 앱을 먼저 켜 두세요';$('apFilter').hidden=true;$('ap').hidden=false;
-    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
+    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):t[1]==='rad'?A.radioCtl(t[2]):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
   });
   $('dgSys').addEventListener('click',function(){
     if(!A||!A.sysReport){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 점검은 최신 앱에서 가능합니다.');return}
