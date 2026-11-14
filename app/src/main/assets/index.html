@@ -996,6 +996,66 @@ html[data-dim="3"] .gd{opacity:.8}
       ovTimer=setTimeout(listenAgain,clean.length*400+10000);
     }else ovTimer=setTimeout(listenAgain,clean.length*230+800);
   }
+
+  /* ---- 차량 블루투스 연동 도우미 ---- */
+  var askAgain=false;
+  function btSnd(spec,ok){var r='';try{r=A.radioCtl(spec)}catch(e){r='실패'}return /^보냄/.test(r)?ok:'전화 기능을 쓰지 못했습니다. '+r}
+  function btScreen(on){var r='';try{r=A.screen(on)}catch(e){r='실패'}if(!/^보냄/.test(r))return '화면을 제어하지 못했습니다. '+r;retSkip=true;return on?'화면을 켭니다.':'화면을 끕니다.'}
+  function jget(k,d){try{var v=JSON.parse(store.get(k)||'null');return v==null?d:v}catch(e){return d}}
+  function callLogGet(){return jget('callLog',[])}
+  function digs(x){return String(x||'').replace(/\D/g,'')}
+  function nameOf(num){
+    var d=digs(num);if(d.length<6)return '';var k=d.slice(-8),pb=jget('phoneBook',[]);
+    for(var i=0;i<pb.length;i++){if(pb[i].p&&digs(pb[i].p).slice(-8)===k)return String(pb[i].n||'').replace(/\/.*/,'')}
+    return '';
+  }
+  function callWho(x){return (x.n&&String(x.n).replace(/\/.*/,''))||nameOf(x.p)||(x.p?x.p.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3'):'알 수 없는 번호')}
+  function callKind(t){return t===1?'받은 전화':t===2?'건 전화':t===3?'부재중 전화':'통화'}
+  function callWhen(d){
+    var m=String(d||'').match(/(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2})/);if(!m)return '';
+    var h=+m[4],ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12;
+    return (+m[2])+'월 '+(+m[3])+'일 '+ap+' '+h+'시 '+(+m[5])+'분';
+  }
+  var WEEK=7*24*3600*1000;
+  window.onNativeContacts=function(o){
+    var manual=window.__contactManual;window.__contactManual=false;
+    var msg='';
+    if(o.err)msg='연락처를 가져오지 못했습니다. '+o.err;
+    else{var l=o.list||[];
+      if(l.length){try{store.set('phoneBook',JSON.stringify(l));store.set('phoneBookAt',String(Date.now()))}catch(e){}msg='연락처 '+l.length+'개를 가져왔습니다.'}
+      else msg='연락처를 받지 못했습니다. 휴대폰 블루투스 설정에서 연락처 공유가 허용되어 있는지 확인해 주세요.'}
+    if(manual){try{say(msg)}catch(e){}}
+  };
+  window.onNativeCalls=function(o){
+    var manual=window.__callManual;window.__callManual=false;
+    var l=o.list||[];
+    if(l.length){
+      /* 최신 순으로 정렬해 최신 데이터만 보관 (누적하지 않고 통째로 교체) */
+      l.sort(function(a,b){return String(b.d).localeCompare(String(a.d))});
+      try{store.set('callLog',JSON.stringify(l.slice(0,50)));store.set('callLogAt',String(Date.now()))}catch(e){}
+      if(manual)try{say('통화기록 '+l.length+'건을 가져왔습니다.')}catch(e){}
+    }else if(manual)try{say(o.err?'통화기록을 가져오지 못했습니다. '+o.err:'통화기록을 받지 못했습니다.')}catch(e){}
+  };
+  window.onBtConnected=function(){
+    /* 휴대폰이 연결되면: 통화기록은 네이티브가 바로 내려받고, 전화번호부는 1주일이 지났을 때만 */
+    var at=+store.get('phoneBookAt')||0;
+    if(!jget('phoneBook',[]).length||Date.now()-at>WEEK){try{if(A&&A.contactSync)A.contactSync()}catch(e){}}
+  };
+  var ringShown=false;
+  window.onBtRing=function(o){
+    var num=o&&o.num||'',nm=nameOf(num),who=nm||(num?num.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3'):'알 수 없는 번호');
+    ringShown=true;ovClosed=false;
+    var t=who+(nm?' 님':'')+'에게서 전화가 왔습니다. 받으려면 전화 받아, 거절하려면 전화 거절이라고 말씀하세요.';
+    ovShow('전화 수신',who,'전화 받아 / 전화 거절');sayThenListen(t);
+  };
+  window.onBtCallEnd=function(){if(ringShown){ringShown=false;convo=false;try{A.stopListening()}catch(e){}ovHide()}};
+  window.onBtSms=function(o){
+    var m={name:o.name||'',num:o.num||'',text:String(o.text||'')};
+    try{store.set('lastSms',JSON.stringify(m))}catch(e){}
+    var who=m.name||nameOf(m.num)||m.num||'알 수 없는 번호';
+    var txt=m.text.length>120?m.text.slice(0,120)+' 이하 생략':m.text;
+    ovClosed=false;ovShow('문자 수신',who,m.text);sayThenHide('문자가 왔습니다. '+who+'님. '+txt);
+  };
   function koTime(){var t=seoulNow(),h=t.h,ap=h<12?'오전':'오후';h=h%12;if(h===0)h=12;return ap+' '+h+'시 '+(t.mi?t.mi+'분':'정각')}
   function weatherSentence(){
     if(!wx){maybeFetch(true);return '아직 날씨 정보를 받지 못했습니다. 잠시 후 다시 물어봐 주세요.'}
@@ -1085,7 +1145,7 @@ html[data-dim="3"] .gd{opacity:.8}
   function command(raw,fromAi){
     var bc=browserCmd(raw);if(bc!==null)return bc;
     var t=raw.replace(/\s+/g,'');
-    if(t.length>16&&!fromAi&&!/^.{0,10}(전화|연락처)/.test(t)&&!/(전화|연락처).{0,6}저장$/.test(t))return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
+    if(t.length>16&&!fromAi&&!(t.length<=30&&/(전화|통화|문자|연락처|화면)/.test(t))&&!window.__pendDial)return null; /* 긴 문장은 정해진 명령이 아니라 AI에게 */
     /* 음악 앱 제어 (뮤직 플레이어가 열어 둔 서비스 명령) */
     if(A&&A.svcTest&&/^(다음곡|이전곡|전곡|음악일시정지|일시정지|음악멈춰|음악재생|재생정지)/.test(t)){
       var ma=/다음곡/.test(t)?'next':/이전곡|전곡/.test(t)?'prev':'playpause';
@@ -1134,32 +1194,65 @@ html[data-dim="3"] .gd{opacity:.8}
       return null;
     })();
     if(rdo!==null)return rdo;
-    /* 전화(블루투스 모듈) + 볼륨 */
+    /* 전화·통화기록·문자·화면 (차량 블루투스 모듈) */
+    var pend=window.__pendDial;
+    if(pend){
+      window.__pendDial=null;
+      if(Date.now()-pend.at<40000){
+        if(/^(네|예|응|어|그래|맞아|맞다|맞습니다|좋아|걸어|확인|오케이|ok|웅|ㅇㅇ)/i.test(t))return btSnd(pend.spec,pend.ok);
+        if(/^(아니|아냐|취소|그만|안걸|하지마|노|틀려|다시)/.test(t))return '전화를 취소했습니다.';
+      }
+    }
     var phn=(function(){
       if(!A||!A.radioCtl)return null;
-      function snd(spec,ok){var r='';try{r=A.radioCtl(spec)}catch(e){r='실패'}return /^보냄/.test(r)?ok:'전화 기능을 쓰지 못했습니다. '+r}
       function cGet(){var o={};try{o=JSON.parse(store.get('contacts')||'{}')||{}}catch(e){}return o}
+      function ask(spec,who){window.__pendDial={spec:spec,ok:who+'께 전화를 겁니다.',at:Date.now()};askAgain=true;return who+'께 전화를 걸까요? 맞으면 네, 아니면 아니요라고 말씀하세요.'}
       var sv=t.match(/(?:전화|연락처)(?:번호)?저장(.+?)(01\d[\d-]{7,10})$/)||t.match(/(.+?)(?:전화번호|번호)?(?:는|을)?(01\d[\d-]{7,10})(?:로|으로|저장)/);
       if(sv&&/저장/.test(t)){var nm=sv[1].replace(/전화|번호|연락처|저장/g,'');if(nm){var c=cGet();c[nm]=sv[2].replace(/-/g,'');store.set('contacts',JSON.stringify(c));return nm+' 번호를 저장했습니다.'}}
-      if(/(연락처|전화번호부|주소록).*(불러|동기화|가져|갱신|업데이트)/.test(t)&&A.contactSync){A.contactSync();return '휴대폰 연락처를 가져옵니다. 잠시 기다려 주세요.'}
-      if(/전화(받|응답)|받아줘|통화연결/.test(t))return snd('@2/9','전화를 받습니다.');
-      if(/전화(끊|종료)|통화(끊|종료)|끊어줘|끊어/.test(t))return snd('@2/10','전화를 끊습니다.');
-      if(/전화(거절)|수신거절|거절해/.test(t))return snd('@2/11','전화를 거절합니다.');
-      if(/재발신|다시전화|마지막.*전화/.test(t))return snd('@2/8','마지막 번호로 다시 겁니다.');
+      if(/(연락처|전화번호부|주소록).*(불러|동기화|가져|갱신|업데이트)/.test(t)&&A.contactSync){window.__contactManual=true;A.contactSync();return '휴대폰 연락처를 가져옵니다. 잠시 기다려 주세요.'}
+      if(/(통화기록|통화내역|전화기록).*(불러|동기화|가져|갱신|업데이트)/.test(t)&&A.callLogSync){window.__callManual=true;A.callLogSync();return '통화기록을 가져옵니다.'}
+      if(/전화(받|응답)|받아줘|통화연결/.test(t))return btSnd('@2/9','전화를 받습니다.');
+      if(/전화(끊|종료)|통화(끊|종료)|끊어줘|끊어/.test(t))return btSnd('@2/10','전화를 끊습니다.');
+      if(/전화(거절)|수신거절|거절해/.test(t))return btSnd('@2/11','전화를 거절합니다.');
+      /* 통화기록 */
+      if(/(최근|마지막|부재중|부재|못받|놓친|누가).*(통화|전화).*(알려|읽어|뭐|있|누구|보여|확인)|(통화|전화)(기록|내역)(알려|읽어|보여)?|부재중/.test(t)&&!/걸어|해줘$/.test(t)){
+        var cl=callLogGet();
+        if(!cl.length)return '통화기록이 없습니다. 휴대폰이 연결되면 자동으로 가져오니, 지금 가져오려면 통화기록 불러와라고 말씀해 주세요.';
+        var want=/부재|못받|놓친/.test(t)?3:/온|받은|누가/.test(t)?1:/건|건거|발신/.test(t)?2:0;
+        var ls=cl.filter(function(x){return !want||x.t===want}).slice(0,3);
+        if(!ls.length)return want===3?'부재중 전화가 없습니다.':'해당하는 통화기록이 없습니다.';
+        return '최근 통화입니다. '+ls.map(function(x){return callWho(x)+' '+callKind(x.t)+(callWhen(x.d)?' '+callWhen(x.d):'')}).join('. ')+'.';
+      }
+      /* 마지막/최근 통화한 사람에게 다시 전화 */
+      if(/(마지막|최근|방금).*(통화|전화).*(사람|번호|곳|에게|한테).*(전화|걸어)|(재발신|다시전화|다시걸어)/.test(t)){
+        var c2=callLogGet();
+        if(c2.length&&c2[0].p){var x=c2[0];return ask('@2/7::'+x.p,callWho(x))}
+        return ask('@2/8','마지막으로 건 번호')
+      }
+      /* 문자 */
+      if(/문자.*(읽어|알려|뭐|왔|확인)|(읽어|알려).*문자/.test(t)){
+        var sm=null;try{sm=JSON.parse(store.get('lastSms')||'null')}catch(e){}
+        if(!sm)return '받은 문자가 없습니다. 차량 블루투스에서 문자 수신이 켜져 있으면 새 문자가 올 때 읽어 드립니다.';
+        return (sm.name||nameOf(sm.num)||sm.num||'알 수 없는 번호')+'님의 문자입니다. '+sm.text;
+      }
+      if(/문자.*(보내|전송|써)/.test(t))return '문자 보내기는 차량 블루투스에 발송 기능이 없어서 지원되지 않습니다. 문자 읽기만 가능합니다.';
+      /* 화면 */
+      if(/화면.*(꺼|끄|오프)|^화면꺼/.test(t)&&A.screen){return btScreen(false)}
+      if(/화면.*(켜|켜줘|깨워|온)/.test(t)&&A.screen){return btScreen(true)}
       var dm=t.match(/(01\d[\d-]{7,10})/);
-      if(dm&&/전화|걸어|연결/.test(t)){var n=dm[1].replace(/-/g,'');return snd('@2/7::'+n,n+'번으로 전화를 겁니다.')}
+      if(dm&&/전화|걸어|연결/.test(t)){var n=dm[1].replace(/-/g,'');return ask('@2/7::'+n,n.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3')+' 번호')}
       if(/전화|걸어/.test(t)&&/해줘|해|걸어|연결|좀/.test(t)){
         var cc=cGet(),ks=Object.keys(cc);
-        for(var i=0;i<ks.length;i++){if(t.indexOf(ks[i])>=0)return snd('@2/7::'+cc[ks[i]],ks[i]+'에게 전화를 겁니다.')}
+        for(var i=0;i<ks.length;i++){if(t.indexOf(ks[i])>=0)return ask('@2/7::'+cc[ks[i]],ks[i]+' 님')}
         var pb=[];try{pb=JSON.parse(store.get('phoneBook')||'[]')||[]}catch(e){}
         var bh=null,bs=0;
         for(var j=0;j<pb.length;j++){
-          var nm=(pb[j].n||'').replace(/\s+/g,'');if(!nm||!pb[j].p)continue;var sc=0;
-          if(t.indexOf(nm)>=0)sc=100+nm.length;
-          else{var core=nm.replace(/[^가-힣a-zA-Z0-9]/g,'');if(core.length>=2&&t.indexOf(core)>=0)sc=90+core.length;else if(core.length>=3&&t.indexOf(core.slice(0,3))>=0)sc=50}
+          var nm2=(pb[j].n||'').replace(/\s+/g,'');if(!nm2||!pb[j].p)continue;var sc=0;
+          if(t.indexOf(nm2)>=0)sc=100+nm2.length;
+          else{var core=nm2.replace(/[^가-힣a-zA-Z0-9]/g,'');if(core.length>=2&&t.indexOf(core)>=0)sc=90+core.length;else if(core.length>=3&&t.indexOf(core.slice(0,3))>=0)sc=50}
           if(sc>bs){bs=sc;bh=pb[j]}
         }
-        if(bh)return snd('@2/7::'+bh.p,(bh.n||'').replace(/\/.*/,'')+'에게 전화를 겁니다.');
+        if(bh)return ask('@2/7::'+bh.p,(bh.n||'').replace(/\/.*/,'')+' 님');
         if(!pb.length&&A.contactSync&&!/\d{7}/.test(t))return '연락처를 아직 가져오지 않았습니다. 휴대폰 연락처 불러와 라고 말씀해 주세요.';
         if(!/전화번호|전화기|전화받|전화끊/.test(t)&&/에게|한테|께|에/.test(t))return '저장된 번호가 없습니다. 이름과 번호를 말씀해 주세요. 예를 들어 엄마 전화번호 010 1234 5678 저장.';
       }
@@ -1217,7 +1310,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var AI_CMDS=['라디오 켜','음악 틀어','네비 켜','블루투스 열어','비디오 열어','카링크 켜','<앱 이름> 열어',
     '브레이브로 <사이트 이름> 열어줘','브레이브로 <검색어> 검색해줘','크롬으로 <검색어> 검색해줘',
     '날씨','몇시','날짜','밝게','어둡게','밝기 보통','밝기 자동','테마','24시간','12시간',
-    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','<연락처 이름>에게 전화해'];
+    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','통화기록 불러와','최근 통화 알려줘','부재중 전화 알려줘','마지막 통화한 사람에게 전화','문자 읽어줘','화면 꺼줘','<연락처 이름>에게 전화해'];
   function aiLists(){
     var o='',ap=[];
     try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
@@ -1303,7 +1396,7 @@ html[data-dim="3"] .gd{opacity:.8}
         if(hm)ovTimer=setTimeout(function(){if(aiPending)ovShow('헤르메스가 처리하는 중…',q,'도구를 쓰는 중이면 1분쯤 걸릴 수 있습니다.')},10000);
         setTimeout(function(){if(aiPending&&aiLast===q&&!ovClosed){aiPending=0;clearTimeout(ovTimer);ovShow('AI 응답 지연',q,'응답이 오지 않았습니다. 다시 말씀해 주세요.');ovTimer=setTimeout(ovHide,6000)}},hm?130000:60000);
         return}
-      ovShow('인식 완료',e.text,r);sayThenHide(r);
+      ovShow('인식 완료',e.text,r);if(askAgain){askAgain=false;sayThenListen(r)}else sayThenHide(r);
     }
     else if(e.type==='error'){
       if(convo){ovShow('대화를 마칩니다','','');ovTimer=setTimeout(ovHide,1200);return} /* 대화 중 말이 없으면 조용히 끝낸다 */
@@ -1407,7 +1500,7 @@ html[data-dim="3"] .gd{opacity:.8}
     try{apps=JSON.parse(A.listApps())}catch(e){apps=[]}
     apOnlyCar=true;$('apFilter').hidden=false;$('apList').onclick=null;$('dg').hidden=true;apDraw();$('ap').hidden=false;
   });
-  var SVC_TESTS=[['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
+  var SVC_TESTS=[['★ BT 수신 상태 보기','btd',''],['★ 통화기록 내려받기','cl',''],['★ 전화번호부 내려받기','ct',''],['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
     ['음악 재생/일시정지','com.syu.music','com.syu.music.playpause'],['음악 다음 곡','com.syu.music','com.syu.music.next'],['음악 이전 곡','com.syu.music','com.syu.music.prev'],['음악 정지','com.syu.music','com.syu.music.stop'],
     ['Tailscale 연결','ts','com.tailscale.ipn.CONNECT_VPN'],['Tailscale 끊기','ts','com.tailscale.ipn.DISCONNECT_VPN'],
     ['★ 라디오 화면 없이 켜기','bg',''],['★ 라디오 소리 소스 요청(메인 0번)','rad','@0/0:1'],['★ 라디오 다음 즐겨찾기','rad','0'],['★ 라디오 이전 즐겨찾기','rad','1'],['★ 라디오 탐색 올림','rad','5'],['★ 라디오 탐색 내림','rad','6'],['★ FM 93.1 지정','rad','13:3,9310'],['★ 라디오 FM 밴드 전환','rad','11:-1'],
@@ -1417,7 +1510,7 @@ html[data-dim="3"] .gd{opacity:.8}
     $('dg').hidden=true;
     var h='';SVC_TESTS.forEach(function(t,i){h+='<div class="ap-row" data-i="'+i+'">'+esc(t[0])+'<small>'+esc(t[2])+'</small></div>'});
     $('apList').innerHTML=h;$('apTitle').textContent='누르면 명령을 보냅니다 — 라디오·음악 앱을 먼저 켜 두세요';$('apFilter').hidden=true;$('ap').hidden=false;
-    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):t[1]==='rad'?A.radioCtl(t[2]):t[1]==='bg'?A.radioBg():A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
+    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):t[1]==='rad'?A.radioCtl(t[2]):t[1]==='bg'?A.radioBg():t[1]==='btd'?A.btDump().replace(/\n/g,' ｜ '):t[1]==='cl'?(window.__callManual=true,A.callLogSync()):t[1]==='ct'?(window.__contactManual=true,A.contactSync()):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
   });
   function dgNeed(fn){
     if(!A||!A[fn]){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 기능은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return false}
@@ -1431,13 +1524,6 @@ html[data-dim="3"] .gd{opacity:.8}
     if(!ok)ovShow('올리기를 시작하지 못했습니다','','저장소 정보를 확인해 주세요.');
   });
   window.onNativeApkProg=function(o){ovShow('APK 올리는 중 '+o.i+' / '+o.n,'',o.pkg+' '+(o.msg||''))};
-  window.onNativeContacts=function(o){
-    var msg;
-    if(o.err)msg='연락처를 가져오지 못했습니다. '+o.err;
-    else{var l=o.list||[];if(l.length){try{store.set('phoneBook',JSON.stringify(l))}catch(e){}msg='연락처 '+l.length+'개를 가져왔습니다.'}
-      else msg='연락처를 받지 못했습니다. 휴대폰 연락처 공유 허용을 확인해 주세요.'}
-    try{say(msg)}catch(e){}
-  };
   window.onNativeApkUp=function(o){
     var l=o.list||[],okN=0,t=l.map(function(x){var r=(x.r||[]).join(' / ');if(/올림/.test(r))okN++;return x.pkg+': '+r}).join('\n');
     ovShow('APK 올리기 끝 ('+okN+' / '+l.length+' 성공)','',t);

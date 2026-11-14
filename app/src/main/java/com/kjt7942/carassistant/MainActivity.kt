@@ -426,6 +426,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         Thread { ensureVpn(0) }.start()
+        if (!btHubOk) btHubKeepTrying()
         super.onResume()
         inFront = true
         applyFullscreen()
@@ -1510,52 +1511,121 @@ class MainActivity : Activity() {
     }
 
 
-    // 차량 블루투스 모듈(2번)에서 휴대폰 전화번호부를 내려받는다 (BT 앱과 같은 방식: 콜백 등록 후 다운로드 명령 26, 항목은 U_BOOK=22로 [이름,번호]가 온다)
-    private var btCb: android.os.Binder? = null
+    // ===== 차량 블루투스 허브 (모듈 2번) =====
+    // BT 앱과 같은 방식: 콜백을 등록해 두면 전화 상태(9)·번호(8)·전화번호부(22)·통화기록(35)·문자(50)가 업데이트로 들어온다.
+    private val btExec = java.util.concurrent.Executors.newSingleThreadExecutor()
     private val btBook = java.util.Collections.synchronizedList(ArrayList<Array<String>>())
+    private val btRecs = java.util.Collections.synchronizedList(ArrayList<Array<String>>())
+    private val btLast = java.util.Collections.synchronizedMap(LinkedHashMap<Int, String>())
     private var btPbap = -1
-    private fun contactSyncRun(): JSONObject {
-        val mod = radioModule(2) ?: return JSONObject().put("err", "블루투스 모듈에 연결하지 못했습니다")
-        btBook.clear(); btPbap = -1
-        if (btCb == null) btCb = object : android.os.Binder() {
-            override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
-                if (code == 1) {
-                    try {
-                        data.enforceInterface("com.syu.ipc.IModuleCallback")
-                        val c = data.readInt(); val ints = data.createIntArray(); data.createFloatArray(); val strs = data.createStringArray()
-                        if (c == 22 && strs != null && strs.size >= 2) btBook.add(arrayOf(strs[0] ?: "", strs[1] ?: ""))
-                        else if (c == 29 && ints != null && ints.isNotEmpty()) btPbap = ints[0]
-                    } catch (e: Throwable) {}
-                    reply?.writeNoException()
-                    return true
-                }
-                if (code == android.os.IBinder.INTERFACE_TRANSACTION) { reply?.writeString("com.syu.ipc.IModuleCallback"); return true }
-                return super.onTransact(code, data, reply, flags)
+    private var btNumber = ""
+    private var btState = -1
+    private var btHubOk = false
+    private var btRingSeq = 0
+
+    private val btBinder = object : android.os.Binder() {
+        override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+            if (code == 1) {
+                try {
+                    data.enforceInterface("com.syu.ipc.IModuleCallback")
+                    val c = data.readInt(); val ints = data.createIntArray(); data.createFloatArray(); val strs = data.createStringArray()
+                    btUpdate(c, ints, strs)
+                } catch (e: Throwable) {}
+                reply?.writeNoException()
+                return true
+            }
+            if (code == android.os.IBinder.INTERFACE_TRANSACTION) { reply?.writeString("com.syu.ipc.IModuleCallback"); return true }
+            return super.onTransact(code, data, reply, flags)
+        }
+    }
+
+    private fun btUpdate(c: Int, ints: IntArray?, strs: Array<String?>?) {
+        try { btLast[c] = "ints=" + (ints?.joinToString(",") ?: "-") + " strs=" + (strs?.joinToString("|") ?: "-") } catch (e: Throwable) {}
+        when (c) {
+            22 -> if (strs != null && strs.size >= 2) btBook.add(arrayOf(strs[0] ?: "", strs[1] ?: ""))
+            29 -> if (ints != null && ints.isNotEmpty()) btPbap = ints[0]
+            35 -> if (ints != null && ints.isNotEmpty() && strs != null && strs.size >= 3) {
+                val o = if (strs.size >= 4) 1 else 0
+                btRecs.add(arrayOf(ints[0].toString(), strs[o] ?: "", strs[o + 1] ?: "", strs[o + 2] ?: ""))
+            }
+            8 -> if (strs != null && strs.isNotEmpty()) btNumber = (strs[0] ?: "").replace(Regex("[^0-9+]"), "")
+            9 -> if (ints != null && ints.isNotEmpty()) {
+                val st = ints[0]; val prev = btState; btState = st
+                if (st >= 2 && prev < 2) {
+                    js("onBtConnected", JSONObject())
+                    btExec.execute { try { Thread.sleep(4000); callLogSyncRun() } catch (e: Throwable) {} }
+                } else if (st < 2 && prev >= 2) js("onBtDisconnected", JSONObject())
+                if (st == 4) {
+                    val seq = ++btRingSeq
+                    Thread { try { Thread.sleep(900) } catch (e: Throwable) {}; if (seq == btRingSeq && btState == 4) js("onBtRing", JSONObject().put("num", btNumber)) }.start()
+                } else if (prev == 4 || prev == 5) { btRingSeq++; js("onBtCallEnd", JSONObject().put("state", st)) }
+            }
+            50 -> if (strs != null && strs.size >= 3) {
+                js("onBtSms", JSONObject().put("name", strs[0] ?: "").put("num", strs[1] ?: "").put("text", strs[2] ?: ""))
             }
         }
-        for (cd in intArrayOf(22, 29)) {
+    }
+
+    @Synchronized
+    private fun btHubStart(): Boolean {
+        if (btHubOk && modCache[2]?.isBinderAlive == true) return true
+        val mod = radioModule(2) ?: return false
+        for (cd in 0 until 100) {
             val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
             try {
                 d.writeInterfaceToken("com.syu.ipc.IRemoteModule")
-                d.writeStrongBinder(btCb); d.writeInt(cd); d.writeInt(1)
+                d.writeStrongBinder(btBinder); d.writeInt(cd); d.writeInt(1)
                 mod.transact(3, d, r, 0)
             } catch (e: Throwable) {} finally { d.recycle(); r.recycle() }
         }
-        radioCtl("@2/26")
+        btHubOk = true
+        return true
+    }
+
+    private val btTrying = java.util.concurrent.atomic.AtomicBoolean(false)
+    private fun btHubKeepTrying() {
+        if (!btTrying.compareAndSet(false, true)) return
+        Thread {
+            var n = 0
+            while (n < 8 && !btHubStart()) { n++; try { Thread.sleep(15000) } catch (e: Throwable) {} }
+            btTrying.set(false)
+        }.start()
+    }
+
+    private fun waitQuiet(sizeOf: () -> Int, quietSec: Int, maxSec: Int, emptyMaxSec: Int) {
         var last = -1; var still = 0; var waited = 0
-        while (waited < 60000) {
-            Thread.sleep(1000); waited += 1000
-            val n = btBook.size
+        while (waited < maxSec) {
+            Thread.sleep(1000); waited++
+            val n = sizeOf()
             if (n == last) still++ else { still = 0; last = n }
-            if (n > 0 && still >= 5) break
-            if (n == 0 && waited >= 20000) break
+            if (n > 0 && still >= quietSec) break
+            if (n == 0 && waited >= emptyMaxSec) break
         }
+    }
+
+    // 전화번호부 내려받기 (명령 26). 최신 목록만 돌려준다 (누적하지 않음)
+    private fun contactSyncRun(): JSONObject {
+        if (!btHubStart()) return JSONObject().put("err", "블루투스 모듈에 연결하지 못했습니다")
+        btBook.clear(); btPbap = -1
+        radioCtl("@2/26")
+        waitQuiet({ btBook.size }, 5, 60, 20)
         val arr = org.json.JSONArray()
         synchronized(btBook) { for (b in btBook) {
             var nm = b[0]; if (nm.endsWith("/H") || nm.endsWith("/M")) nm = nm.substringBefore("/")
             arr.put(JSONObject().put("n", nm).put("p", b[1].replace(Regex("[^0-9+]"), "")))
         } }
         return JSONObject().put("list", arr).put("pbap", btPbap)
+    }
+
+    // 통화기록 내려받기 (명령 35). 형식: 종류(1·2·3), 이름, 번호, 시각
+    private fun callLogSyncRun() {
+        if (!btHubStart()) { js("onNativeCalls", JSONObject().put("err", "블루투스 모듈에 연결하지 못했습니다")); return }
+        btRecs.clear()
+        radioCtl("@2/35")
+        waitQuiet({ btRecs.size }, 3, 25, 12)
+        val arr = org.json.JSONArray()
+        synchronized(btRecs) { for (b in btRecs) arr.put(JSONObject().put("t", b[0].toIntOrNull() ?: 0).put("n", b[1]).put("p", b[2].replace(Regex("[^0-9+]"), "")).put("d", b[3])) }
+        js("onNativeCalls", JSONObject().put("list", arr))
     }
 
     // GitHub Contents API로 파일 올리기 (스트리밍 base64라 큰 APK도 메모리를 적게 쓴다)
@@ -2057,9 +2127,15 @@ class MainActivity : Activity() {
         fun radioCtl(spec: String): String = this@MainActivity.radioCtl(spec)
         @JavascriptInterface
         fun contactSync(): String {
-            Thread { try { js("onNativeContacts", contactSyncRun()) } catch (e: Throwable) { js("onNativeContacts", JSONObject().put("err", e.message ?: "오류")) } }.start()
+            btExec.execute { try { js("onNativeContacts", contactSyncRun()) } catch (e: Throwable) { js("onNativeContacts", JSONObject().put("err", e.message ?: "오류")) } }
             return "시작"
         }
+        @JavascriptInterface
+        fun callLogSync(): String { btExec.execute { try { callLogSyncRun() } catch (e: Throwable) {} }; return "시작" }
+        @JavascriptInterface
+        fun btDump(): String = synchronized(btLast) { "허브=" + btHubOk + " 상태=" + btState + " 번호=" + btNumber + "\n" + btLast.entries.joinToString("\n") { it.key.toString() + ": " + it.value.take(120) } }
+        @JavascriptInterface
+        fun screen(on: Boolean): String = this@MainActivity.radioCtl("@0/18:" + (if (on) 0 else 1))
         @JavascriptInterface
         fun volume(dir: String): String {
             return try {
