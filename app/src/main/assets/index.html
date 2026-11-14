@@ -1542,7 +1542,7 @@ html[data-dim="3"] .gd{opacity:.8}
     try{apps=JSON.parse(A.listApps())}catch(e){apps=[]}
     apOnlyCar=true;$('apFilter').hidden=false;$('apList').onclick=null;$('dg').hidden=true;apDraw();$('ap').hidden=false;
   });
-  var SVC_TESTS=[['★ BT 수신 상태 보기','btd',''],['★ 통화기록 내려받기','cl',''],['★ 전화번호부 내려받기','ct',''],['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
+  var SVC_TESTS=[['★ 인터넷·날씨 연결 점검','net',''],['★ BT 수신 상태 보기','btd',''],['★ 통화기록 내려받기','cl',''],['★ 전화번호부 내려받기','ct',''],['라디오 다음 방송','com.syu.radio','com.syu.radio.nextservice'],['라디오 이전 방송','com.syu.radio','com.syu.radio.prevservice'],
     ['음악 재생/일시정지','com.syu.music','com.syu.music.playpause'],['음악 다음 곡','com.syu.music','com.syu.music.next'],['음악 이전 곡','com.syu.music','com.syu.music.prev'],['음악 정지','com.syu.music','com.syu.music.stop'],
     ['Tailscale 연결','ts','com.tailscale.ipn.CONNECT_VPN'],['Tailscale 끊기','ts','com.tailscale.ipn.DISCONNECT_VPN'],
     ['★ 라디오 화면 없이 켜기','bg',''],['★ 라디오 소리 소스 요청(메인 0번)','rad','@0/0:1'],['★ 라디오 다음 즐겨찾기','rad','0'],['★ 라디오 이전 즐겨찾기','rad','1'],['★ 라디오 탐색 올림','rad','5'],['★ 라디오 탐색 내림','rad','6'],['★ FM 93.1 지정','rad','13:3,9310'],['★ 라디오 FM 밴드 전환','rad','11:-1'],
@@ -1552,7 +1552,7 @@ html[data-dim="3"] .gd{opacity:.8}
     $('dg').hidden=true;
     var h='';SVC_TESTS.forEach(function(t,i){h+='<div class="ap-row" data-i="'+i+'">'+esc(t[0])+'<small>'+esc(t[2])+'</small></div>'});
     $('apList').innerHTML=h;$('apTitle').textContent='누르면 명령을 보냅니다 — 라디오·음악 앱을 먼저 켜 두세요';$('apFilter').hidden=true;$('ap').hidden=false;
-    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):t[1]==='rad'?A.radioCtl(t[2]):t[1]==='bg'?A.radioBg():t[1]==='btd'?A.btDump().replace(/\n/g,' ｜ '):t[1]==='cl'?(window.__callManual=true,A.callLogSync()):t[1]==='ct'?(window.__contactManual=true,A.contactSync()):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
+    $('apList').onclick=function(ev){var r=ev.target.closest('.ap-row');if(!r)return;var t=SVC_TESTS[+r.getAttribute('data-i')];var m='';try{m=t[1]==='key'?A.mediaKey(t[2]):t[1]==='ts'?A.tsIntent(t[2]):t[1]==='rad'?A.radioCtl(t[2]):t[1]==='bg'?A.radioBg():t[1]==='net'?A.netCheck():t[1]==='btd'?A.btDump().replace(/\n/g,' ｜ '):t[1]==='cl'?(window.__callManual=true,A.callLogSync()):t[1]==='ct'?(window.__contactManual=true,A.contactSync()):A.svcTest(t[1],t[2])}catch(e){m='오류 '+e}$('apTitle').textContent=t[0]+' → '+m};
   });
   function dgNeed(fn){
     if(!A||!A[fn]){$('dg').hidden=true;ovShow('앱을 업데이트해 주세요','','이 기능은 최신 앱에서 가능합니다. "업데이트 확인"을 눌러 주세요.');return false}
@@ -1565,6 +1565,7 @@ html[data-dim="3"] .gd{opacity:.8}
     var ok=false;try{ok=A.apkUpload('@syu',ghTok(),ghRepo())}catch(e){}
     if(!ok)ovShow('올리기를 시작하지 못했습니다','','저장소 정보를 확인해 주세요.');
   });
+  window.onNativeNet=function(o){$('apTitle').textContent='연결 점검 결과';$('apList').innerHTML='<div class="ap-row" style="white-space:pre-wrap">'+String(o.text||'').replace(/[<&]/g,'')+'</div>'};
   window.onNativeApkProg=function(o){ovShow('APK 올리는 중 '+o.i+' / '+o.n,'',o.pkg+' '+(o.msg||''))};
   window.onNativeApkUp=function(o){
     var l=o.list||[],okN=0,t=l.map(function(x){var r=(x.r||[]).join(' / ');if(/올림/.test(r))okN++;return x.pkg+': '+r}).join('\n');

@@ -1511,6 +1511,41 @@ class MainActivity : Activity() {
     }
 
 
+
+    // 연결 점검: 날씨 서버 등에 접속해 보고, VPN을 거치는 경로와 VPN을 거치지 않는 경로를 각각 시험한다
+    private fun netCheckRun(): String {
+        val sb = StringBuilder()
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val nets = cm.allNetworks.toList()
+        sb.append("VPN 켜짐: ").append(vpnUp()).append("\n")
+        val act = cm.activeNetwork
+        for (n in nets) {
+            val c = cm.getNetworkCapabilities(n) ?: continue
+            val t = when { c.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) -> "VPN"; c.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"; c.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "모바일"; c.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "유선"; else -> "기타" }
+            sb.append("망 ").append(t).append(if (n == act) " (기본)" else "").append(if (c.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)) " · 인터넷 확인됨" else " · 인터넷 미확인").append("\n")
+        }
+        val targets = listOf("날씨" to "https://api.open-meteo.com/v1/forecast?latitude=36.59&longitude=128.19&current=temperature_2m", "구글" to "https://www.google.com/generate_204")
+        fun probe(label: String, url: String, net: android.net.Network?) {
+            val t0 = System.currentTimeMillis()
+            val r = try {
+                val c = (if (net != null) net.openConnection(URL(url)) else URL(url).openConnection()) as HttpURLConnection
+                c.connectTimeout = 8000; c.readTimeout = 8000
+                val code = c.responseCode; c.disconnect(); "HTTP $code"
+            } catch (e: Throwable) { e.javaClass.simpleName + " " + (e.message ?: "").take(60) }
+            sb.append(label).append(": ").append(r).append(" (").append(System.currentTimeMillis() - t0).append("ms)\n")
+        }
+        for ((nm, u) in targets) {
+            probe("$nm · 기본 경로", u, null)
+            for (n in nets) {
+                val c = cm.getNetworkCapabilities(n) ?: continue
+                if (c.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)) continue
+                if (!c.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue
+                probe("$nm · VPN 제외 경로", u, n)
+            }
+        }
+        return sb.toString()
+    }
+
     // ===== 차량 블루투스 허브 (모듈 2번) =====
     // BT 앱과 같은 방식: 콜백을 등록해 두면 전화 상태(9)·번호(8)·전화번호부(22)·통화기록(35)·문자(50)가 업데이트로 들어온다.
     private val btExec = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -2130,6 +2165,8 @@ class MainActivity : Activity() {
             btExec.execute { try { js("onNativeContacts", contactSyncRun()) } catch (e: Throwable) { js("onNativeContacts", JSONObject().put("err", e.message ?: "오류")) } }
             return "시작"
         }
+        @JavascriptInterface
+        fun netCheck(): String { Thread { val r = try { netCheckRun() } catch (e: Throwable) { "실패: " + e.message }; js("onNativeNet", JSONObject().put("text", r)) }.start(); return "시작" }
         @JavascriptInterface
         fun callLogSync(): String { btExec.execute { try { callLogSyncRun() } catch (e: Throwable) {} }; return "시작" }
         @JavascriptInterface
