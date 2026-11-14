@@ -138,7 +138,7 @@ input.ak-in{font:inherit;font-size:max(16px,min(3.6vh,2.4vw));color:var(--fg);ba
 :root{--tap:60px}
 @media (orientation:portrait){:root{--tap:58px}}
 @media (orientation:landscape) and (max-height:520px){:root{--tap:52px}}
-button,#dg button,#ov button,#ak button,#ap button,#kk button,#md button{min-height:var(--tap);min-width:max(96px,8vw)}
+button,#dg button,#ov button,#ak button,#ap button,#cl button,#kk button,#md button{min-height:var(--tap);min-width:max(96px,8vw)}
 #ov #ovClose{min-height:max(var(--tap),13vh)}
 .btns{gap:12px}
 .ap-row,.kk-row{min-height:var(--tap);box-sizing:border-box;padding-top:max(10px,1.4vh);padding-bottom:max(10px,1.4vh)}
@@ -270,7 +270,7 @@ html[data-dim="3"] .clock,html[data-dim="3"] .ring{opacity:.82}
 #ap .ap-row,#kk .ap-row,#md .ap-row,#ph .ap-row,#kk .kk-row{font-size:max(17px,4.2vw)}
 #dg .dg-row{font-size:max(15px,3.7vw)!important}
 #sd .sd-t{font-size:max(19px,4.6vw)}
-#ak #akClose,#ap #apClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose,#pf #pfCancel{min-width:max(96px,22vw)}
+#ak #akClose,#ap #apClose,#cl #clClose,#kk #kkClose,#md #mdClose,#sd #sdClose,#dg #dgClose,#ph #phClose,#pf #pfCancel{min-width:max(96px,22vw)}
 #phTabs{margin-bottom:max(8px,1.2vh)}
 #akProv{margin-bottom:max(10px,1.6vh)}#akProv button{white-space:nowrap}
 .ak-l{display:block;color:var(--fg-dim);margin:max(10px,1.6vh) 0 6px;font-size:max(17px,min(3.4vh,2.3vw))}
@@ -515,6 +515,14 @@ html[data-dim="3"] .gd{opacity:.8}
       <button id="akClear" type="button">키 삭제</button>
     </div>
     </div>
+  </div>
+</div>
+
+<div class="ov" id="cl" hidden>
+  <div class="ov-in">
+    <div class="op-h"><div class="ov-state" id="clTitle">통화기록 — 누르면 전화를 겁니다</div><button id="clClose" type="button">‹ 뒤로</button></div>
+    <div class="pl-list" id="clList"></div>
+    <div class="btns" style="justify-content:flex-start"><button id="clSync" type="button">다시 가져오기</button></div>
   </div>
 </div>
 
@@ -1028,6 +1036,7 @@ html[data-dim="3"] .gd{opacity:.8}
   };
   window.onNativeCalls=function(o){
     var manual=window.__callManual;window.__callManual=false;
+    if(!$('cl').hidden&&(o.list||[]).length){setTimeout(showCallLog,50)}
     var l=o.list||[];
     if(l.length){
       /* 최신 순으로 정렬해 최신 데이터만 보관 (누적하지 않고 통째로 교체) */
@@ -1042,13 +1051,31 @@ html[data-dim="3"] .gd{opacity:.8}
     if(!jget('phoneBook',[]).length||Date.now()-at>WEEK){try{if(A&&A.contactSync)A.contactSync()}catch(e){}}
   };
   var ringShown=false;
+
+  /* 통화기록 화면: 누르면 바로 전화 */
+  function showCallLog(){
+    var l=callLogGet(),h='';
+    if(!l.length)h='<div class="ap-row">통화기록이 없습니다. 휴대폰이 차량 블루투스에 연결되면 자동으로 가져옵니다.</div>';
+    else for(var i=0;i<l.length;i++){var x=l[i],who=callWho(x);
+      h+='<div class="ap-row" data-i="'+i+'"><span class="rk">'+(x.t===3?'부재중':x.t===1?'수신':x.t===2?'발신':'통화')+'</span>'+who.replace(/[<&]/g,'')+'<small>'+(x.p||'번호 없음')+(callWhen(x.d)?' · '+callWhen(x.d):'')+'</small></div>'}
+    $('clList').innerHTML=h;$('cl').hidden=false;
+    var at=+store.get('callLogAt')||0;$('clTitle').textContent='통화기록 '+l.length+'건'+(at?' · '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'})+' 기준':'')+' — 누르면 전화';
+  }
+  $('clClose').addEventListener('click',function(){$('cl').hidden=true});
+  $('clSync').addEventListener('click',function(){window.__callManual=false;try{A.callLogSync()}catch(e){};$('clTitle').textContent='통화기록을 가져오는 중…'});
+  $('clList').addEventListener('click',function(ev){
+    var r=ev.target.closest('.ap-row');if(!r||r.getAttribute('data-i')==null)return;
+    var x=callLogGet()[+r.getAttribute('data-i')];if(!x||!x.p)return;
+    var m='';try{m=A.radioCtl('@2/7::'+x.p)}catch(e){m='실패'}
+    $('cl').hidden=true;ovClosed=false;ovShow(/^보냄/.test(m)?'전화 거는 중':'전화 실패',callWho(x),x.p);ovTimer=setTimeout(ovHide,3000);
+  });
   window.onBtRing=function(o){
     var num=o&&o.num||'',nm=nameOf(num),who=nm||(num?num.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3'):'알 수 없는 번호');
     ringShown=true;ovClosed=false;
-    var t=who+(nm?' 님':'')+'에게서 전화가 왔습니다. 받으려면 전화 받아, 거절하려면 전화 거절이라고 말씀하세요.';
-    ovShow('전화 수신',who,'전화 받아 / 전화 거절');sayThenListen(t);
+    ovShow('전화 수신',who,'핸들의 통화 연결 / 통화 종료 버튼을 쓰세요');
+    sayThenHide(who+(nm?' 님':'')+'에게서 전화가 왔습니다.');
   };
-  window.onBtCallEnd=function(){if(ringShown){ringShown=false;convo=false;try{A.stopListening()}catch(e){}ovHide()}};
+  window.onBtCallEnd=function(){if(ringShown){ringShown=false;ovHide()}};
   window.onBtSms=function(o){
     var m={name:o.name||'',num:o.num||'',text:String(o.text||'')};
     try{store.set('lastSms',JSON.stringify(m))}catch(e){}
@@ -1214,6 +1241,7 @@ html[data-dim="3"] .gd{opacity:.8}
       if(/전화(받|응답)|받아줘|통화연결/.test(t))return btSnd('@2/9','전화를 받습니다.');
       if(/전화(끊|종료)|통화(끊|종료)|끊어줘|끊어/.test(t))return btSnd('@2/10','전화를 끊습니다.');
       if(/전화(거절)|수신거절|거절해/.test(t))return btSnd('@2/11','전화를 거절합니다.');
+      if(/(통화기록|통화내역|전화기록|통화목록).*(보여|열어|화면|목록)|(통화기록|통화내역)$/.test(t)){showCallLog();return '통화기록을 화면에 띄웠습니다.'}
       /* 통화기록 */
       if(/(최근|마지막|부재중|부재|못받|놓친|누가).*(통화|전화).*(알려|읽어|뭐|있|누구|보여|확인)|(통화|전화)(기록|내역)(알려|읽어|보여)?|부재중/.test(t)&&!/걸어|해줘$/.test(t)){
         var cl=callLogGet();
@@ -1310,7 +1338,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var AI_CMDS=['라디오 켜','음악 틀어','네비 켜','블루투스 열어','비디오 열어','카링크 켜','<앱 이름> 열어',
     '브레이브로 <사이트 이름> 열어줘','브레이브로 <검색어> 검색해줘','크롬으로 <검색어> 검색해줘',
     '날씨','몇시','날짜','밝게','어둡게','밝기 보통','밝기 자동','테마','24시간','12시간',
-    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','통화기록 불러와','최근 통화 알려줘','부재중 전화 알려줘','마지막 통화한 사람에게 전화','문자 읽어줘','화면 꺼줘','<연락처 이름>에게 전화해'];
+    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','통화기록 불러와','통화기록 보여줘','최근 통화 알려줘','부재중 전화 알려줘','마지막 통화한 사람에게 전화','문자 읽어줘','화면 꺼줘','<연락처 이름>에게 전화해'];
   function aiLists(){
     var o='',ap=[];
     try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
@@ -1565,7 +1593,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var voiceT=0;
   /* 전화 종료 버튼 = 뒤로 가기. 열린 화면을 하나 닫고, 아무것도 없으면 비서 앱을 닫아 이전 앱으로 돌아간다 */
   window.onEndKey=function(){
-    var ids=['ov','pf','dg','kk','md','ak','ap','ph','op'];
+    var ids=['ov','pf','dg','kk','md','ak','ap','cl','ph','op'];
     for(var i=0;i<ids.length;i++){
       var el=$(ids[i]);
       if(el&&!el.hidden){var b=$(ids[i]+'Close');if(b){b.click();return}el.hidden=true;return}
