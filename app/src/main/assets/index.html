@@ -1070,10 +1070,10 @@ html[data-dim="3"] .gd{opacity:.8}
   function showCallLog(){
     var l=callLogGet(),h='';
     if(!l.length)h='<div class="ap-row">통화기록이 없습니다. 휴대폰이 차량 블루투스에 연결되면 자동으로 가져옵니다.</div>';
-    else for(var i=0;i<l.length;i++){var x=l[i],who=callWho(x);
+    else for(var i=0;i<l.length;i++){var x=l[i],who=String(x.n||nameOf(x.p)||(x.p?fmtNum(x.p):'알 수 없는 번호')).replace(/\/.*/,'');
       h+='<div class="ap-row" data-i="'+i+'">'+(x.p?'<button class="mini cl-call" type="button" data-i="'+i+'">발신</button>':'')+'<span class="rk">'+(x.t===3?'부재중':x.t===1?'수신':x.t===2?'발신':'통화')+'</span>'+who.replace(/[<&]/g,'')+'<small>'+(x.p?fmtNum(x.p):'번호 없음')+(callWhen(x.d)?' · '+callWhen(x.d):'')+'</small></div>'}
     $('clList').innerHTML=h;$('cl').hidden=false;
-    var at=+store.get('callLogAt')||0;$('clTitle').textContent='통화기록 '+l.length+'건'+(at?' · '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'})+' 기준':'')+' — 발신 버튼을 누르면 전화';
+    var at=+store.get('callLogAt')||0;$('clTitle').textContent='통화기록 '+l.length+'건'+(at?' · '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'})+' 기준':'');
   }
   $('clClose').addEventListener('click',function(){$('cl').hidden=true});
   $('clSync').addEventListener('click',function(){window.__callManual=false;try{A.callLogSync()}catch(e){};$('clTitle').textContent='통화기록을 가져오는 중…'});
