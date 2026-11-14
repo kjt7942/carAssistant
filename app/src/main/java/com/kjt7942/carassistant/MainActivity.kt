@@ -2166,7 +2166,7 @@ class MainActivity : Activity() {
             return "시작"
         }
         @JavascriptInterface
-        fun netCheck(): String { Thread { val r = try { netCheckRun() } catch (e: Throwable) { "실패: " + e.message }; js("onNativeNet", JSONObject().put("text", r)) }.start(); return "시작" }
+        fun netCheck(): String { Thread { val r = try { netCheckRun() } catch (e: Throwable) { "실패: " + e.message }; js("onNativeNetCheck", JSONObject().put("text", r)) }.start(); return "시작" }
         @JavascriptInterface
         fun callLogSync(): String { btExec.execute { try { callLogSyncRun() } catch (e: Throwable) {} }; return "시작" }
         @JavascriptInterface
