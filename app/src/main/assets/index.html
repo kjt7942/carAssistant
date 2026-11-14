@@ -907,7 +907,7 @@ html[data-dim="3"] .gd{opacity:.8}
     var w=wmo(wx.code,night());
     var hi=num(wx.hi)?Math.round(wx.hi)+'°':'-',lo=num(wx.lo)?Math.round(wx.lo)+'°':'-';
     var l2=[],ageMin=Math.round((Date.now()-(wx.at||0))/60000),stale='';
-    if(ageMin>90)stale='⚠ '+(ageMin>=120?Math.floor(ageMin/60)+'시간':ageMin+'분')+' 전 정보'+(wxErr?' · 갱신 실패':'')+' · 누르면 새로고침';
+    if(ageMin>90)stale='⚠ '+(ageMin>=120?Math.floor(ageMin/60)+'시간':ageMin+'분')+' 전 · '+seoulNowFrom(wx.at||Date.now())+'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-.15em;margin-left:.3em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>';
     if(num(wx.wind))l2.push('바람 <b>'+(Math.round(wx.wind*10)/10)+'m/s</b>');
     if(num(wx.pop))l2.push('강수 <b>'+Math.round(wx.pop)+'%</b>');
     el.innerHTML='<div class="wk only-b">WEATHER · '+esc(placeShort())+'</div>'+
@@ -915,7 +915,7 @@ html[data-dim="3"] .gd{opacity:.8}
       '<i class="sep only-a">|</i><span class="whl">최고 <b>'+hi+'</b> 최저 <b>'+lo+'</b></span>'+
       '<i class="sep only-a">|</i><span class="wpl only-a">'+esc(placeShort())+'</span></div>'+
       (l2.length?'<div class="wl2 only-b">'+l2.join(' &nbsp;·&nbsp; ')+'</div>':'')+
-      (stale?'<div class="wl2" style="color:var(--warn,#c9a15a)">'+stale+'</div>':'<div class="wl2" style="opacity:.55;font-size:.8em">'+(wxErr?'⚠ 갱신 실패 · ':'')+'갱신 '+seoulNowFrom(wx.at||Date.now())+' · 누르면 새로고침</div>');
+      (stale?'<div class="wl2 wl-up" style="color:var(--warn,#c9a15a);text-align:right;font-size:1.1em">'+stale+'</div>':'<div class="wl2 wl-up" style="opacity:.7;font-size:1.1em;text-align:right">'+(wxErr?'⚠ ':'')+seoulNowFrom(wx.at||Date.now())+'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-.15em;margin-left:.3em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg></div>');
   }
   (function(){var w=$('wx');if(w)w.addEventListener('click',function(){last.t=0;wxNext=0;wxErr='';maybeFetch(true)})})();
   function drawStatus(){
