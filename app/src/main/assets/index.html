@@ -164,6 +164,11 @@ button,#dg button,#ov button,#ak button,#ap button,#cl button,#kk button,#md but
 .wxw{display:contents}
 .root[data-theme=a] .wxw,.root[data-theme=d] .wxw{display:table;margin:0 auto}
 .root .wl2.wl-up{text-align:right;opacity:.6;font-size:calc(var(--s)*19);margin-top:.15em;color:var(--fg-dim)}
+
+.root[data-theme=b] .wl2.wl-row{display:flex;justify-content:space-between;align-items:baseline}
+.root[data-theme=b] .wl2.wl-row .wl-upi{font-size:calc(var(--s)*19);opacity:.6}
+.root[data-theme=b] .wl2.wl-row .wl-upi.wl-warn{color:var(--warn,#c9a15a);opacity:.9}
+.root[data-theme=b] .wl-up.wl-solo{display:none}
 .root .wl2.wl-warn{color:var(--warn,#c9a15a);opacity:.9}
 
 .empty{color:var(--fg-dim)}
@@ -915,12 +920,13 @@ html[data-dim="3"] .gd{opacity:.8}
     if(ageMin>90)stale='⚠ '+(ageMin>=120?Math.floor(ageMin/60)+'시간':ageMin+'분')+' 전 · '+seoulNowFrom(wx.at||Date.now())+'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-.15em;margin-left:.3em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>';
     if(num(wx.wind))l2.push('바람 <b>'+(Math.round(wx.wind*10)/10)+'m/s</b>');
     if(num(wx.pop))l2.push('강수 <b>'+Math.round(wx.pop)+'%</b>');
+    var upTxt=stale?stale:((wxErr?'⚠ ':'')+seoulNowFrom(wx.at||Date.now())+'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-.15em;margin-left:.3em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>');
     el.innerHTML='<div class="wk only-b">WEATHER · '+esc(placeShort())+'</div>'+
       '<div class="wxw"><div class="wl1"><b class="wt">'+Math.round(wx.temp)+'°</b><span class="wc">'+esc(w.c)+'</span>'+
       '<i class="sep only-a">|</i><span class="whl">최고 <b>'+hi+'</b> 최저 <b>'+lo+'</b></span>'+
       '<i class="sep only-a">|</i><span class="wpl only-a">'+esc(placeShort())+'</span></div>'+
-      (l2.length?'<div class="wl2 only-b">'+l2.join(' &nbsp;·&nbsp; ')+'</div>':'')+
-      (stale?'<div class="wl2 wl-up wl-warn">'+stale+'</div>':'<div class="wl2 wl-up">'+(wxErr?'⚠ ':'')+seoulNowFrom(wx.at||Date.now())+'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-.15em;margin-left:.3em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg></div></div>');
+      (l2.length?'<div class="wl2 only-b wl-row"><span>'+l2.join(' &nbsp;·&nbsp; ')+'</span><span class="wl-upi'+(stale?' wl-warn':'')+'">'+upTxt+'</span></div>':'')+
+      '<div class="wl2 wl-up'+(stale?' wl-warn':'')+(l2.length?' wl-solo':'')+'">'+upTxt+'</div></div>';
   }
   (function(){var w=$('wx');if(w)w.addEventListener('click',function(){last.t=0;wxNext=0;wxErr='';maybeFetch(true)})})();
   function drawStatus(){
