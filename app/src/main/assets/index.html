@@ -520,7 +520,7 @@ html[data-dim="3"] .gd{opacity:.8}
 
 <div class="ov" id="cl" hidden>
   <div class="ov-in">
-    <div class="op-h"><div class="ov-state" id="clTitle">통화기록 — 누르면 전화를 겁니다</div><button id="clClose" type="button">‹ 뒤로</button></div>
+    <div class="op-h"><div class="ov-state" id="clTitle">통화기록</div><button id="clClose" type="button">‹ 뒤로</button></div>
     <div class="pl-list" id="clList"></div>
     <div class="btns" style="justify-content:flex-start"><button id="clSync" type="button">다시 가져오기</button></div>
   </div>
@@ -1017,7 +1017,21 @@ html[data-dim="3"] .gd{opacity:.8}
     for(var i=0;i<pb.length;i++){if(pb[i].p&&digs(pb[i].p).slice(-8)===k)return String(pb[i].n||'').replace(/\/.*/,'')}
     return '';
   }
-  function callWho(x){return (x.n&&String(x.n).replace(/\/.*/,''))||nameOf(x.p)||(x.p?x.p.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3'):'알 수 없는 번호')}
+  function fmtNum(p,sep){
+    sep=sep||'-';var d=String(p||'').replace(/[^\d+]/g,''),pre='';
+    if(d.indexOf('+82')===0){pre='+82 ';d='0'+d.slice(3)}
+    var g;
+    if(/^02/.test(d))g=d.length>=10?[2,4,4]:[2,3,4];
+    else if(/^01\d/.test(d))g=d.length>=11?[3,4,4]:[3,3,4];
+    else if(/^0\d\d/.test(d))g=d.length>=11?[3,4,4]:[3,3,4];
+    else if(/^1[5-9]\d\d/.test(d)&&d.length===8)g=[4,4];
+    else return pre+d;
+    var o=[],i=0;for(var k=0;k<g.length;k++){o.push(d.substr(i,g[k]));i+=g[k]}
+    if(i<d.length)o.push(d.slice(i));
+    return pre+o.filter(Boolean).join(sep);
+  }
+  window.fmtNum=fmtNum;
+  function callWho(x){return (x.n&&String(x.n).replace(/\/.*/,''))||nameOf(x.p)||(x.p?fmtNum(x.p,' '):'알 수 없는 번호')}
   function callKind(t){return t===1?'받은 전화':t===2?'건 전화':t===3?'부재중 전화':'통화'}
   function callWhen(d){
     var m=String(d||'').match(/(\d{4})(\d{2})(\d{2})T?(\d{2})(\d{2})/);if(!m)return '';
@@ -1057,20 +1071,20 @@ html[data-dim="3"] .gd{opacity:.8}
     var l=callLogGet(),h='';
     if(!l.length)h='<div class="ap-row">통화기록이 없습니다. 휴대폰이 차량 블루투스에 연결되면 자동으로 가져옵니다.</div>';
     else for(var i=0;i<l.length;i++){var x=l[i],who=callWho(x);
-      h+='<div class="ap-row" data-i="'+i+'"><span class="rk">'+(x.t===3?'부재중':x.t===1?'수신':x.t===2?'발신':'통화')+'</span>'+who.replace(/[<&]/g,'')+'<small>'+(x.p||'번호 없음')+(callWhen(x.d)?' · '+callWhen(x.d):'')+'</small></div>'}
+      h+='<div class="ap-row" data-i="'+i+'">'+(x.p?'<button class="mini cl-call" type="button" data-i="'+i+'">발신</button>':'')+'<span class="rk">'+(x.t===3?'부재중':x.t===1?'수신':x.t===2?'발신':'통화')+'</span>'+who.replace(/[<&]/g,'')+'<small>'+(x.p?fmtNum(x.p):'번호 없음')+(callWhen(x.d)?' · '+callWhen(x.d):'')+'</small></div>'}
     $('clList').innerHTML=h;$('cl').hidden=false;
-    var at=+store.get('callLogAt')||0;$('clTitle').textContent='통화기록 '+l.length+'건'+(at?' · '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'})+' 기준':'')+' — 누르면 전화';
+    var at=+store.get('callLogAt')||0;$('clTitle').textContent='통화기록 '+l.length+'건'+(at?' · '+new Date(at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'})+' 기준':'')+' — 발신 버튼을 누르면 전화';
   }
   $('clClose').addEventListener('click',function(){$('cl').hidden=true});
   $('clSync').addEventListener('click',function(){window.__callManual=false;try{A.callLogSync()}catch(e){};$('clTitle').textContent='통화기록을 가져오는 중…'});
   $('clList').addEventListener('click',function(ev){
-    var r=ev.target.closest('.ap-row');if(!r||r.getAttribute('data-i')==null)return;
+    var r=ev.target.closest('.cl-call');if(!r)return;
     var x=callLogGet()[+r.getAttribute('data-i')];if(!x||!x.p)return;
     var m='';try{m=A.radioCtl('@2/7::'+x.p)}catch(e){m='실패'}
-    $('cl').hidden=true;ovClosed=false;ovShow(/^보냄/.test(m)?'전화 거는 중':'전화 실패',callWho(x),x.p);ovTimer=setTimeout(ovHide,3000);
+    $('cl').hidden=true;ovClosed=false;ovShow(/^보냄/.test(m)?'전화 거는 중':'전화 실패',String(x.n||nameOf(x.p)||fmtNum(x.p)).replace(/\/.*/,''),fmtNum(x.p));ovTimer=setTimeout(ovHide,3000);
   });
   window.onBtRing=function(o){
-    var num=o&&o.num||'',nm=nameOf(num),who=nm||(num?num.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3'):'알 수 없는 번호');
+    var num=o&&o.num||'',nm=nameOf(num),who=nm||(num?fmtNum(num,' '):'알 수 없는 번호');
     ringShown=true;ovClosed=false;
     ovShow('전화 수신',who,'핸들의 통화 연결 / 통화 종료 버튼을 쓰세요');
     sayThenHide(who+(nm?' 님':'')+'에게서 전화가 왔습니다.');
@@ -1268,7 +1282,7 @@ html[data-dim="3"] .gd{opacity:.8}
       if(/화면.*(꺼|끄|오프)|^화면꺼/.test(t)&&A.screen){return btScreen(false)}
       if(/화면.*(켜|켜줘|깨워|온)/.test(t)&&A.screen){return btScreen(true)}
       var dm=t.match(/(01\d[\d-]{7,10})/);
-      if(dm&&/전화|걸어|연결/.test(t)){var n=dm[1].replace(/-/g,'');return ask('@2/7::'+n,n.replace(/(\d{3})(\d{4})(\d{4})/,'$1 $2 $3')+' 번호')}
+      if(dm&&/전화|걸어|연결/.test(t)){var n=dm[1].replace(/-/g,'');return ask('@2/7::'+n,fmtNum(n,' ')+' 번호')}
       if(/전화|걸어/.test(t)&&/해줘|해|걸어|연결|좀/.test(t)){
         var cc=cGet(),ks=Object.keys(cc);
         for(var i=0;i<ks.length;i++){if(t.indexOf(ks[i])>=0)return ask('@2/7::'+cc[ks[i]],ks[i]+' 님')}
