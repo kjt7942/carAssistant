@@ -1108,9 +1108,10 @@ html[data-dim="3"] .gd{opacity:.8}
     var rplay=/(틀어|켜|들려|들을|듣|맞춰|가자|줘|채널)/.test(t);
     if(rplay&&A&&A.radioCtl){
       var rl2=rpGet(),tl=t.toLowerCase();
+      var anyRadio=/라디오/.test(t)&&!/앱|화면|열어|보여|다음|이전|주파수|\d[.점]\d/.test(t);
       for(var ri=0;ri<rl2.length;ri++){
         var kk=rl2[ri].k.split('|');
-        if(kk.some(function(w){return w&&tl.indexOf(w)>=0})){
+        if(kk.some(function(w){return w&&tl.indexOf(w)>=0})||(anyRadio&&ri===0)){
           var rfx=rl2[ri].f,rnm=rl2[ri].n;
           try{A.radioBg()}catch(e){}
           setTimeout(function(){try{A.radioCtl('@0/0:1')}catch(e){}},800);
