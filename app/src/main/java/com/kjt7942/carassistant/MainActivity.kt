@@ -1487,6 +1487,8 @@ class MainActivity : Activity() {
             var body = spec
             var modNo = 1
             if (body.startsWith("@")) { modNo = body.substring(1, body.indexOf('/')).toInt(); body = body.substring(body.indexOf('/') + 1) }
+            var strs: Array<String>? = null
+            if (body.contains("::")) { val sp = body.split("::", limit = 2); body = sp[0]; strs = sp[1].split("|").toTypedArray() }
             val parts = body.split(":")
             val code = parts[0].trim().toInt()
             val ints = if (parts.size > 1) parts[1].split(",").map { it.trim().toInt() }.toIntArray() else null
@@ -1497,7 +1499,7 @@ class MainActivity : Activity() {
                 d.writeInt(code)
                 d.writeIntArray(ints)
                 d.writeFloatArray(null)
-                d.writeStringArray(null)
+                d.writeStringArray(strs)
                 mod.transact(1, d, r, 0)
                 r.readException()
             } finally { d.recycle(); r.recycle() }
@@ -2004,6 +2006,22 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun radioCtl(spec: String): String = this@MainActivity.radioCtl(spec)
+        @JavascriptInterface
+        fun volume(dir: String): String {
+            return try {
+                val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                val st = android.media.AudioManager.STREAM_MUSIC
+                val max = am.getStreamMaxVolume(st)
+                when {
+                    dir == "up" -> am.adjustStreamVolume(st, android.media.AudioManager.ADJUST_RAISE, android.media.AudioManager.FLAG_SHOW_UI)
+                    dir == "down" -> am.adjustStreamVolume(st, android.media.AudioManager.ADJUST_LOWER, android.media.AudioManager.FLAG_SHOW_UI)
+                    dir == "mute" -> am.adjustStreamVolume(st, android.media.AudioManager.ADJUST_MUTE, android.media.AudioManager.FLAG_SHOW_UI)
+                    dir == "unmute" -> am.adjustStreamVolume(st, android.media.AudioManager.ADJUST_UNMUTE, android.media.AudioManager.FLAG_SHOW_UI)
+                    dir.startsWith("set:") -> am.setStreamVolume(st, (dir.substring(4).toInt().coerceIn(0, 100) * max / 100), android.media.AudioManager.FLAG_SHOW_UI)
+                }
+                "볼륨 " + am.getStreamVolume(st) + "/" + max
+            } catch (e: Throwable) { "실패: " + (e.message ?: e.javaClass.simpleName) }
+        }
 
         @JavascriptInterface
         fun radioBg(): String {
