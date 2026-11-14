@@ -1509,6 +1509,55 @@ class MainActivity : Activity() {
         }
     }
 
+
+    // 차량 블루투스 모듈(2번)에서 휴대폰 전화번호부를 내려받는다 (BT 앱과 같은 방식: 콜백 등록 후 다운로드 명령 26, 항목은 U_BOOK=22로 [이름,번호]가 온다)
+    private var btCb: android.os.Binder? = null
+    private val btBook = java.util.Collections.synchronizedList(ArrayList<Array<String>>())
+    private var btPbap = -1
+    private fun contactSyncRun(): JSONObject {
+        val mod = radioModule(2) ?: return JSONObject().put("err", "블루투스 모듈에 연결하지 못했습니다")
+        btBook.clear(); btPbap = -1
+        if (btCb == null) btCb = object : android.os.Binder() {
+            override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+                if (code == 1) {
+                    try {
+                        data.enforceInterface("com.syu.ipc.IModuleCallback")
+                        val c = data.readInt(); val ints = data.createIntArray(); data.createFloatArray(); val strs = data.createStringArray()
+                        if (c == 22 && strs != null && strs.size >= 2) btBook.add(arrayOf(strs[0] ?: "", strs[1] ?: ""))
+                        else if (c == 29 && ints != null && ints.isNotEmpty()) btPbap = ints[0]
+                    } catch (e: Throwable) {}
+                    reply?.writeNoException()
+                    return true
+                }
+                if (code == android.os.IBinder.INTERFACE_TRANSACTION) { reply?.writeString("com.syu.ipc.IModuleCallback"); return true }
+                return super.onTransact(code, data, reply, flags)
+            }
+        }
+        for (cd in intArrayOf(22, 29)) {
+            val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
+            try {
+                d.writeInterfaceToken("com.syu.ipc.IRemoteModule")
+                d.writeStrongBinder(btCb); d.writeInt(cd); d.writeInt(1)
+                mod.transact(3, d, r, 0)
+            } catch (e: Throwable) {} finally { d.recycle(); r.recycle() }
+        }
+        radioCtl("@2/26")
+        var last = -1; var still = 0; var waited = 0
+        while (waited < 60000) {
+            Thread.sleep(1000); waited += 1000
+            val n = btBook.size
+            if (n == last) still++ else { still = 0; last = n }
+            if (n > 0 && still >= 5) break
+            if (n == 0 && waited >= 20000) break
+        }
+        val arr = org.json.JSONArray()
+        synchronized(btBook) { for (b in btBook) {
+            var nm = b[0]; if (nm.endsWith("/H") || nm.endsWith("/M")) nm = nm.substringBefore("/")
+            arr.put(JSONObject().put("n", nm).put("p", b[1].replace(Regex("[^0-9+]"), "")))
+        } }
+        return JSONObject().put("list", arr).put("pbap", btPbap)
+    }
+
     // GitHub Contents API로 파일 올리기 (스트리밍 base64라 큰 APK도 메모리를 적게 쓴다)
     private fun ghPutFile(repo: String, token: String, path: String, msg: String, file: File): String {
         return try {
@@ -2006,6 +2055,11 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun radioCtl(spec: String): String = this@MainActivity.radioCtl(spec)
+        @JavascriptInterface
+        fun contactSync(): String {
+            Thread { try { js("onNativeContacts", contactSyncRun()) } catch (e: Throwable) { js("onNativeContacts", JSONObject().put("err", e.message ?: "오류")) } }.start()
+            return "시작"
+        }
         @JavascriptInterface
         fun volume(dir: String): String {
             return try {
