@@ -1165,18 +1165,6 @@ html[data-dim="3"] .gd{opacity:.8}
       return null;
     })();
     if(phn!==null)return phn;
-    var vol=(function(){
-      if(!A||!A.volume)return null;
-      if(!/볼륨|소리|음량|음소거|무음/.test(t))return null;
-      var m=t.match(/(\d{1,3})(?:퍼센트|%|으로|로)?/);
-      if(m&&/맞춰|으로|로|설정/.test(t)){var r=A.volume('set:'+m[1]);return '소리를 '+m[1]+'퍼센트로 맞춥니다.'}
-      if(/음소거|꺼|끄|무음/.test(t)&&!/켜/.test(t)){A.volume('mute');return '소리를 끕니다.'}
-      if(/음소거해제|소리켜|살려/.test(t)){A.volume('unmute');return '소리를 켭니다.'}
-      if(/올려|키워|크게|높여|업/.test(t)){A.volume('up');A.volume('up');return '소리를 키웠습니다.'}
-      if(/내려|줄여|작게|낮춰|다운/.test(t)){A.volume('down');A.volume('down');return '소리를 줄였습니다.'}
-      return null;
-    })();
-    if(vol!==null)return vol;
     var ap=null;
     for(var i=0;i<APPS.length;i++){if(APPS[i][0].test(t)){ap=[APPS[i][1],APPS[i][2]];break}}
     var verb=/켜|열|틀|실행|보여|들려|들을|듣|띄워|가자|가줘|시작/.test(t);
@@ -1228,7 +1216,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var AI_CMDS=['라디오 켜','음악 틀어','네비 켜','블루투스 열어','비디오 열어','카링크 켜','<앱 이름> 열어',
     '브레이브로 <사이트 이름> 열어줘','브레이브로 <검색어> 검색해줘','크롬으로 <검색어> 검색해줘',
     '날씨','몇시','날짜','밝게','어둡게','밝기 보통','밝기 자동','테마','24시간','12시간',
-    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','<연락처 이름>에게 전화해','볼륨 올려','볼륨 줄여','볼륨 50으로'];
+    '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','<연락처 이름>에게 전화해'];
   function aiLists(){
     var o='',ap=[];
     try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
