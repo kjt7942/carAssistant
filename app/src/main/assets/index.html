@@ -1498,7 +1498,9 @@ html[data-dim="3"] .gd{opacity:.8}
     $('akMsg').textContent=m||(has?('키가 저장되어 있습니다 (끝 '+A.keyTail()+'). 새 키를 입력하면 바꿉니다.'):'오픈라우터 API 키를 붙여넣거나 입력해 주세요. 키는 이 기기 안에만 저장됩니다.');
   }
   /* ---------- AI 연결: 오픈라우터 / 헤르메스 에이전트 ---------- */
-  var HM_DEFAULT='http://100.93.226.13:8642/v1';
+  var HM_DEFAULT='http://100.123.241.92:8642/v1';
+  /* 서버 이전: 저장된 주소가 예전 IP면 새 주소로 자동 교체 (키는 그대로) */
+  (function(){try{var i=A&&A.aiInfo&&JSON.parse(A.aiInfo());if(i&&i.hUrl&&i.hUrl.indexOf('100.93.226.13')>=0&&i.hKey)A.setHermes(i.hUrl.replace('100.93.226.13','100.123.241.92'),'')}catch(e){}})();
   function aiInfo(){try{return JSON.parse(A.aiInfo())}catch(e){return null}}
   function aiProv(){var i=A&&A.aiInfo?aiInfo():null;return i?i.prov:'or'}
   function akDraw(m){
