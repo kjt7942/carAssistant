@@ -723,6 +723,18 @@ html[data-dim="3"] .gd{opacity:.8}
     return fetch(url,o).then(function(r){clearTimeout(tm);return r},function(e){clearTimeout(tm);throw (e&&e.name==='AbortError')?new Error('응답 시간 초과'):e});
   }
 
+  /* 날씨·위치 이름은 VPN(테일스케일)을 거치지 않는 망으로 받는다 (앱 v48 이상). 구버전은 기존 방식 */
+  var httpWait={},httpSeq=0;
+  window.onNativeHttp=function(o){var w=httpWait[o.id];if(!w)return;delete httpWait[o.id];clearTimeout(w.tm);if(o.err)w.rej(new Error(o.err));else w.res({ok:o.status>=200&&o.status<300,status:o.status,json:function(){return Promise.resolve(JSON.parse(o.body))}})};
+  function fetchPlain(url,ms){
+    if(!(A&&A.httpGet))return fetchT(url,null,ms);
+    return new Promise(function(res,rej){
+      var id='h'+(++httpSeq);
+      httpWait[id]={res:res,rej:rej,tm:setTimeout(function(){delete httpWait[id];rej(new Error('응답 시간 초과'))},ms||20000)};
+      try{A.httpGet(id,url)}catch(e){clearTimeout(httpWait[id].tm);delete httpWait[id];rej(e)}
+    });
+  }
+
   /* ---------- 시계 (한국 시간 고정) ---------- */
   var fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'});
   function seoulNow(){
@@ -885,7 +897,7 @@ html[data-dim="3"] .gd{opacity:.8}
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=Asia%2FSeoul&forecast_days=1&wind_speed_unit=ms';
     var usedDef=!loc;
     function hm(v){var m=/T(\d\d):(\d\d)/.exec(String(v||''));return m?(+m[1])*60+(+m[2]):null}
-    fetchT(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
+    fetchPlain(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
       var cu=j.current,d=j.daily;
       wx={temp:cu.temperature_2m,feels:cu.apparent_temperature,code:cu.weather_code,wind:cu.wind_speed_10m,
         hi:d.temperature_2m_max[0],lo:d.temperature_2m_min[0],pop:d.precipitation_probability_max[0],
@@ -899,7 +911,7 @@ html[data-dim="3"] .gd{opacity:.8}
   }
   function geocode(c){
     if(placeFor&&km(placeFor.lat,placeFor.lon,c.lat,c.lon)<8)return;
-    fetchT('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+c.lat.toFixed(4)+'&longitude='+c.lon.toFixed(4)+'&localityLanguage=ko')
+    fetchPlain('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+c.lat.toFixed(4)+'&longitude='+c.lon.toFixed(4)+'&localityLanguage=ko')
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){
         var nm=j.city||j.locality||j.principalSubdivision||'';
         if(nm){place=nm;placeFor=c;wxSave();drawWx()}

@@ -1512,6 +1512,32 @@ class MainActivity : Activity() {
 
 
 
+
+    // VPN(테일스케일)을 거치지 않는 인터넷 망으로 직접 접속한다 (날씨·위치 이름 조회용)
+    private fun plainNetwork(): android.net.Network? {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        var fallback: android.net.Network? = null
+        for (n in cm.allNetworks) {
+            val c = cm.getNetworkCapabilities(n) ?: continue
+            if (c.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)) continue
+            if (!c.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue
+            if (c.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)) return n
+            if (fallback == null) fallback = n
+        }
+        return fallback
+    }
+    private fun httpGetPlain(url: String): JSONObject {
+        val net = try { plainNetwork() } catch (e: Throwable) { null }
+        val c = (if (net != null) net.openConnection(URL(url)) else URL(url).openConnection()) as HttpURLConnection
+        c.connectTimeout = 10000; c.readTimeout = 12000
+        c.setRequestProperty("User-Agent", "carAssistant")
+        val code = c.responseCode
+        val st = if (code in 200..299) c.inputStream else c.errorStream
+        val body = st?.bufferedReader()?.use { it.readText().take(400000) } ?: ""
+        c.disconnect()
+        return JSONObject().put("status", code).put("body", body).put("via", if (net != null) "plain" else "default")
+    }
+
     // 연결 점검: 날씨 서버 등에 접속해 보고, VPN을 거치는 경로와 VPN을 거치지 않는 경로를 각각 시험한다
     private fun netCheckRun(): String {
         val sb = StringBuilder()
@@ -2167,6 +2193,14 @@ class MainActivity : Activity() {
         }
         @JavascriptInterface
         fun netCheck(): String { Thread { val r = try { netCheckRun() } catch (e: Throwable) { "실패: " + e.message }; js("onNativeNetCheck", JSONObject().put("text", r)) }.start(); return "시작" }
+        @JavascriptInterface
+        fun httpGet(id: String, url: String): String {
+            Thread {
+                val o = try { httpGetPlain(url) } catch (e: Throwable) { JSONObject().put("err", e.javaClass.simpleName + " " + (e.message ?: "").take(80)) }
+                js("onNativeHttp", o.put("id", id))
+            }.start()
+            return "시작"
+        }
         @JavascriptInterface
         fun callLogSync(): String { btExec.execute { try { callLogSyncRun() } catch (e: Throwable) {} }; return "시작" }
         @JavascriptInterface
