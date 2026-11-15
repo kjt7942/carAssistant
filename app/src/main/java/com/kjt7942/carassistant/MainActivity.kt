@@ -1526,16 +1526,24 @@ class MainActivity : Activity() {
         }
         return fallback
     }
+    private fun httpGetOnce(url: String, net: android.net.Network?): JSONObject {
+        val c = (if (net != null) net.openConnection(URL(url)) else URL(url).openConnection()) as HttpURLConnection
+        try {
+            c.connectTimeout = 10000; c.readTimeout = 12000
+            c.setRequestProperty("User-Agent", "carAssistant")
+            val code = c.responseCode
+            val st = if (code in 200..299) c.inputStream else c.errorStream
+            val body = st?.bufferedReader()?.use { it.readText().take(400000) } ?: ""
+            return JSONObject().put("status", code).put("body", body).put("via", if (net != null) "plain" else "default")
+        } finally { try { c.disconnect() } catch (e: Throwable) {} }
+    }
+    // VPN 제외 망으로 먼저 시도하고, 그 망에 붙을 수 없거나(EPERM 등) 실패하면 기본 경로로 다시 시도한다
     private fun httpGetPlain(url: String): JSONObject {
         val net = try { plainNetwork() } catch (e: Throwable) { null }
-        val c = (if (net != null) net.openConnection(URL(url)) else URL(url).openConnection()) as HttpURLConnection
-        c.connectTimeout = 10000; c.readTimeout = 12000
-        c.setRequestProperty("User-Agent", "carAssistant")
-        val code = c.responseCode
-        val st = if (code in 200..299) c.inputStream else c.errorStream
-        val body = st?.bufferedReader()?.use { it.readText().take(400000) } ?: ""
-        c.disconnect()
-        return JSONObject().put("status", code).put("body", body).put("via", if (net != null) "plain" else "default")
+        if (net != null) {
+            try { return httpGetOnce(url, net) } catch (e: Throwable) { /* 아래에서 기본 경로로 재시도 */ }
+        }
+        return httpGetOnce(url, null)
     }
 
     // 연결 점검: 날씨 서버 등에 접속해 보고, VPN을 거치는 경로와 VPN을 거치지 않는 경로를 각각 시험한다
