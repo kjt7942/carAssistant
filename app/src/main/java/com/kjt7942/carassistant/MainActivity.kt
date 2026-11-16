@@ -460,7 +460,17 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
+    // 스마트폰(작은 화면)에서는 앱을 끝낼 때 Tailscale VPN을 끊는다 (결제 앱 등이 VPN 때문에 안 되는 문제). 차(헤드유닛)는 그대로 둔다.
+    private fun tsOffOnExit(): Boolean =
+        getSharedPreferences("ui", MODE_PRIVATE).getBoolean("tsOff", resources.configuration.smallestScreenWidthDp < 600)
+
     override fun onDestroy() {
+        if (!isChangingConfigurations && tsOffOnExit()) {
+            try {
+                sendBroadcast(Intent("com.tailscale.ipn.DISCONNECT_VPN").setClassName("com.tailscale.ipn", "com.tailscale.ipn.IPNReceiver"))
+            } catch (e: Exception) {
+            }
+        }
         destroyed = true
         stopLocation()
         pairStop()
