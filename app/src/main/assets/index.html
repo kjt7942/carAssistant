@@ -905,7 +905,7 @@ html[data-dim="3"] .gd{opacity:.8}
       last={t:Date.now(),lat:c.lat,lon:c.lon,def:usedDef};wxErr='';wxFail=0;wxNext=0;
       wxSave();geocode(c);drawWx();drawClock();
     }).catch(function(e){
-      wxFail++;wxNext=Date.now()+[1,3,10,30][Math.min(wxFail,4)-1]*60000;
+      wxFail++;wxNext=Date.now()+[0.3,1,3,10][Math.min(wxFail,4)-1]*60000;
       wxErr='날씨 서비스에 연결하지 못했습니다 ('+(e&&e.message||'오류')+')';drawWx();drawStatus();
     }).then(function(){busy=false});
   }
