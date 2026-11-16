@@ -976,7 +976,7 @@ html[data-dim="3"] .gd{opacity:.8}
   function ovShow(state,text,resp){
     $('ov').hidden=false;$('ovState').textContent=state||'';$('ovText').textContent=text||'';$('ovResp').textContent=resp||'';
   }
-  var retPending=false,retSkip=false;
+  var retPending=false,retSkip=false,silentOk=false; /* silentOk: 앱 실행·라디오 조작 성공 시 안내 음성 없이 화면으로만 알린다 (라디오 소리와 겹치지 않게) */
   function retApp(){var v=store.get('retApp');return v===null?'prev':v}
   function ovHide(){
     $('ov').hidden=true;clearTimeout(ovTimer);ttsWait=null;convo=false;
@@ -1244,14 +1244,14 @@ html[data-dim="3"] .gd{opacity:.8}
           setTimeout(function(){try{A.radioCtl('@0/0:1')}catch(e){}},800);
           setTimeout(function(){try{A.radioCtl('13:3,'+rfx)}catch(e){}},1800);
           setTimeout(function(){try{A.radioCtl('13:3,'+rfx)}catch(e){}},3500);
-          return rnm+' '+(rfx/100)+' 메가헤르츠를 틀겠습니다.';
+          silentOk=true;return rnm+' '+(rfx/100)+' 메가헤르츠를 틀겠습니다.';
         }
       }
     }
     /* 라디오 제어 (시스템 서비스 연동) */
     var rdo=(function(){
       var fm=t.match(/(\d{2,3})[.점](\d{1,2})/),ctx=/라디오|fm|에프엠|주파수|맞춰|채널|방송/i.test(t);
-      function snd(spec,ok){var r='';try{r=A.radioCtl(spec)}catch(e){r='실패'}return /^보냄/.test(r)?ok:'라디오를 제어하지 못했습니다. '+r}
+      function snd(spec,ok){var r='';try{r=A.radioCtl(spec)}catch(e){r='실패'}if(/^보냄/.test(r)){silentOk=true;return ok}return '라디오를 제어하지 못했습니다. '+r}
       if(!A||!A.radioCtl||!ctx)return null;
       if(fm){var f=Math.round(parseFloat(fm[1]+'.'+fm[2])*100);if(f>=6500&&f<=10800)return snd('13:3,'+f,(f/100)+' 메가헤르츠로 맞춥니다.')}
       if(/(다음|앞).*(주파수|탐색|검색)|주파수.*(올려|위로)|탐색.*(올|다음)/.test(t))return snd('5','다음 주파수를 찾습니다.');
@@ -1333,7 +1333,7 @@ html[data-dim="3"] .gd{opacity:.8}
     if(!ap&&verb&&!/메모|루틴|동기화|정비|테마|밝기|업데이트|날씨/.test(t)){var f=findInstalled(t);if(f)ap=[f.p,f.n]}
     if(ap&&verb){
       var ok=false;try{ok=!!(A&&A.launchApp(ap[0]))}catch(e){}
-      if(ok){retSkip=true;return ap[1]+'를 엽니다.'}
+      if(ok){retSkip=true;silentOk=true;return ap[1]+'를 엽니다.'}
       return ap[1]+'를 열지 못했습니다.';
     }
     if(/테마/.test(t)){setTheme(THEMES[(THEMES.indexOf(theme)+1)%THEMES.length]);return '테마를 '+theme.toUpperCase()+'로 바꿨습니다.'}
@@ -1464,7 +1464,7 @@ html[data-dim="3"] .gd{opacity:.8}
         if(hm)ovTimer=setTimeout(function(){if(aiPending)ovShow('헤르메스가 처리하는 중…',q,'도구를 쓰는 중이면 1분쯤 걸릴 수 있습니다.')},10000);
         setTimeout(function(){if(aiPending&&aiLast===q&&!ovClosed){aiPending=0;clearTimeout(ovTimer);ovShow('AI 응답 지연',q,'응답이 오지 않았습니다. 다시 말씀해 주세요.');ovTimer=setTimeout(ovHide,6000)}},hm?130000:60000);
         return}
-      ovShow('인식 완료',e.text,r);if(askAgain){askAgain=false;sayThenListen(r)}else sayThenHide(r);
+      ovShow('인식 완료',e.text,r);if(askAgain){silentOk=false;askAgain=false;sayThenListen(r)}else if(silentOk){silentOk=false;clearTimeout(ovTimer);ttsWait=null;ovTimer=setTimeout(ovHide,2500)}else sayThenHide(r);
     }
     else if(e.type==='error'){
       if(convo){ovShow('대화를 마칩니다','','');ovTimer=setTimeout(ovHide,1200);return} /* 대화 중 말이 없으면 조용히 끝낸다 */
