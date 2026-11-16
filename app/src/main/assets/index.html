@@ -1032,7 +1032,14 @@ html[data-dim="3"] .gd{opacity:.8}
   }
 
   /* ---- 차량 블루투스 연동 도우미 ---- */
-  var askAgain=false;
+  var askAgain=false,holdPend=false;
+  function pendClear(){window.__pendDial=null;try{if(A&&A.setDialPending)A.setDialPending(false)}catch(e){}}
+  window.onHwKey=function(o){
+    var pd=window.__pendDial;pendClear();if(!pd)return;
+    clearTimeout(ovTimer);ttsWait=null;
+    if(o.key==='call'){var m=btSnd(pd.spec,pd.ok);ovClosed=false;ovShow('전화 연결',pd.who,m);ovTimer=setTimeout(ovHide,3000)}
+    else{ovShow('전화 취소',pd.who,'취소했습니다.');ovTimer=setTimeout(ovHide,1500)}
+  };
   function btSnd(spec,ok){var r='';try{r=A.radioCtl(spec)}catch(e){r='실패'}return /^보냄/.test(r)?ok:'전화 기능을 쓰지 못했습니다. '+r}
   function btScreen(on){var r='';try{r=A.screen(on)}catch(e){r='실패'}if(!/^보냄/.test(r))return '화면을 제어하지 못했습니다. '+r;retSkip=true;return on?'화면을 켭니다.':'화면을 끕니다.'}
   function jget(k,d){try{var v=JSON.parse(store.get(k)||'null');return v==null?d:v}catch(e){return d}}
@@ -1264,7 +1271,7 @@ html[data-dim="3"] .gd{opacity:.8}
     /* 전화·통화기록·문자·화면 (차량 블루투스 모듈) */
     var pend=window.__pendDial;
     if(pend){
-      window.__pendDial=null;
+      pendClear();
       if(Date.now()-pend.at<40000){
         if(/^(네|예|응|어|그래|맞아|맞다|맞습니다|좋아|걸어|확인|오케이|ok|웅|ㅇㅇ)/i.test(t))return btSnd(pend.spec,pend.ok);
         if(/^(아니|아냐|취소|그만|안걸|하지마|노|틀려|다시)/.test(t))return '전화를 취소했습니다.';
@@ -1273,7 +1280,11 @@ html[data-dim="3"] .gd{opacity:.8}
     var phn=(function(){
       if(!A||!A.radioCtl)return null;
       function cGet(){var o={};try{o=JSON.parse(store.get('contacts')||'{}')||{}}catch(e){}return o}
-      function ask(spec,who){window.__pendDial={spec:spec,ok:who+'께 전화를 겁니다.',at:Date.now()};askAgain=true;return who+'께 전화를 걸까요? 맞으면 네, 아니면 아니요라고 말씀하세요.'}
+      function ask(spec,who){
+        window.__pendDial={spec:spec,ok:who+'께 전화를 겁니다.',who:who,at:Date.now()};holdPend=true;
+        try{if(A.setDialPending)A.setDialPending(true)}catch(e){}
+        return who+'께 전화를 겁니다. 핸들의 통화 버튼을 누르면 연결, 통화 종료 버튼을 누르면 취소됩니다.';
+      }
       var sv=t.match(/(?:전화|연락처)(?:번호)?저장(.+?)(01\d[\d-]{7,10})$/)||t.match(/(.+?)(?:전화번호|번호)?(?:는|을)?(01\d[\d-]{7,10})(?:로|으로|저장)/);
       if(sv&&/저장/.test(t)){var nm=sv[1].replace(/전화|번호|연락처|저장/g,'');if(nm){var c=cGet();c[nm]=sv[2].replace(/-/g,'');store.set('contacts',JSON.stringify(c));return nm+' 번호를 저장했습니다.'}}
       if(/(연락처|전화번호부|주소록).*(불러|동기화|가져|갱신|업데이트)/.test(t)&&A.contactSync){window.__contactManual=true;A.contactSync();return '휴대폰 연락처를 가져옵니다. 잠시 기다려 주세요.'}
@@ -1464,7 +1475,7 @@ html[data-dim="3"] .gd{opacity:.8}
         if(hm)ovTimer=setTimeout(function(){if(aiPending)ovShow('헤르메스가 처리하는 중…',q,'도구를 쓰는 중이면 1분쯤 걸릴 수 있습니다.')},10000);
         setTimeout(function(){if(aiPending&&aiLast===q&&!ovClosed){aiPending=0;clearTimeout(ovTimer);ovShow('AI 응답 지연',q,'응답이 오지 않았습니다. 다시 말씀해 주세요.');ovTimer=setTimeout(ovHide,6000)}},hm?130000:60000);
         return}
-      ovShow('인식 완료',e.text,r);if(askAgain){silentOk=false;askAgain=false;sayThenListen(r)}else if(silentOk){silentOk=false;clearTimeout(ovTimer);ttsWait=null;ovTimer=setTimeout(ovHide,2500)}else sayThenHide(r);
+      ovShow('인식 완료',e.text,r);if(askAgain){silentOk=false;askAgain=false;sayThenListen(r)}else if(holdPend){holdPend=false;clearTimeout(ovTimer);ttsWait=null;say(String(r).replace(/[*#`_>~-]/g,' '));ovTimer=setTimeout(function(){if(window.__pendDial){pendClear();ovShow('전화 취소','','시간이 지나 취소했습니다.');ovTimer=setTimeout(ovHide,2000)}else ovHide()},40000)}else if(silentOk){silentOk=false;clearTimeout(ovTimer);ttsWait=null;ovTimer=setTimeout(ovHide,2500)}else sayThenHide(r);
     }
     else if(e.type==='error'){
       if(convo){ovShow('대화를 마칩니다','','');ovTimer=setTimeout(ovHide,1200);return} /* 대화 중 말이 없으면 조용히 끝낸다 */

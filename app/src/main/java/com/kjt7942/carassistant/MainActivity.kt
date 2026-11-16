@@ -66,6 +66,7 @@ class MainActivity : Activity() {
     private val ioExec = Executors.newSingleThreadExecutor()
     private val aiExec = Executors.newSingleThreadExecutor()
     private var keyProbe = false
+    @Volatile private var dialPending = false
     private var mediaSession: MediaSession? = null
 
     private var tts: TextToSpeech? = null
@@ -1361,6 +1362,14 @@ class MainActivity : Activity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (keyProbe) keyEmit("key", event)
+        // 전화 걸기 확인 중: 핸들 통화 버튼 = 전화 걸기, 통화 종료 버튼 = 취소
+        if (dialPending && (event.keyCode == KeyEvent.KEYCODE_CALL || event.keyCode == KeyEvent.KEYCODE_ENDCALL)) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                dialPending = false
+                js("onHwKey", JSONObject().put("key", if (event.keyCode == KeyEvent.KEYCODE_CALL) "call" else "end"))
+            }
+            return true
+        }
         // 전화 종료 버튼(통화 중이 아닐 때): 뒤로 가기 역할. 맨 처음 화면이면 비서 앱을 닫고 이전 앱으로 간다.
         if (!keyProbe && event.keyCode == KeyEvent.KEYCODE_ENDCALL && inFront && !inCall()) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
@@ -2209,6 +2218,8 @@ class MainActivity : Activity() {
             }.start()
             return "시작"
         }
+        @JavascriptInterface
+        fun setDialPending(on: Boolean) { dialPending = on }
         @JavascriptInterface
         fun callLogSync(): String { btExec.execute { try { callLogSyncRun() } catch (e: Throwable) {} }; return "시작" }
         @JavascriptInterface
