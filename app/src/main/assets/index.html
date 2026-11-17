@@ -730,7 +730,7 @@ html[data-dim="3"] .gd{opacity:.8}
     if(!(A&&A.httpGet))return fetchT(url,null,ms);
     return new Promise(function(res,rej){
       var id='h'+(++httpSeq);
-      httpWait[id]={res:res,rej:rej,tm:setTimeout(function(){delete httpWait[id];rej(new Error('응답 시간 초과'))},ms||20000)};
+      httpWait[id]={res:res,rej:rej,tm:setTimeout(function(){delete httpWait[id];rej(new Error('응답 시간 초과'))},ms||32000)};
       try{A.httpGet(id,url)}catch(e){clearTimeout(httpWait[id].tm);delete httpWait[id];rej(e)}
     });
   }
@@ -836,12 +836,12 @@ html[data-dim="3"] .gd{opacity:.8}
   var DEF={lat:36.5866,lon:128.1867,name:'문경시'};
   var loc=null,wx=null,wxErr='',busy=false,last={t:0,lat:null,lon:null},place='',placeFor=null;
   /* 통신을 아끼는 규칙: 1시간에 한 번, 또는 20km 넘게 이동했을 때만 받는다. 화면이 안 보일 때는 받지 않는다.
-     실패하면 1·3·10·30분 간격으로만 다시 시도한다. 마지막 날씨는 저장해 두고 앱을 다시 켜도 그대로 쓴다. */
-  var WX_AGE=60*60*1000,WX_KM=20,wxFail=0,wxNext=0,visible=true;
+     실패하면 18초·1·3·10분 간격으로 다시 시도한다. 마지막 날씨는 저장해 두고 앱을 다시 켜도 그대로 쓴다. */
+  var WX_AGE=60*60*1000,WX_KM=20,wxFail=0,wxNext=0,visible=true,wxErrRaw='';
   (function(){
     try{
       var sv=JSON.parse(store.get('wxc')||'null');
-      if(sv&&sv.wx&&num(sv.wx.temp)&&Date.now()-sv.wx.at<6*3600*1000&&Date.now()>=sv.wx.at){wx=sv.wx;last=sv.last||last;place=sv.place||'';placeFor=sv.placeFor||null}
+      if(sv&&sv.wx&&num(sv.wx.temp)&&Date.now()-sv.wx.at<24*3600*1000&&Date.now()>=sv.wx.at){wx=sv.wx;last=sv.last||last;place=sv.place||'';placeFor=sv.placeFor||null}
     }catch(e){}
   })();
   function wxSave(){try{store.set('wxc',JSON.stringify({wx:wx,last:last,place:place,placeFor:placeFor}))}catch(e){}}
@@ -906,7 +906,10 @@ html[data-dim="3"] .gd{opacity:.8}
       wxSave();geocode(c);drawWx();drawClock();
     }).catch(function(e){
       wxFail++;wxNext=Date.now()+[0.3,1,3,10][Math.min(wxFail,4)-1]*60000;
-      wxErr='날씨 서비스에 연결하지 못했습니다 ('+(e&&e.message||'오류')+')';drawWx();drawStatus();
+      var em=String(e&&e.message||'');
+      /* 긴 영문 오류는 화면을 넘치므로 짧은 우리말로 바꾼다 (자세한 내용은 점검 화면에서) */
+      var why=/timeout|timed out|시간 초과/i.test(em)?'응답이 늦습니다':/UnknownHost|resolve|ENOTFOUND|Unable to resolve/i.test(em)?'인터넷에 연결되지 않았습니다':/EPERM|refused|unreach|Network is/i.test(em)?'인터넷 연결이 불안정합니다':/^HTTP/.test(em)?'날씨 서버 오류 ('+em+')':'연결 오류';
+      wxErr='날씨를 받지 못했습니다 · '+why+' · 곧 다시 시도합니다';wxErrRaw=em;drawWx();drawStatus();
     }).then(function(){busy=false});
   }
   function geocode(c){
@@ -1166,7 +1169,7 @@ html[data-dim="3"] .gd{opacity:.8}
   var instApps=null,instAt=0;
   function nm(x){return String(x||'').toLowerCase().replace(/[\s.·_-]+/g,'')}
   function findInstalled(t){
-    if(!instApps||Date.now()-instAt>600000){try{instApps=JSON.parse(A&&A.listApps?A.listApps():'[]')}catch(e){instApps=[]}instAt=Date.now()}
+    if(!instApps||Date.now()-instAt>60000){try{instApps=JSON.parse(A&&A.listApps?A.listApps():'[]')}catch(e){instApps=[]}instAt=Date.now()}
     if(!instApps.length)return null;
     var tl=nm(t),hit=null,i;
     function byLabel(l){var k=nm(l);for(var j=0;j<instApps.length;j++)if(nm(instApps[j].n)===k)return instApps[j];return null}
@@ -1396,7 +1399,7 @@ html[data-dim="3"] .gd{opacity:.8}
     '메모 <메모할 내용>','메모 읽어줘','<정비 항목> 언제 했어','정비','<루틴 이름>','동기화','새로고침','MBC 라디오 틀어','<채널 이름> 틀어','MBC 라디오 90.5 저장','다음 방송','이전 방송','다음 주파수','이전 주파수','라디오 <주파수 예: 93.1>','다음 곡','이전 곡','음악 일시정지','전화 받아','전화 끊어','<이름>에게 전화해','<이름> 010 1234 5678 저장','휴대폰 연락처 불러와','통화기록 불러와','통화기록 보여줘','최근 통화 알려줘','부재중 전화 알려줘','마지막 통화한 사람에게 전화','문자 읽어줘','화면 꺼줘','<연락처 이름>에게 전화해'];
   function aiLists(){
     var o='',ap=[];
-    try{if(!instApps||Date.now()-instAt>600000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
+    try{if(!instApps||Date.now()-instAt>60000){instApps=JSON.parse(A&&A.listApps?A.listApps():'[]');instAt=Date.now()}}catch(e){instApps=instApps||[]}
     (instApps||[]).forEach(function(a){if(a.p!=='com.kjt7942.carassistant'&&ap.length<70)ap.push(a.n)});
     if(ap.length)o+='\n설치된 앱: '+ap.join(', ');
     var rn=live(D.routines).map(function(r){return r.name});if(rn.length)o+='\n루틴: '+rn.join(', ');
@@ -1504,7 +1507,7 @@ html[data-dim="3"] .gd{opacity:.8}
       ['마이크 권한',!!d.mic,d.mic?'허용':'허용 안 됨'],
       ['음성 인식 서비스',!!d.speech,d.speech?'사용 가능':'이 기기에 음성 인식 서비스가 없음'],
       ['음성 출력(TTS)',!!(d.ttsReady&&d.ttsKo>=0),d.ttsReady?(d.ttsKo>=0?'한국어 사용 가능 · 엔진 '+d.ttsEngines+'개':'엔진은 있으나 한국어 음성 데이터 없음'):'음성 출력 엔진 없음'],
-      ['인터넷·날씨',!!wx,wx?'날씨 수신 성공':(wxErr||'아직 수신 전')],
+      ['인터넷·날씨',!!wx,wx?'날씨 수신 성공':((wxErr||'아직 수신 전')+(wxErrRaw?' ('+wxErrRaw+')':''))],
       ['블루투스',d.btHas===undefined?null:(d.btHas?!!d.btOn:false),d.btHas===undefined?'앱 업데이트 필요':(d.btHas?((d.btOn?'켜짐':'꺼짐')+(d.btBonded&&d.btBonded.length?' · 등록 '+d.btBonded.length+'대 ('+d.btBonded.slice(0,3).join(', ')+(d.btBonded.length>3?' 외 '+(d.btBonded.length-3)+'대':'')+')':' · 등록된 기기 없음')):(d.btErr==='SecurityException'?'"권한 다시 요청"에서 근처 기기 권한을 허용해 주세요':d.btErr?'조회 실패('+d.btErr+')':'블루투스 장치 없음'))],
       d.aiProv==='hermes'?['AI 연결(헤르메스)',d.hermes?true:null,d.hermes?('연결 정보 저장됨 · 키 끝 '+(A&&A.keyTail?A.keyTail():'')):'주소·키 없음 — 옵션 → 시스템 → AI'] :
       ['AI 연결(오픈라우터)',d.aiKey?true:null,d.aiKey?('키 저장됨 · 끝 '+(A&&A.keyTail?A.keyTail():'')):'키 없음 — "AI 키 설정"에서 입력'],
@@ -1984,15 +1987,19 @@ html[data-dim="3"] .gd{opacity:.8}
       if((m=/^(?:기다리기|대기)\s*[:：]?\s*(\d+)/.exec(st))){
         wait=Math.min(60,+m[1])*1000;ovShow('루틴 · '+r.name,'',m[1]+'초 기다리는 중');
       }else{
-        var tx;
+        var tx,quiet=false;
         if((m=/^(?:말하기|말)\s*[:：]\s*(.+)$/.exec(st)))tx=m[1];
-        else{tx=dataCommand(st);if(tx===null)tx=command(st);if(tx===null)tx='"'+st+'" 동작은 알 수 없어 건너뜁니다.'}
+        else{silentOk=false;tx=dataCommand(st);if(tx===null)tx=command(st);if(tx===null)tx='"'+st+'" 동작은 알 수 없어 건너뜁니다.';quiet=silentOk;silentOk=false}
         ovShow('루틴 · '+r.name+' ('+i+'/'+steps.length+')',st,tx);
+        /* 라디오·앱 실행처럼 소리가 나는 동작은 안내 음성 없이 화면으로만 (라디오 소리와 겹치지 않게) */
+        if(quiet){wait=2500}
+        else{
         var talk=A&&A.canSpeak&&A.canSpeak();say(tx);
         if(talk&&A.hasTtsDone&&A.hasTtsDone()){
           ttsWait=function(){ttsWait=null;clearTimeout(ovTimer);ovTimer=setTimeout(next,700)};
           wait=tx.length*400+8000; /* 끝 신호가 오지 않을 때의 안전장치 */
         }else wait=Math.max(1800,tx.length*230+900);
+        }
       }
       ovTimer=setTimeout(next,wait);
     }
@@ -2182,7 +2189,9 @@ html[data-dim="3"] .gd{opacity:.8}
     function after(){
       dueCheck();
       var au=live(D.routines).filter(function(r){return r.auto})[0];
-      if(au&&$('ov').hidden&&!window.uiBusy())setTimeout(function(){if($('ov').hidden&&!window.uiBusy()){retPending=false;runRoutine(au)}},dueShown?4000:500);
+      /* 화면이 다시 읽혀도(업데이트·복구) 3분 안에 두 번 돌지 않게 */
+      var lastAu=+(store.get('auAt')||0);if(au&&Date.now()-lastAu>=0&&Date.now()-lastAu<180000)au=null;
+      if(au&&$('ov').hidden&&!window.uiBusy())setTimeout(function(){if($('ov').hidden&&!window.uiBusy()){store.set('auAt',String(Date.now()));retPending=false;runRoutine(au)}},dueShown?4000:500);
     }
     if(ghTok())sync(after);else after();
   },12000);

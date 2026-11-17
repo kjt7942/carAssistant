@@ -360,6 +360,12 @@ class MainActivity : Activity() {
         web.addJavascriptInterface(Bridge(), "Android")
         loadUi()
 
+        // 앱이 설치·삭제되면 앱 목록을 다시 만든다
+        try {
+            val pf = IntentFilter().apply { addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED); addAction(Intent.ACTION_PACKAGE_REPLACED); addDataScheme("package") }
+            registerReceiver(pkgReceiver, pf)
+        } catch (e: Exception) {
+        }
         val filter = IntentFilter(actionInstall)
         if (Build.VERSION.SDK_INT >= 33) {
             registerReceiver(installReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -374,6 +380,8 @@ class MainActivity : Activity() {
         main.postDelayed(checkRunnable, 8000)
         main.postDelayed({ announceUpdated() }, 6000)
         main.postDelayed({ emitIntent(intent) }, 1800)
+        // 시동 직후 바쁜 시간이 지나면 앱 목록을 미리 만들어 둔다
+        main.postDelayed({ Thread { try { appsList(true) } catch (e: Throwable) {} }.start() }, 20000)
     }
 
     private fun fullscreenOn(): Boolean = getSharedPreferences("ui", MODE_PRIVATE).getBoolean("full", true)
@@ -429,6 +437,7 @@ class MainActivity : Activity() {
         Thread { ensureVpn(0) }.start()
         if (!btHubOk) btHubKeepTrying()
         super.onResume()
+        try { web.onResume() } catch (e: Exception) {}
         inFront = true
         applyFullscreen()
         startLocation()
@@ -457,6 +466,8 @@ class MainActivity : Activity() {
         setKeyProbe(false)
         abandonFocus()
         stopLocation()
+        // 화면 그리기·애니메이션만 쉰다 (자바스크립트는 계속 돌아 전화·문자 알림과 루틴은 그대로 동작)
+        try { web.onPause() } catch (e: Exception) {}
         super.onPause()
     }
 
@@ -478,6 +489,10 @@ class MainActivity : Activity() {
         main.removeCallbacksAndMessages(null)
         try {
             unregisterReceiver(installReceiver)
+        } catch (e: Exception) {
+        }
+        try {
+            unregisterReceiver(pkgReceiver)
         } catch (e: Exception) {
         }
         try {
@@ -1545,10 +1560,11 @@ class MainActivity : Activity() {
         }
         return fallback
     }
-    private fun httpGetOnce(url: String, net: android.net.Network?): JSONObject {
+    private fun httpGetOnce(url: String, net: android.net.Network?, quick: Boolean = false): JSONObject {
         val c = (if (net != null) net.openConnection(URL(url)) else URL(url).openConnection()) as HttpURLConnection
         try {
-            c.connectTimeout = 10000; c.readTimeout = 12000
+            // 첫 시도는 짧게 끊어야 화면 쪽 제한 시간 안에 다른 경로로 다시 시도할 수 있다
+            if (quick) { c.connectTimeout = 5000; c.readTimeout = 7000 } else { c.connectTimeout = 8000; c.readTimeout = 10000 }
             c.setRequestProperty("User-Agent", "carAssistant")
             val code = c.responseCode
             val st = if (code in 200..299) c.inputStream else c.errorStream
@@ -1560,7 +1576,7 @@ class MainActivity : Activity() {
     private fun httpGetPlain(url: String): JSONObject {
         val net = try { plainNetwork() } catch (e: Throwable) { null }
         if (net != null) {
-            try { return httpGetOnce(url, net) } catch (e: Throwable) { /* 아래에서 기본 경로로 재시도 */ }
+            try { return httpGetOnce(url, net, true) } catch (e: Throwable) { /* 아래에서 기본 경로로 재시도 */ }
         }
         return httpGetOnce(url, null)
     }
@@ -1924,6 +1940,39 @@ class MainActivity : Activity() {
 
     // ---------- 화면에서 부르는 기능 ----------
 
+    private val pkgReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: Context?, i: Intent?) { appsCache = null }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) appsCache = null
+    }
+
+    // 설치된 앱 목록은 만드는 데 1~2초 걸려(헤드유닛) 미리 만들어 두고 10분간 재사용한다 — 첫 음성 명령이 멈칫하지 않게
+    @Volatile private var appsCache: String? = null
+    @Volatile private var appsAt = 0L
+    private fun appsList(force: Boolean): String {
+        val c = appsCache
+        if (!force && c != null && System.currentTimeMillis() - appsAt < 600000) return c
+        val arr = JSONArray()
+        try {
+            val i = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val seen = HashSet<String>()
+            val list = packageManager.queryIntentActivities(i, 0)
+                .map { Pair(it.loadLabel(packageManager).toString(), it.activityInfo.packageName) }
+                .sortedBy { it.first.lowercase() }
+            for ((label, pkg) in list) {
+                if (!seen.add(pkg)) continue
+                arr.put(JSONObject().put("n", label).put("p", pkg))
+            }
+        } catch (e: Exception) {
+        }
+        val r = arr.toString()
+        appsCache = r; appsAt = System.currentTimeMillis()
+        return r
+    }
+
     inner class Bridge {
         @JavascriptInterface
         fun listen() {
@@ -2084,22 +2133,7 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun listApps(): String {
-            val arr = JSONArray()
-            try {
-                val i = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-                val seen = HashSet<String>()
-                val list = packageManager.queryIntentActivities(i, 0)
-                    .map { Pair(it.loadLabel(packageManager).toString(), it.activityInfo.packageName) }
-                    .sortedBy { it.first.lowercase() }
-                for ((label, pkg) in list) {
-                    if (!seen.add(pkg)) continue
-                    arr.put(JSONObject().put("n", label).put("p", pkg))
-                }
-            } catch (e: Exception) {
-            }
-            return arr.toString()
-        }
+        fun listApps(): String = appsList(false)
 
         @JavascriptInterface
         fun appsReport(): String {
