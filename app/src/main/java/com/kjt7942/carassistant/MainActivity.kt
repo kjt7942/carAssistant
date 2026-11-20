@@ -1341,6 +1341,10 @@ class MainActivity : Activity() {
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
         i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+        // 말이 느린 사람도 중간에 끊기지 않게: 말 사이 쉬는 시간을 더 오래 기다린다 (인식기가 무시하면 화면 쪽 이어받기가 보완)
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 3000L)
         try {
             r.startListening(i)
         } catch (e: Exception) {
@@ -1977,6 +1981,12 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun listen() {
             main.post { startListening(true) }
+        }
+
+        /** 말이 이어질 것 같을 때 신호음 없이 바로 다시 듣는다 */
+        @JavascriptInterface
+        fun listenMore() {
+            main.post { startListening(false) }
         }
 
         @JavascriptInterface

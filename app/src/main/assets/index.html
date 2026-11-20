@@ -1457,7 +1457,8 @@ html[data-dim="3"] .gd{opacity:.8}
       if(run)sayThenHide(reply);else sayThenListen(reply);
     }else{ovShow('AI 연결 실패',aiLast,e.err||'알 수 없는 오류');ovTimer=setTimeout(ovHide,9000)}
   };
-  var ovClosed=false;
+  var ovClosed=false,carry='',carryN=0;
+  var INCOMPLETE=/(에게|한테|께|에서|에|을|를|은|는|와|과|랑|하고|으로|의|부터|까지|그리고|그런데|그래서|그러면|저기|해서|인데)$|^(전화|통화|문자)(\s*(해|해줘|걸어|걸어줘))?$/;
   window.onNativeSpeech=function(e){
     if(ovClosed)return;
     clearTimeout(ovTimer);ttsWait=null;
@@ -1467,6 +1468,14 @@ html[data-dim="3"] .gd{opacity:.8}
       if(e.type==='result'&&e.text){addMemo(e.text);ovShow('메모 저장',e.text,'저장했습니다');ovTimer=setTimeout(ovHide,1200);return}
       ovShow(e.type==='error'?'음성 인식 실패':'알아듣지 못했습니다','',e.type==='error'?e.text:'다시 ＋ 추가를 눌러 말씀해 주세요.');ovTimer=setTimeout(ovHide,3000);return;
     }
+    /* 말이 느려 중간에 끊긴 경우: 문장이 덜 끝난 것 같으면 신호음 없이 다시 들어 이어 붙인다 (최대 2번) */
+    if(e.type==='result'){
+      var tx0=((carry?carry+' ':'')+(e.text||'')).trim();
+      if(e.text&&carryN<2&&A&&A.listenMore&&INCOMPLETE.test(tx0)){carry=tx0;carryN++;ovShow('계속 말씀하세요…',tx0,'말씀이 끝나지 않은 것 같아 더 듣고 있습니다');try{A.listenMore()}catch(er){carry='';carryN=0;e={type:'result',text:tx0};}
+        if(carry)return}
+      else{carry='';carryN=0;e={type:'result',text:tx0}}
+    }else if(e.type==='error'&&carry){var tc=carry;carry='';carryN=0;e={type:'result',text:tc}}
+    else if(e.type==='partial'&&carry)e={type:'partial',text:carry+' '+(e.text||'')};
     if(e.type==='ready'){ovShow('듣는 중… 말씀해 주세요','','')}
     else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
     else if(e.type==='result'){
@@ -1491,9 +1500,9 @@ html[data-dim="3"] .gd{opacity:.8}
   };
   $('bVoice').addEventListener('click',function(){
     if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
-    ovClosed=false;aiPending=0;memoMode=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
+    ovClosed=false;carry='';carryN=0;aiPending=0;memoMode=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
   });
-  $('ovClose').addEventListener('click',function(){ovClosed=true;memoMode=false;ovHide();if(A)try{A.stopListening()}catch(e){}});
+  $('ovClose').addEventListener('click',function(){ovClosed=true;carry='';carryN=0;memoMode=false;ovHide();if(A)try{A.stopListening()}catch(e){}});
 
   /* ---------- 진단 ---------- */
   function showDiag(){
