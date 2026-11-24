@@ -1483,7 +1483,9 @@ html[data-dim="3"] .gd{opacity:.8}
       if(run)sayThenHide(reply);else sayThenListen(reply);
     }else{ovShow('AI 연결 실패',aiLast,e.err||'알 수 없는 오류');ovTimer=setTimeout(ovHide,9000)}
   };
-  var ovClosed=false,carry='',carryN=0;
+  var ovClosed=false,carry='',carryN=0,graceTm=null;
+  function graceMs(){var v=store.get('grace');return v===null||v===''?2200:Math.max(0,+v||0)}
+  function graceDone(){clearTimeout(graceTm);var t=carry;carry='';carryN=0;try{A.cancelListen()}catch(x){}if(t&&!ovClosed)window.onNativeSpeech({type:'result',text:t,_g:1})}
   var INCOMPLETE=/(에게|한테|께|에서|에|을|를|은|는|와|과|랑|하고|으로|의|부터|까지|그리고|그런데|그래서|그러면|저기|해서|인데)$|^(전화|통화|문자)(\s*(해|해줘|걸어|걸어줘))?$/;
   window.onNativeSpeech=function(e){
     if(ovClosed)return;
@@ -1494,21 +1496,30 @@ html[data-dim="3"] .gd{opacity:.8}
       if(e.type==='result'&&e.text){addMemo(e.text);ovShow('메모 저장',e.text,'저장했습니다');ovTimer=setTimeout(ovHide,1200);return}
       ovShow(e.type==='error'?'음성 인식 실패':'알아듣지 못했습니다','',e.type==='error'?e.text:'다시 ＋ 추가를 눌러 말씀해 주세요.');ovTimer=setTimeout(ovHide,3000);return;
     }
-    /* 말이 느려 중간에 끊긴 경우: 문장이 덜 끝난 것 같으면 신호음 없이 다시 들어 이어 붙인다 (최대 2번) */
-    if(e.type==='result'){
-      var tx0=((carry?carry+' ':'')+(e.text||'')).trim();
-      if(e.text&&carryN<2&&A&&A.listenMore&&INCOMPLETE.test(tx0)){carry=tx0;carryN++;ovShow('계속 말씀하세요…',tx0,'말씀이 끝나지 않은 것 같아 더 듣고 있습니다');try{A.listenMore()}catch(er){carry='';carryN=0;e={type:'result',text:tx0};}
-        if(carry)return}
-      else{carry='';carryN=0;e={type:'result',text:tx0}}
-    }else if(e.type==='error'&&carry){var tc=carry;carry='';carryN=0;e={type:'result',text:tc}}
-    else if(e.type==='partial'&&carry)e={type:'partial',text:carry+' '+(e.text||'')};
+    /* 말이 느려 중간에 끊기는 문제: 인식기가 '끝'이라고 해도 바로 실행하지 않고, 신호음 없이 잠시(기본 2.2초) 더 듣는다.
+       그 사이 이어서 말하면 앞 말에 붙이고, 조용하면 그때 실행한다. 문장이 덜 끝난 듯하면 1.8초 더 기다린다. */
+    if(e.type==='result'&&!e._g){
+      var tx0=((carry?carry+' ':'')+(e.text||'')).trim(),GR=graceMs();
+      var quick=/^(예|네|응|아니|아니요|아뇨|그만|취소|됐어)[.!\s]*$/.test(tx0);
+      if(e.text&&!quick&&GR>0&&carryN<4&&A&&A.listenMore&&A.cancelListen){
+        carry=tx0;carryN++;ovShow('계속 말씀하세요…',tx0,'말씀이 끝나면 잠시 뒤에 실행합니다');
+        try{A.listenMore();clearTimeout(graceTm);graceTm=setTimeout(graceDone,INCOMPLETE.test(tx0)?GR+1800:GR);return}
+        catch(er){carry='';carryN=0}
+      }
+      carry='';carryN=0;e={type:'result',text:tx0};
+    }else if(e.type==='partial'&&carry){clearTimeout(graceTm);e={type:'partial',text:carry+' '+(e.text||'')}}
+    else if(e.type==='ready'&&carry){ovShow('계속 말씀하세요…',carry,'말씀이 끝나면 잠시 뒤에 실행합니다');return}
+    else if(e.type==='error'&&carry){clearTimeout(graceTm);var tc=carry;carry='';carryN=0;e={type:'result',text:tc}}
     if(e.type==='ready'){ovShow('듣는 중… 말씀해 주세요','','')}
     else if(e.type==='partial'){ovShow('듣는 중…',e.text,'')}
     else if(e.type==='result'){
       if(convo&&!e.text){ovShow('대화를 마칩니다','','');ovTimer=setTimeout(ovHide,1200);return}
       if(!e.text){ovShow('알아듣지 못했습니다','','다시 눌러서 말씀해 주세요.');ovTimer=setTimeout(ovHide,3000);return}
       if((convo||ohOn)&&/^(그만|됐어|됐다|끝|고마워|고맙|수고|대화\s*끝|종료|이제\s*됐)/.test(e.text.trim())){convo=false;ohOn=false;ovShow('대화 종료',e.text,'네, 대화를 마칠게요.');sayThenHide('네, 대화를 마칠게요.');return}
-      var om=OH.exec(e.text.trim()),r=null;
+      var om=OH.exec(e.text.trim()),r=null,gs=/^(음성\s*)?(대기|기다림|기다리는)\s*(시간)?\s*(을|를)?\s*(끄기|꺼\s*줘|꺼|짧게|보통|더\s*길게|길게)/.exec(e.text.replace(/\s+/g,' ').trim());
+      if(gs){var gk=gs[5].replace(/\s/g,''),gv=/^끄|^꺼/.test(gk)?0:gk==='짧게'?1500:gk==='보통'?2200:gk==='더길게'?5000:3500;store.set('grace',String(gv));
+        r=gv?'말을 마친 뒤 '+(gv/1000)+'초 동안 더 기다립니다.':'말이 끊기면 바로 실행합니다.'}
+      else
       if(om||ohOn){ohOn=true;var oq=om?(om[3]||'').trim():e.text.trim();if(oq)r=ohAsk(oq);else{r='네, 오대리입니다. 말씀하세요.';askAgain=true}}
       if(r===null){
       var rt=findRoutine(e.text);if(rt){runRoutine(rt);return}
@@ -1530,9 +1541,9 @@ html[data-dim="3"] .gd{opacity:.8}
   };
   $('bVoice').addEventListener('click',function(){
     if(!A){ovShow('앱에서만 쓸 수 있습니다','','');return}
-    ovClosed=false;carry='';carryN=0;aiPending=0;memoMode=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
+    ovClosed=false;clearTimeout(graceTm);carry='';carryN=0;aiPending=0;memoMode=false;retPending=!!retApp();retSkip=false;ovShow('마이크 준비 중…','','');A.listen();
   });
-  $('ovClose').addEventListener('click',function(){ovClosed=true;carry='';carryN=0;memoMode=false;ovHide();if(A)try{A.stopListening()}catch(e){}});
+  $('ovClose').addEventListener('click',function(){ovClosed=true;clearTimeout(graceTm);carry='';carryN=0;memoMode=false;ovHide();if(A)try{A.stopListening()}catch(e){}});
 
   /* ---------- 진단 ---------- */
   function showDiag(){

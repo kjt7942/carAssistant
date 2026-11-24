@@ -1983,6 +1983,15 @@ class MainActivity : Activity() {
             main.post { startListening(true) }
         }
 
+        /** 이어 듣기를 그만두고 인식기를 조용히 멈춘다 (오류·결과 신호 없음) */
+        @JavascriptInterface
+        fun cancelListen() {
+            main.post {
+                try { recognizer?.cancel() } catch (e: Exception) {}
+                abandonFocus()
+            }
+        }
+
         /** 말이 이어질 것 같을 때 신호음 없이 바로 다시 듣는다 */
         @JavascriptInterface
         fun listenMore() {
