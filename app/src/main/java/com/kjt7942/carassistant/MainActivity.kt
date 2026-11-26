@@ -1151,6 +1151,7 @@ class MainActivity : Activity() {
 
     private var sttRetry = 0
     private var sttCancelled = false
+    @Volatile private var sttIgnoreUntil = 0L  // 이어 듣기를 멈춘 직후 인식기가 보내는 뒤늦은 오류·결과를 무시
     private val focusRelease = Runnable { abandonFocus() }
     private var ducked = false
     private var focusReq: AudioFocusRequest? = null
@@ -1244,7 +1245,7 @@ class MainActivity : Activity() {
         val r = SpeechRecognizer.createSpeechRecognizer(this)
         r.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                if (sttCancelled) return
+                if (sttCancelled || System.currentTimeMillis() < sttIgnoreUntil) return
                 js("onNativeSpeech", speechEvent("ready", ""))
             }
 
@@ -1252,12 +1253,12 @@ class MainActivity : Activity() {
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {
-                if (sttCancelled) return
+                if (sttCancelled || System.currentTimeMillis() < sttIgnoreUntil) return
                 js("onNativeSpeech", speechEvent("end", ""))
             }
 
             override fun onError(error: Int) {
-                if (sttCancelled) return
+                if (sttCancelled || System.currentTimeMillis() < sttIgnoreUntil) return
                 // 11: 인식 서비스 연결 끊김, 5: 인식기 오류, 8: 사용 중 -> 인식기를 새로 만들어 한 번 자동 재시도
                 if ((error == 11 || error == SpeechRecognizer.ERROR_CLIENT ||
                         error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) && sttRetry < 1
@@ -1273,7 +1274,7 @@ class MainActivity : Activity() {
             }
 
             override fun onResults(results: Bundle?) {
-                if (sttCancelled) return
+                if (sttCancelled || System.currentTimeMillis() < sttIgnoreUntil) return
                 sttRetry = 0
                 abandonFocus()
                 val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -1282,7 +1283,7 @@ class MainActivity : Activity() {
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
-                if (sttCancelled) return
+                if (sttCancelled || System.currentTimeMillis() < sttIgnoreUntil) return
                 val list = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = if (list != null && list.isNotEmpty()) list[0] else ""
                 if (text.isNotEmpty()) js("onNativeSpeech", speechEvent("partial", text))
@@ -1305,6 +1306,9 @@ class MainActivity : Activity() {
         if (fromUser) {
             sttRetry = 0
             sttCancelled = false
+            sttIgnoreUntil = 0L
+        } else if (System.currentTimeMillis() < sttIgnoreUntil) {
+            sttIgnoreUntil = 0L  // 이어 듣기를 다시 시작하면 무시 구간 해제
         }
         if (!granted(Manifest.permission.RECORD_AUDIO)) {
             js("onNativeSpeech", speechEvent("error", "마이크 권한이 없습니다"))
@@ -1344,7 +1348,6 @@ class MainActivity : Activity() {
         // 말이 느린 사람도 중간에 끊기지 않게: 말 사이 쉬는 시간을 더 오래 기다린다 (인식기가 무시하면 화면 쪽 이어받기가 보완)
         i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
         i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 3000L)
         try {
             r.startListening(i)
         } catch (e: Exception) {
@@ -1987,6 +1990,7 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun cancelListen() {
             main.post {
+                sttIgnoreUntil = System.currentTimeMillis() + 2500
                 try { recognizer?.cancel() } catch (e: Exception) {}
                 abandonFocus()
             }
